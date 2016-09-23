@@ -1,10 +1,9 @@
-# causalsens
+# DirectEffects
 
-`causalsens` is an R package for performing sensitivity analyses for the estimation of causal effects. It implement the methods of [Blackwell (2014)][senspaper]. You can install `causalsens` using the following code:
-
+`DirectEffects` is an R package to estimate controlled direct effects (CDEs). As of now, the only model supported is sequential g-estimation, but we plan to expand to other models, including doubly robust estimators, in the future. For more information on how CDEs can be useful for applied research and a brief introduction to sequential g-estimation, see our [2016 APSR][de-paper]. To install the development version of `DirectEffects`, run the following code in R:
 ```R
 require(devtools)
-install_github("mattblackwell/causalsens", ref = "master")
+install_github("mattblackwell/DirectEffects", ref = "master")
 ```
 
-[senspaper]: http://pan.oxfordjournals.org/content/22/2/169.full.pdf?keytype=ref&ijkey=IstLH0KYWM4sVCe
+[de-paper]: http://www.mattblackwel.org/files/papers/direct-effects.pdf
