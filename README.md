@@ -6,4 +6,4 @@ require(devtools)
 install_github("mattblackwell/DirectEffects", ref = "master")
 ```
 
-[de-paper]: http://www.mattblackwel.org/files/papers/direct-effects.pdf
+[de-paper]: http://www.mattblackwell.org/files/papers/direct-effects.pdf
