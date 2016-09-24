@@ -1,6 +1,21 @@
-sequential.g <- function(formula, first.mod, data, subset, na.action, weights, offset, contrasts = NULL, model = TRUE, y = TRUE, x = FALSE, ...) {
+#' Peform sequential g-estimation
+#'
+#' @inheritParams stats::lm
+#' @param formula formula specification of the direct effect and blip-down models.
+#' Should be of the form \code{y ~ tr + x1 + x2 | med} where \code{tr} is the
+#' name of the treatment variable, \code{med} is the name of the mediator
+#' and \code{x1} and \code{x2} are baseline covariates. Before the \code{|} bar
+#' represents the direct effects model and after the bar represents
+#' the blip-down model, the latter of which will be used to created
+#' the blipped down outcome.
+#' @param first_mod an \code{lm} output containing the first-stage
+#' regression model. Must contain a coefficient for all variables in
+#' the blip-down model in the \code{formula} argument.
+#' @return A \code{seqg} object.
+#' @export
+sequential.g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL, ...) {
   cl <- match.call()
-  if (!identical(first.mod$call$data, cl$data)) {
+  if (!identical(first_mod$call$data, cl$data)) {
     stop("data must be the same for both models")
   }
 
@@ -18,11 +33,11 @@ sequential.g <- function(formula, first.mod, data, subset, na.action, weights, o
   f2 <- formula(formula, lhs = 0, rhs = 2)
   f2 <- update(f2, ~ . - 1)
   formula <- as.Formula(f1, f2)
-  fcoefs <- coef(first.mod)
+  fcoefs <- coef(first_mod)
   bt <- terms(formula, data = data, rhs = 2)
   bnames <- attr(bt, "term.labels")
   if (!all(bnames %in% names(fcoefs))) {
-    stop("blip.form contains terms not in first.mod")
+    stop("blip.form contains terms not in first_mod")
   }
   bvars <- match(bnames, names(fcoefs), 0L)
   mf$formula <- formula
@@ -47,16 +62,16 @@ sequential.g <- function(formula, first.mod, data, subset, na.action, weights, o
   out$na.action <- attr(mf, "na.action")
   out$levels <- stats::.getXlevels(mt, mf)
   out$contrasts <- attr(X, "contrasts")
-  out$first.mod <- first.mod
-  X1 <- model.matrix(first.mod)
+  out$first_mod <- first_mod
+  X1 <- model.matrix(first_mod)
   n <- NROW(X)
   Fhat <- crossprod(X, X1)/n
   Fhat[, !(colnames(X1) %in% bnames)] <- 0
-  p1 <- 1L:first.mod$rank
-  R1 <- chol2inv(first.mod$qr$qr[p1, p1, drop = FALSE])
+  p1 <- 1L:first_mod$rank
+  R1 <- chol2inv(first_mod$qr$qr[p1, p1, drop = FALSE])
   efun <- if (is.null(w)) X * out$residual else w * X * out$residual
-  w1 <- first.mod$weights
-  res1 <- residuals(first.mod)
+  w1 <- first_mod$weights
+  res1 <- residuals(first_mod)
   efun1 <- if (is.null(w1)) X1 * res1 else w1 * X1 * res1
   ghat <- t(efun) + Fhat %*% R1 %*% t(efun1)
   meat <- crossprod(t(ghat))

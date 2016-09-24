@@ -4,11 +4,16 @@ Date: 2016-06-05
 Title: Estimating Controlled Direct Effects for Explaing Causal Findings
 Author: Avidit Acharya, Matthew Blackwell, Maya Sen
 Maintainer: Matthew Blackwell <mblackwell@gov.harvard.edu>
-Imports: stats, Formula
+Imports:
+    stats,
+    Formula
 Depends:
     R (>= 3.0.0)
-Description: The DirectEffects package provides functions to estimate controlled direct effects. 
+Description: The DirectEffects package provides functions to estimate controlled
+    direct effects.
 License: GPL (>= 2)
 URL: http://www.mattblackwell.org/software/direct-effects/
 VignetteBuilder: knitr
-Suggests: knitr
+Suggests:
+    knitr
+RoxygenNote: 5.0.1

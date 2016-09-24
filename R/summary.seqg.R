@@ -1,3 +1,4 @@
+#' @export
 summary.seqg <- function(object, treatment = NULL) {
   z <- object
   p <- z$rank
@@ -21,7 +22,7 @@ summary.seqg <- function(object, treatment = NULL) {
   ans
 }
 
-
+#' @export
 print.summary.seqg <- function(obj) {
   cat("\nt test of coefficients: \n\n")
   stats::printCoefmat(obj$coefficients)

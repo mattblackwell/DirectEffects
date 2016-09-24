@@ -1,3 +1,4 @@
+#' @export
 print.seqg <- function(object) {
   cat("\nCall:\n")
   print(object$call)
