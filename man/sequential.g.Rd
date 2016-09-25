@@ -61,7 +61,36 @@ the blip-down model in the \code{formula} argument.}
     regression fitting functions (see below).}
 }
 \value{
-A \code{seqg} object.
+Returns an object of \code{class} A \code{"seqg"}. Similar
+to the output of a call to \code{lm}. Contains the following
+components:
+\itemize{
+  \item coefficients: a vector of named coefficients for the direct
+effects model.
+  \item residuals: the residuals, that is the blipped-down outcome
+minus the fitted values.
+  \item rank: the numeric rank of the fitted linear direct effects
+model.
+  \item fitted.values: the fitted mean values of the direct effects
+model.
+  \item weights: (only for weighted fits) the specified weights.
+  \item df.residual: the residual degrees of freedom for the direct
+effects model.
+  \item terms: the \code{terms} object used.
+  \item formula: the \code{formula} object used, possibly modified
+to drop a constant in the blip-down model.
+  \item call: the matched call.
+  \item contrasts:  the contrasts used for the factor variables.
+  \item levels: the levels of the factor variables.
+  \item first_mod: the first_mod object used.
+  \item vcov: covariance matrix of the direct-effects coefficients.
+  \item model: full model frame (if \code{model = TRUE}).
+  \item y: the blipped-down response vector (if \code{y = TRUE}).
+  \item x: the direct effects model matrix (if \code{x = TRUE}).
+}
+In addition, non-null fits will have components \code{assign},
+\code{effects}, and \code{qr} from the output of \code{lm.fit} or
+\code{lm.wfit}, whichever is used.
 }
 \description{
 Peform sequential g-estimation
