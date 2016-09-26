@@ -9,11 +9,14 @@ Imports:
     Formula
 Depends:
     R (>= 3.0.0)
+Suggests:
+    roxygen2
 Description: The DirectEffects package provides functions to estimate controlled
     direct effects.
 License: GPL (>= 2)
 URL: http://www.mattblackwell.org/software/direct-effects/
 VignetteBuilder: knitr
+LazyData: true
 Suggests:
     knitr
 RoxygenNote: 5.0.1
