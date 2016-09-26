@@ -3,4 +3,4 @@
 S3method(print,seqg)
 S3method(print,summary.seqg)
 S3method(summary,seqg)
-export(sequential.g)
+export(sequential_g)

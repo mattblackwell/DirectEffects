@@ -1,4 +1,5 @@
-#' Peform sequential g-estimation
+#' Peform linear sequential g-estimation to estimate the controlled
+#' direct effect of a treatment net the effect of a mediator.
 #'
 #' @inheritParams stats::lm
 #' @param formula formula specification of the direct effect and blip-down models.
@@ -11,6 +12,31 @@
 #' @param first_mod an \code{lm} output containing the first-stage
 #' regression model. Must contain a coefficient for all variables in
 #' the blip-down model in the \code{formula} argument.
+#' @param model logical indicating whether the resulting model frame
+#' should be returned.
+#' @param y logical indicating whether the blipped-down outcome
+#' vector should be returned.
+#' @param x logical indicating whether the model matrix of the direct
+#' effects model should be returned.
+#' @details The \code{sequential_g} function implements the linear
+#' sequential g-estimator developed by Vansteelandt (2009) with the
+#' consistent variance estimator developed by Acharya, Blackwell, and
+#' Sen (2016).
+#'
+#' The function takes in a first-stage linear model, \code{first_mod},
+#' of the \code{lm} class which is assumed to estimate the effect of
+#' the mediator on the outcome (conditional on the treatment,
+#' intermediate confounders, and baseline confounders). The formula
+#' specifies both the second stage, direct effect model of the
+#' treatment and baseline confounders, but also contains the
+#' specification of the 'blip-down' or 'demediation' function that is
+#' used to remove the average effect of the mediator (possibly
+#' interacted) from the outcome to create the blipped-down outcome.
+#' This blipped-down outcome is the passed to a standard linear model
+#' with the covariates as specified for the direct effects model.
+#'
+#' See the references below for more details.
+#'
 #' @return Returns an object of \code{class} A \code{"seqg"}. Similar
 #' to the output of a call to \code{lm}. Contains the following
 #' components:
@@ -41,8 +67,14 @@
 #' In addition, non-null fits will have components \code{assign},
 #' \code{effects}, and \code{qr} from the output of \code{lm.fit} or
 #' \code{lm.wfit}, whichever is used.
+#' @references Vansteelandt, S. (2009). Estimating Direct Effects in
+#' Cohort and Case-Control Studies. Epidemiology, 20(6), 851-860.
+#'
+#' Acharya, Avidit, Blackwell, Matthew, and Sen, Maya. (2016)
+#' "Explaning Causal Effects Without Bias: Detecting and Assessing
+#' Direct Effects." Forthcoming, American Political Science Review.
 #' @export
-sequential.g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL, ...) {
+sequential_g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL, ...) {
   cl <- match.call()
   if (!identical(first_mod$call$data, cl$data)) {
     stop("data must be the same for both models")
@@ -52,7 +84,7 @@ sequential.g <- function(formula, first_mod, data, subset, weights, na.action, m
   m <- match(c("formula", "data", "subset", "na.action", "weights", "offset"), names(mf), 0L)
   mf <- mf[c(1L, m)]
   mf$drop.unused.levels <- TRUE
-  formula <- as.Formula(formula)
+  formula <- Formula::as.Formula(formula)
   stopifnot(length(formula)[1] == 1L, length(formula)[2] %in% 1:2)
   if (inherits(try(terms(formula), silent = TRUE), "try-error")) {
     stop("cannot use dot '.' in formulas")
@@ -61,7 +93,7 @@ sequential.g <- function(formula, first_mod, data, subset, weights, na.action, m
   f1 <- formula(formula, rhs = 1)
   f2 <- formula(formula, lhs = 0, rhs = 2)
   f2 <- update(f2, ~ . - 1)
-  formula <- as.Formula(f1, f2)
+  formula <- Formula::as.Formula(f1, f2)
   fcoefs <- coef(first_mod)
   bt <- terms(formula, data = data, rhs = 2)
   bnames <- attr(bt, "term.labels")

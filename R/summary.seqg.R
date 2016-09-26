@@ -1,5 +1,5 @@
 #' @export
-summary.seqg <- function(object, treatment = NULL) {
+summary.seqg <- function(object, treatment = NULL, ...) {
   z <- object
   p <- z$rank
   rdf <- z$df.residual
@@ -23,10 +23,9 @@ summary.seqg <- function(object, treatment = NULL) {
 }
 
 #' @export
-print.summary.seqg <- function(obj) {
+print.summary.seqg <- function(x, ...) {
   cat("\nt test of coefficients: \n\n")
-  stats::printCoefmat(obj$coefficients)
+  stats::printCoefmat(x$coefficients)
   cat("\n")
-  invisible(obj)
-
+  invisible(x)
 }

@@ -1,10 +1,10 @@
 #' @export
-print.seqg <- function(object) {
+print.seqg <- function(x, ...) {
   cat("\nCall:\n")
-  print(object$call)
+  print(x$call)
 
   cat("\n\nCoefficients:\n")
-  print(object$coefficients)
+  print(x$coefficients)
   cat("\n")
-  invisible(object)
+  invisible(x)
 }
