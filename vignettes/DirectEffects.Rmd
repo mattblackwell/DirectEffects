@@ -1,0 +1,38 @@
+---
+title: "DirectEffects: Estimating controlled direct effects"
+author: Matthew Blackwell
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Estimating controlled direct effects}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+The `DirectEffects` package provides the tools for researchers to estimate the controlled direct effect of some treatment, net the effect of some mediator. This goal is often tricky in practice because there are covariates that causally affect the mediator and are causally affected by the treatment. Including such variables in a regression model, for instance, could lead to posttreatment bias when estimating the direct effect of treatment. A large class of models and estimation approaches have been developed to avoid this problem. Currently, the package only implements one approach to estimating the CDE, which is called sequential g-estimation. The idea behind this approach is that if we can estimate the effect of the mediator using a standard linear model, then to estimate the direct effect of treatment without posttreatment bias if we suitably "remove" that effect from the dependent variable. 
+
+To show how to implement this procedure in R using the `DirectEffects` package, we first load the package and attach the example dataset on historical plough use and women's modern participation in politics:
+```{r, echo = TRUE, eval = TRUE}
+library(DirectEffects)
+data(ploughs)
+
+```
+
+As a baseline, we first 
+
+```{r, echo = TRUE, eval = TRUE}
+ate.mod <- lm(women_politics ~ plow + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged, data = ploughs)
+summary(ate.mod)
+
+```
+
+```{r, echo = TRUE, eval = TRUE}
+ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
+ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
+
+first <- lm(women_politics~ plow + centered_ln_inc + centered_ln_incsq + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged +years_civil_conflict +  years_interstate_conflict  + oil_pc + european_descent + communist_dummy +polity2_2000+serv_va_gdp2000, data = ploughs)
+
+direct <- sequential_g(women_politics ~ plow + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged | centered_ln_inc + centered_ln_incsq, first_mod = first, data = ploughs, subset = rownames(ploughs) %in% rownames(model.matrix(first)))
+summary(direct)
+```
