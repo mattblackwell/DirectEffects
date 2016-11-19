@@ -15,20 +15,20 @@ library(scales)
 ```
 
 # Introduction
-The `DirectEffects` package provides the tools for researchers to estimate the controlled direct effect of some treatment, net the effect of some mediator (See [Acharaya, Blackwell, and Sen (2016)](https://www.cambridge.org/core/journals/american-political-science-review/article/explaining-causal-findings-without-bias-detecting-and-assessing-direct-effects/D11BEB8666E913A0DCD7D0B9872F5D11)). This goal is often tricky in practice because there are covariates that causally affect the mediator and are causally affected by the treatment. Including such variables in a regression model, for instance, could lead to posttreatment bias when estimating the direct effect of treatment. A large class of models and estimation approaches have been developed to avoid this problem. Currently, the package only implements one approach to estimating the CDE, which is called sequential g-estimation. The idea behind this approach is that if we can estimate the effect of the mediator using a standard linear model, then to estimate the direct effect of treatment without posttreatment bias if we suitably "remove" that effect from the dependent variable. 
+The `DirectEffects` package provides the tools for researchers to estimate the controlled direct effect of some treatment, net the effect of some mediator (See [Acharaya, Blackwell, and Sen (2016)](https://www.cambridge.org/core/journals/american-political-science-review/article/explaining-causal-findings-without-bias-detecting-and-assessing-direct-effects/D11BEB8666E913A0DCD7D0B9872F5D11)). This goal is often tricky in practice because there are covariates that causally affect the mediator and are causally affected by the treatment. Including such variables in a regression model, for instance, could lead to post-treatment bias when estimating the direct effect of treatment. A large class of models and estimation approaches have been developed to avoid this problem. Currently, the package only implements one approach to estimating the CDE, which is called sequential g-estimation. The idea behind this approach is that if we can estimate the effect of the mediator using a standard linear model, then to estimate the direct effect of treatment without post-treatment bias if we suitably "remove" that effect from the dependent variable. 
 
 
 # Setup
-To show how to implement this procedure in R using the `DirectEffects` package, we first load the package and attach the example dataset on historical plough use and women's modern participation in politics:
+To show how to implement this procedure in R using the `DirectEffects` package, we first load the package and attach the example dataset on historical plow use and women's modern participation in politics:
 ```{r, echo = TRUE, eval = TRUE}
 library(DirectEffects)
 data(ploughs)
 ```
 
-The data comes from [Alesina, Giuliano, and Nunn, 2013](http://scholar.harvard.edu/files/nunn/files/alesina_giuliano_nunn_qje_2013.pdf?m=1366834674). The paper's main argument is that the advent of the capital-intensive agricultural practice of the plough favored men over women participating in agriculture, which have affected gender inequality in modern societies. They also suggest that the effect of the plough agriculture flows through income. Thus, in this example, 
+The data comes from [Alesina, Giuliano, and Nunn, 2013](http://scholar.harvard.edu/files/nunn/files/alesina_giuliano_nunn_qje_2013.pdf?m=1366834674). The paper's main argument is that the advent of the capital-intensive agricultural practice of the plow favored men over women participating in agriculture, which have affected gender inequality in modern societies. They also suggest that the effect of the plow agriculture flows through income. Thus, in this example, 
 
 * $Y_i$ is the share of political positions held by women in 2000
-* $A_i$ is the relative proportion of ethnic groups that traditionally used the plough within a country
+* $A_i$ is the relative proportion of ethnic groups that traditionally used the plow within a country
 * $M_i$ is the log GDP per capita in 2000
 * $X_i$ is the pre-treatment characteristics of the country, which are mostly geographic,
 
@@ -56,7 +56,7 @@ ggplot(ploughs, aes(x = plow, women_politics/100)) +
 # Implementation
 As a baseline, we first regress $Y$ on $A$ controlling for the pre-treatment variables $X$.
 
-Notice that the effect of the plough is negative and insignificant.
+Notice that the effect of the plow is negative and insignificant.
 ```{r, echo = TRUE, eval = TRUE}
 ate.mod <- lm(women_politics ~ plow + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged, data = ploughs)
 summary(ate.mod)
@@ -75,7 +75,7 @@ first <- lm(women_politics~ plow + centered_ln_inc + centered_ln_incsq + agricul
 ```
 
 
-Then, we implment `DirectEffects`. The main argument is a `formula` object as the first argument, regressing $Y$ on $X$ but mediated through $M$ (expressed as `yvar ~ xvars | mvars`).
+Then, we implement `DirectEffects`. The main argument is a `formula` object as the first argument, regressing $Y$ on $X$ but mediated through $M$ (expressed as `yvar ~ xvars | mvars`).
 
 ```{r}
 form.main <- women_politics ~ plow + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged | centered_ln_inc + centered_ln_incsq
@@ -89,7 +89,7 @@ direct <- sequential_g(form.main,
                        subset = rownames(ploughs) %in% rownames(model.matrix(first)))
 ```
 
-The results show a negative ACDE of ploughs, where we have define "direct" in the sense of not flowing through the mediators of income. 
+The results show a negative ACDE of plows, where we have define "direct" in the sense of not flowing through the mediators of income. 
 ```{r, echo = TRUE, eval = TRUE}
 summary(direct)
 ```

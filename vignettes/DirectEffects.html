@@ -75,17 +75,17 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<p>The <code>DirectEffects</code> package provides the tools for researchers to estimate the controlled direct effect of some treatment, net the effect of some mediator (See <a href="https://www.cambridge.org/core/journals/american-political-science-review/article/explaining-causal-findings-without-bias-detecting-and-assessing-direct-effects/D11BEB8666E913A0DCD7D0B9872F5D11">Acharaya, Blackwell, and Sen (2016)</a>). This goal is often tricky in practice because there are covariates that causally affect the mediator and are causally affected by the treatment. Including such variables in a regression model, for instance, could lead to posttreatment bias when estimating the direct effect of treatment. A large class of models and estimation approaches have been developed to avoid this problem. Currently, the package only implements one approach to estimating the CDE, which is called sequential g-estimation. The idea behind this approach is that if we can estimate the effect of the mediator using a standard linear model, then to estimate the direct effect of treatment without posttreatment bias if we suitably “remove” that effect from the dependent variable.</p>
+<p>The <code>DirectEffects</code> package provides the tools for researchers to estimate the controlled direct effect of some treatment, net the effect of some mediator (See <a href="https://www.cambridge.org/core/journals/american-political-science-review/article/explaining-causal-findings-without-bias-detecting-and-assessing-direct-effects/D11BEB8666E913A0DCD7D0B9872F5D11">Acharaya, Blackwell, and Sen (2016)</a>). This goal is often tricky in practice because there are covariates that causally affect the mediator and are causally affected by the treatment. Including such variables in a regression model, for instance, could lead to post-treatment bias when estimating the direct effect of treatment. A large class of models and estimation approaches have been developed to avoid this problem. Currently, the package only implements one approach to estimating the CDE, which is called sequential g-estimation. The idea behind this approach is that if we can estimate the effect of the mediator using a standard linear model, then to estimate the direct effect of treatment without post-treatment bias if we suitably “remove” that effect from the dependent variable.</p>
 </div>
 <div id="setup" class="section level1">
 <h1>Setup</h1>
-<p>To show how to implement this procedure in R using the <code>DirectEffects</code> package, we first load the package and attach the example dataset on historical plough use and women’s modern participation in politics:</p>
+<p>To show how to implement this procedure in R using the <code>DirectEffects</code> package, we first load the package and attach the example dataset on historical plow use and women’s modern participation in politics:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(DirectEffects)
 <span class="kw">data</span>(ploughs)</code></pre></div>
-<p>The data comes from <a href="http://scholar.harvard.edu/files/nunn/files/alesina_giuliano_nunn_qje_2013.pdf?m=1366834674">Alesina, Giuliano, and Nunn, 2013</a>. The paper’s main argument is that the advent of the capital-intensive agricultural practice of the plough favored men over women participating in agriculture, which have affected gender inequality in modern societies. They also suggest that the effect of the plough agriculture flows through income. Thus, in this example,</p>
+<p>The data comes from <a href="http://scholar.harvard.edu/files/nunn/files/alesina_giuliano_nunn_qje_2013.pdf?m=1366834674">Alesina, Giuliano, and Nunn, 2013</a>. The paper’s main argument is that the advent of the capital-intensive agricultural practice of the plow favored men over women participating in agriculture, which have affected gender inequality in modern societies. They also suggest that the effect of the plow agriculture flows through income. Thus, in this example,</p>
 <ul>
 <li><span class="math inline">\(Y_i\)</span> is the share of political positions held by women in 2000</li>
-<li><span class="math inline">\(A_i\)</span> is the relative proportion of ethnic groups that traditionally used the plough within a country</li>
+<li><span class="math inline">\(A_i\)</span> is the relative proportion of ethnic groups that traditionally used the plow within a country</li>
 <li><span class="math inline">\(M_i\)</span> is the log GDP per capita in 2000</li>
 <li><span class="math inline">\(X_i\)</span> is the pre-treatment characteristics of the country, which are mostly geographic,</li>
 </ul>
@@ -127,7 +127,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="implementation" class="section level1">
 <h1>Implementation</h1>
 <p>As a baseline, we first regress <span class="math inline">\(Y\)</span> on <span class="math inline">\(A\)</span> controlling for the pre-treatment variables <span class="math inline">\(X\)</span>.</p>
-<p>Notice that the effect of the plough is negative and insignificant.</p>
+<p>Notice that the effect of the plow is negative and insignificant.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">ate.mod &lt;-<span class="st"> </span><span class="kw">lm</span>(women_politics ~<span class="st"> </span>plow +<span class="st"> </span>agricultural_suitability +<span class="st">  </span>tropical_climate +<span class="st">  </span>large_animals +<span class="st"> </span>political_hierarchies +<span class="st"> </span>economic_complexity +<span class="st"> </span>rugged, <span class="dt">data =</span> ploughs)
 <span class="kw">summary</span>(ate.mod)</code></pre></div>
 <pre><code>## 
@@ -162,14 +162,14 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 ploughs$centered_ln_incsq &lt;-<span class="st"> </span>ploughs$centered_ln_inc^<span class="dv">2</span></code></pre></div>
 <p>The first stage is a linear model of <span class="math inline">\(Y\)</span> on <span class="math inline">\(X\)</span> and <span class="math inline">\(M\)</span>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">first &lt;-<span class="st"> </span><span class="kw">lm</span>(women_politics~<span class="st"> </span>plow +<span class="st"> </span>centered_ln_inc +<span class="st"> </span>centered_ln_incsq +<span class="st"> </span>agricultural_suitability +<span class="st">  </span>tropical_climate +<span class="st">  </span>large_animals +<span class="st"> </span>political_hierarchies +<span class="st"> </span>economic_complexity +<span class="st"> </span>rugged +years_civil_conflict +<span class="st">  </span>years_interstate_conflict  +<span class="st"> </span>oil_pc +<span class="st"> </span>european_descent +<span class="st"> </span>communist_dummy +polity2_2000+serv_va_gdp2000, <span class="dt">data =</span> ploughs)</code></pre></div>
-<p>Then, we implment <code>DirectEffects</code>. The main argument is a <code>formula</code> object as the first argument, regressing <span class="math inline">\(Y\)</span> on <span class="math inline">\(X\)</span> but mediated through <span class="math inline">\(M\)</span> (expressed as <code>yvar ~ xvars | mvars</code>).</p>
+<p>Then, we implement <code>DirectEffects</code>. The main argument is a <code>formula</code> object as the first argument, regressing <span class="math inline">\(Y\)</span> on <span class="math inline">\(X\)</span> but mediated through <span class="math inline">\(M\)</span> (expressed as <code>yvar ~ xvars | mvars</code>).</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">form.main &lt;-<span class="st"> </span>women_politics ~<span class="st"> </span>plow +<span class="st"> </span>agricultural_suitability +<span class="st">  </span>tropical_climate +<span class="st">  </span>large_animals +<span class="st"> </span>political_hierarchies +<span class="st"> </span>economic_complexity +<span class="st"> </span>rugged |<span class="st"> </span>centered_ln_inc +<span class="st"> </span>centered_ln_incsq</code></pre></div>
 <p>The <code>first_mod</code> argument is also necessary, and takes the model of the class <code>lm</code> computed earlier.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">direct &lt;-<span class="st"> </span><span class="kw">sequential_g</span>(form.main,
                        <span class="dt">first_mod =</span> first,
                        <span class="dt">data =</span> ploughs,
                        <span class="dt">subset =</span> <span class="kw">rownames</span>(ploughs) %in%<span class="st"> </span><span class="kw">rownames</span>(<span class="kw">model.matrix</span>(first)))</code></pre></div>
-<p>The results show a negative ACDE of ploughs, where we have define “direct” in the sense of not flowing through the mediators of income.</p>
+<p>The results show a negative ACDE of plows, where we have define “direct” in the sense of not flowing through the mediators of income.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(direct)</code></pre></div>
 <pre><code>## 
 ## t test of coefficients: 
