@@ -25,12 +25,37 @@ library(DirectEffects)
 data(ploughs)
 ```
 
+# Theory
+The main quantity of interest in the DirectEffect package is the Average Controlled Direct Effect (ACDE). This is based off the following causal structure (Figure 3 in Acharaya, Blackwell, and Sen)
+
+```{r, echo = F, out.width = "600px"}
+knitr::include_graphics("figures/ABS_fig3.png")
+```
+
+The Controlled Direct Effect defined for a given treatment ($A = a$ vs. $A = a^\prime$) and a given value of the mediator ($M = m$) is 
+$$\mathit{CDE}_{i}(a, a^\prime, m) = Y_i(A = a, M = m) - Y_i(A = a^\prime, M = m)$$
+and is the total of the dashed lines in the Figure above. Thus, we set the mediator constant across the two treatments. 
+
+Contrast this with the Natural Direct Effect, implemented in mediation analysis, which is "natural"" in the sense that we let the mediator take its potential outcome under treatment.
+$$\mathit{NDE}_{i}(a, a^\prime) = Y_i(A = a, M = M(a)) - Y_i(A = a^\prime, M = M(a^\prime))$$
+
+The NDE's counterpart, the Natural Indirect Effect, is the effect that "flows through" the mediator, holding treatment constant
+$$\mathit{NIE}_{i}(a, a^\prime) = Y_i(A = a, M = M(a)) - Y_i(A = a, M = M(a^\prime))$$
+and involves a ``cross-world'' assumption in the second potential outcome (we never observe $A = a$ and the mediator under $A = a^\prime$ for a given individual $i$.)
+
+The CDE is useful for discriminating between  causal mechanisms, because the average total effect $\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]$ can be decomposed as the sum of the average CDE across observations (_ACDE_), the average natural indirect effect,  and a measure of how much the direct effect of $A$ depends on a particular $M = m$:
+$$\tau(a, a^\prime) = \mathit{ACDE} (a, a^\prime, M = 0) +  \mathit{ANIE} (a, a^\prime) + E[M_i(a)[ \mathit{CDE}(a, a^\prime, M = 1) -  \mathit{CDE}(a, a^\prime, M = 0)]].$$
+
+Thus, if the _ACDE_ is non-zero, it is evidence that the effect of $A$ is not entirely explained/dominated by its mediated effect _via_ $M.$ We illustrate this with an emprical example.
+
+
+# Case
 The data comes from [Alesina, Giuliano, and Nunn, 2013](http://scholar.harvard.edu/files/nunn/files/alesina_giuliano_nunn_qje_2013.pdf?m=1366834674). The paper's main argument is that the advent of the capital-intensive agricultural practice of the plow favored men over women participating in agriculture, which have affected gender inequality in modern societies. They also suggest that the effect of the plow agriculture flows through income. Thus, in this example, 
 
-* $Y_i$ is the share of political positions held by women in 2000
-* $A_i$ is the relative proportion of ethnic groups that traditionally used the plow within a country
-* $M_i$ is the log GDP per capita in 2000
-* $X_i$ is the pre-treatment characteristics of the country, which are mostly geographic,
+* $Y_i$ is the share of political positions held by women in 2000 (`women_politics`)
+* $A_i$ is the relative proportion of ethnic groups that traditionally used the plow within a country (`plow`)
+* $M_i$ is the log GDP per capita in 2000 (`ln_income`)
+* $X_i$ is the pre-treatment characteristics of the country, which are mostly geographic. (`tropical_climate`, `agricultura_suitability`, `large_animals`, `political_hierarchies`, `economic_complexity`, and `rugged`)
 
 where $i$ indexes countries.
 ```{r, echo = FALSE, eval = TRUE}
