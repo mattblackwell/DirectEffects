@@ -80,7 +80,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="installation" class="section level1">
 <h1>Installation</h1>
 <p>The current version of the package is currently on git.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">devtools::<span class="kw">install_git</span>(<span class="st">&quot;https://github.com/mattblackwell/DirectEffects.git&quot;</span>)
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install_github</span>(<span class="st">&quot;mattblackwell/DirectEffects&quot;</span>, <span class="dt">ref =</span> <span class="st">&quot;master&quot;</span>)
 <span class="kw">library</span>(DirectEffects)</code></pre></div>
 </div>
 <div id="quantity-of-interest" class="section level1">
@@ -201,12 +201,12 @@ ploughs$centered_ln_incsq &lt;-<span class="st"> </span>ploughs$centered_ln_inc^
 </div>
 <div id="second-stage" class="section level2">
 <h2>Second stage</h2>
-<p>Then, we implement <code>DirectEffects</code>. The main argument is a <code>formula</code> object as the first argument, regressing <span class="math inline">\(Y\)</span> on <span class="math inline">\(X\)</span> but mediated through <span class="math inline">\(M\)</span> (expressed as <code>yvar ~ xvars | mvars</code>).</p>
+<p>Next, we specify the main formula that, in contrasts to the first stage model, distinguishes between the mediator and other predictors. The formula should regress <span class="math inline">\(Y\)</span> on <span class="math inline">\(X\)</span> but mediated through <span class="math inline">\(M\)</span>, expressed as <code>yvar ~ xvars | mvars</code>. The mediators must be named the samed way as in the first model.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">form.main &lt;-<span class="st"> </span>women_politics ~<span class="st"> </span>plow +<span class="st"> </span>agricultural_suitability +<span class="st">  </span>tropical_climate +<span class="st">  </span>large_animals +<span class="st"> </span>political_hierarchies +<span class="st"> </span>economic_complexity +<span class="st"> </span>rugged |<span class="st"> </span>centered_ln_inc +<span class="st"> </span>centered_ln_incsq</code></pre></div>
 </div>
 <div id="sequential-g-estimation" class="section level2">
 <h2>Sequential g-estimation</h2>
-<p>Finally, we enter the two formula for each step into the sequential g-estimation function.</p>
+<p>Finally, we enter the two formula for each step into the sequential g-estimation function. It takes the main model specification as the first argument (<code>formula</code>), followed by the first stage model used for estimating the de-mediation function (<code>first_mod</code>).</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">direct &lt;-<span class="st"> </span><span class="kw">sequential_g</span>(<span class="dt">formula =</span> form.main,
                        <span class="dt">first_mod =</span> first,
                        <span class="dt">data =</span> ploughs,
