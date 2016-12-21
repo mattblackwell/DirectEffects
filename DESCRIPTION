@@ -10,7 +10,7 @@ Imports:
 Depends:
     R (>= 3.0.0)
 Suggests:
-    roxygen2
+    roxygen2, knitr, rmarkdown
 Description: The DirectEffects package provides functions to estimate controlled
     direct effects.
 License: GPL (>= 2)
