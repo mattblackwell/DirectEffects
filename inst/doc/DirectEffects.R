@@ -1,14 +1,25 @@
 ## ----loadpkg, echo = F, include = F--------------------------------------
 library(dplyr)
-library(ggrepel)
 library(scales)
 library(reshape2)
-library(DT)
+library(ggplot2)
 library(DirectEffects) # devtools::install_github("mattblackwell/DirectEffects", ref = "develop")
 
 ## ---- echo = TRUE, eval = F----------------------------------------------
 #  install_github("mattblackwell/DirectEffects", ref = "master")
 #  library(DirectEffects)
+
+## ---- eval = F-----------------------------------------------------------
+#  data(ploughs)
+#  ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
+#  ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
+#  
+#  first <- lm(women_politics~ plow + centered_ln_inc + centered_ln_incsq + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged + years_civil_conflict +  years_interstate_conflict  + oil_pc + european_descent + communist_dummy + polity2_2000 + serv_va_gdp2000,
+#              data = ploughs)
+#  
+#  direct <- sequential_g(formula = women_politics ~ plow + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged | centered_ln_inc + centered_ln_incsq,
+#                         first_mod = first,
+#                         data = ploughs, subset = rownames(ploughs) %in% rownames(model.matrix(first)))
 
 ## ---- echo = F, out.width = "600px"--------------------------------------
 knitr::include_graphics("figures/ABS_fig3.png")
@@ -24,8 +35,8 @@ ggplot(ploughs, aes(x = plow, women_politics/100, size = exp(ln_income))) +
   labs(
     title = "Agricultural practice and modern gender equity",
     caption = "Source: Alesina, Giuliano, and Nunn (2013)",
-    y = "% political positions held by women (2000)",
-    x = "% ethnic groups that traditionally used the plough"
+    y = "Political positions held by women (2000)",
+    x = "Ethnic groups that traditionally used the plough"
   ) +
   geom_point(alpha = 0.5) +
   scale_x_continuous(label = percent) +
@@ -58,9 +69,9 @@ direct <- sequential_g(formula = form.main,
 
 ## ---- echo = F, fig.width= 7, fig.height=4, warning=F--------------------
 mnames <- c("centered_ln_inc", "centered_ln_incsq")
+coefs <- coefficients(fit.first)[mnames]
 
 curve.first <- function(x) {
-  coefs <- coefficients(fit.first)[mnames]
   yhat <- coefs[1]*x + coefs[2]*x^2
   return(yhat)
 }
@@ -68,10 +79,10 @@ curve.first <- function(x) {
 ploughs %>% 
   ggplot(., aes_string(x = mnames[1], y = "women_politics")) + 
   geom_point() +
-  stat_function(fun = curve.first, size = 1, color = "indianred", size = 2, se = F) +
+  stat_function(fun = curve.first, size = 1, color = "indianred", size = 2) +
   labs(title = "De-mediation function (line) overlayed on bivariate relationship (points)") +
-  annotate('text', x = 2, y = 0, 
-           label = "gamma(m)== 2.6347851*m + 0.8801396*m^{2}",
+  annotate('text', x = 2, y = -1, 
+           label = paste0("gamma(m)==", coefs[1], "*m + ", coefs[2], "*m^{2}"),
            parse = TRUE,
            color = "indianred")  +
   theme_light()
@@ -143,5 +154,6 @@ head(direct$y)
 head(direct$x) # will be non-NULL if the argument x in sequential_g is set to TRUE
 
 ## ------------------------------------------------------------------------
-str(direct$terms)
+names(direct$terms)
+class(direct$terms$direct)
 

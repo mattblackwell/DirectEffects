@@ -10,20 +10,19 @@ vignette: >
 ---
 ```{r loadpkg, echo = F, include = F}
 library(dplyr)
-library(ggrepel)
 library(scales)
 library(reshape2)
-library(DT)
+library(ggplot2)
 library(DirectEffects) # devtools::install_github("mattblackwell/DirectEffects", ref = "develop")
 ```
 
-## Contents
-* Installation
-* Quantity of Interests
-* Estimation by sequential g-estimation
-* Case
-* Implementation
-* Interpreation of Output
+* [Installation](#implementation)
+* [Demonstration](#demonstration)
+* [Quantity of Interest](#quantity-of-interest)
+* [Estimation by sequential g-estimation](#estimation-by-sequential-g-estimation)
+* [Case](#case)
+* [Implementation](#implementation)
+* [Interpretation of Output](#interpretation-of-output)
 
 # Introduction
 The `DirectEffects` package provides the tools for researchers to estimate the controlled direct effect of some treatment, net the effect of some mediator (See [Acharaya, Blackwell, and Sen (2016)](https://www.cambridge.org/core/journals/american-political-science-review/article/explaining-causal-findings-without-bias-detecting-and-assessing-direct-effects/D11BEB8666E913A0DCD7D0B9872F5D11)). This goal is often tricky in practice because there are covariates that causally affect the mediator and are causally affected by the treatment. Including such variables in a regression model, for instance, could lead to post-treatment bias when estimating the direct effect of treatment. A large class of models and estimation approaches have been developed to avoid this problem. Currently, the package only implements one approach to estimating the CDE, which is called sequential g-estimation. The idea behind this approach is that if we can estimate the effect of the mediator using a standard linear model, then to estimate the direct effect of treatment without post-treatment bias if we suitably "remove" that effect from the dependent variable. 
@@ -36,16 +35,33 @@ install_github("mattblackwell/DirectEffects", ref = "master")
 library(DirectEffects)
 ```
 
+# Demonstration
+Below is a minimal working example of implementing a version of `DirectEffects`. In the subsequent sections, we explain the process in detail.
+```{r, eval = F}
+data(ploughs)
+ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
+ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
+
+first <- lm(women_politics~ plow + centered_ln_inc + centered_ln_incsq + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged + years_civil_conflict +  years_interstate_conflict  + oil_pc + european_descent + communist_dummy + polity2_2000 + serv_va_gdp2000,
+            data = ploughs)
+
+direct <- sequential_g(formula = women_politics ~ plow + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged | centered_ln_inc + centered_ln_incsq, 
+                       first_mod = first, 
+                       data = ploughs, subset = rownames(ploughs) %in% rownames(model.matrix(first)))
+```
+
+
 # Quantity of Interest
-The main quantity of interest in the DirectEffect package is the Average Controlled Direct Effect (ACDE). This is based off the following causal structure (Figure 3 in Acharaya, Blackwell, and Sen)
+The main quantity of interest in the DirectEffect package is the Average Controlled Direct Effect (ACDE). This can be illustrated from the following causal structure (Figure 3 in Acharaya, Blackwell, and Sen).
 
 ```{r, echo = F, out.width = "600px"}
 knitr::include_graphics("figures/ABS_fig3.png")
 ```
 
+
 The Controlled Direct Effect defined for a given treatment ($A = a$ vs. $A = a^\prime$) and a given value of the mediator ($M = m$) is 
 $$\mathit{CDE}_{i}(a, a^\prime, m) = Y_i(A = a, M = m) - Y_i(A = a^\prime, M = m)$$
-and is the total of the dashed lines in the Figure above. Thus, we set the mediator constant across the two treatments. 
+and is the total of tehe dashed lines in the Figure above. Thus, we set the mediator constant across the two treatments. 
 
 Contrast this with the Natural Direct Effect, implemented in mediation analysis, which is "natural"" in the sense that we let the mediator take its potential outcome under treatment.
 $$\mathit{NDE}_{i}(a, a^\prime) = Y_i(A = a, M = M(a)) - Y_i(A = a^\prime, M = M(a^\prime))$$
@@ -63,10 +79,27 @@ Thus, if the _ACDE_ is non-zero, it is evidence that the effect of $A$ is not en
 # Estimation by sequential g-estimation
 `DirectEffects` estimates the ACDE by sequential g-estimation, a type of structural nested mean model. 
 
-Sequential g-estimation is relevant because it allows us to nonparametrically identify the ACDE conditional on pre-treatment confounders as follows:
-$$E[Y_i(a, M = 0) - Y_i(0,0)|X_i = x] = E[Y_i - \gamma(a, M_i, x) | A_i = a, X_i = x] - E[Y_i - \gamma(0, M_i, x) | A_i = 0, X_i = x]$$
-The function $\gamma$ above is called the "demediation function" (or "blip-down function") and is computed as follows:
+Sequential g-estimation is relevant because it allows us to nonparametrically identify, under the sequential unconfoundedness assumption, the ACDE as follows:
+$$E[Y_i(a, 0) - Y_i(0,0)|X_i = x] = E[Y_i - \gamma(a, M_i, x) | A_i = a, x] - E[Y_i - \gamma(0, M_i, x) | A_i = 0, x]$$
+
+The function $\gamma$ above is called the "demediation function" (or "blip-down function") and is computed as follows.
 $$\gamma(a, m, x) = E[Y_i(a, M_i = m)  = Y_i(a, M_i = 0) | X_i = x]$$
+
+This function computes the effect of switching from some level of the mediator to 0, and thus is an estimate of the causal effect of the mediator. conditional on the treatment and with treatment held constant. Subtracting its estimates $\gamma(A_i, M_i, X_i)$ from the outcome $Y_i$ will effectively remove the variation due to the mediator.
+
+The identification of the ACDE hold under the sequential unconfoundedness condition, using the definitions by Acharaya, Blackwell, and Sen.
+
+**Assumption 1 (Sequential Unconfoundedness)** 
+
+> First, no omitted variables for the effect of treatment ($A$) on the outcome ($Y$), conditional on the pretreatment confounders ($X$). Second, no omitted variables for the effect of the mediator on the outcome, conditional on the treatment, pretreatment confounders, and intermediate confounders ($Z$).
+
+
+While the _average_ CDE is estimated nonparametrically with this assumption, we need to make a further assumption to accurately characterize the de-mediation function.
+
+**Assumption 2 (No intermediate interactions)**
+
+> The effect of the mediator ($M$) on the outcome ($Y$) is independent of the intermediate confounders ($Z$).
+
 
 ## Estimating the de-mediation function
 However, estimating the de-mediation function itself is hard, because it asks the potential outcomes of the same individuals under different values of the mediator. Under the assumption of _sequential unconcoundedness_, however, it is nonparametrically identified with the usual conditional difference-in-means estimator. This assumption in this context invokes the selection on observables assumption that is necessary to interpret multiple regression coefficients as an average treatment effect. 
@@ -108,8 +141,8 @@ ggplot(ploughs, aes(x = plow, women_politics/100, size = exp(ln_income))) +
   labs(
     title = "Agricultural practice and modern gender equity",
     caption = "Source: Alesina, Giuliano, and Nunn (2013)",
-    y = "% political positions held by women (2000)",
-    x = "% ethnic groups that traditionally used the plough"
+    y = "Political positions held by women (2000)",
+    x = "Ethnic groups that traditionally used the plough"
   ) +
   geom_point(alpha = 0.5) +
   scale_x_continuous(label = percent) +
@@ -155,7 +188,7 @@ fit.first <- lm(women_politics~ plow + centered_ln_inc + centered_ln_incsq + agr
 
 
 ## Second stage model
-Next, we specify the main formula that, in contrasts to the first stage model, distinguishes between the mediator and other predictors.  The formula should regress $Y$ on $X$ but mediated through $M$, expressed as `yvar ~ xvars | mvars`. The mediators must be named the samed way as in the first model. 
+Next, we specify the main formula that, in contrasts to the first stage model, distinguishes between the mediator and other predictors.  The formula should regress $Y$ on $X$ but mediated through $M$, expressed as `yvar ~ xvars | mvars`. The mediators must be named the same way as in the first model. 
 
 ```{r}
 form.main <- women_politics ~ plow + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged | centered_ln_inc + centered_ln_incsq
@@ -182,9 +215,9 @@ This function, `sequential_g(formula, first_mod, data, ...)`, implements sequent
 How did `sequential_g` estimate the ACDE? The key components of the process center on the de-mediation function. The demediating function used here is the conditional expectation function. We take the coefficients of the mediator from the OLS regression of `Y` on `M`, controlling also for `A` and `X`. In our example the mediators are the log of income and its square, thus the de-mediation function can be expressed as the parabola:
 ```{r, echo = F, fig.width= 7, fig.height=4, warning=F}
 mnames <- c("centered_ln_inc", "centered_ln_incsq")
+coefs <- coefficients(fit.first)[mnames]
 
 curve.first <- function(x) {
-  coefs <- coefficients(fit.first)[mnames]
   yhat <- coefs[1]*x + coefs[2]*x^2
   return(yhat)
 }
@@ -192,10 +225,10 @@ curve.first <- function(x) {
 ploughs %>% 
   ggplot(., aes_string(x = mnames[1], y = "women_politics")) + 
   geom_point() +
-  stat_function(fun = curve.first, size = 1, color = "indianred", size = 2, se = F) +
+  stat_function(fun = curve.first, size = 1, color = "indianred", size = 2) +
   labs(title = "De-mediation function (line) overlayed on bivariate relationship (points)") +
-  annotate('text', x = 2, y = 0, 
-           label = "gamma(m)== 2.6347851*m + 0.8801396*m^{2}",
+  annotate('text', x = 2, y = -1, 
+           label = paste0("gamma(m)==", coefs[1], "*m + ", coefs[2], "*m^{2}"),
            parse = TRUE,
            color = "indianred")  +
   theme_light()
@@ -244,13 +277,13 @@ The second stage involves regressing the de-mediated dependent variable on the t
 
 
 
-# Interpretation of Output
+# Interpretation of Output 
 Functions `summary` and `print` can be applied to a DirectEffects object:
 ```{r, echo = TRUE, eval = TRUE}
 summary(direct)
 ```
 
-The coefficient on the treatment variable (here, `pplow`), is the Average Causal Direct Effect. The results show a negative ACDE of plows, where we have define "direct" in the sense of not flowing through the mediators of income. It is now larger than its effect found from the total effect:
+The coefficient on the treatment variable (here, `plow`), is the Average Causal Direct Effect. The results show a negative ACDE of plows, where we have define "direct" in the sense of not flowing through the mediators of income. It is now larger than its effect found from the total effect:
 ```{r, echo = F, fig.width= 7, fig.height=4}
 df.coef <- rbind(summary(ate.mod)$coef["plow", ],
                summary(direct)$coef["plow", ]) %>% 
@@ -293,7 +326,8 @@ head(direct$x) # will be non-NULL if the argument x in sequential_g is set to TR
 
 The specifications of the various models is stored in `terms`
 ```{r}
-str(direct$terms)
+names(direct$terms)
+class(direct$terms$direct)
 ```
 
 
