@@ -167,13 +167,9 @@ summary(ate.mod)
 
 # Implementation
 ## Setup
-To use the CDE to rule out alternative causal mechanisms, we need to make an additional assumption. Specifically, we assume that the controlled direct effect of treatment does not vary by the mediator, i.e. there is no interaction effect of a treatment and mediator combination that goes above and beyond the linear combination of each. Under this assumption, the decomposition of total effect can be expressed as
-$$\mathit{\tau} = \mathit{ACDE} + \mathit{ANIE} + E[M_i(a')d(m -m')]$$
 
-and if we center the mediator to mean 0, the third term is zero. In which case, 
-$$\mathit{\tau} = \mathit{ACDE} + \mathit{ANIE}$$
+In this example, we would like to make this assumption and conduct a hypothesis test on whether or not the controlled direct effect of plows net income is substantive. One way to make this inference slightly easier to accomplish is to recenter our mediator, (log income), so that when we demediate with $m = 0$, this will equivalent to demediation with $m$ set to its mean value. Thus, we center the mediator to 0 and use this _centered_ variable as our mediator. Furthermore, we create a squared term of this centered mediator so that we can include it in the demediation function.
 
-In our data, we would like to make this assumption and conduct a hypothesis test on whether or not the controlled direct effect of plows net income is substantive. Thus, we center the mediator to 0 and use this _centered_ variable as our mediator. The subsequent estimators assume a mean-zero mediator, so this step is important. 
 ```{r, echo = TRUE, eval = TRUE}
 ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
 ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
@@ -182,7 +178,7 @@ ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
 ## First stage model
 The first stage is a linear model of the outcome on both the  $Y$ on $A$ (`plow`), $M$ (`centered_ln_inc` + `centered_ln_incsq`), and $X$: 
 ```{r, echo = TRUE, eval = TRUE}
-fit.first <- lm(women_politics~ plow + centered_ln_inc + centered_ln_incsq + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged +years_civil_conflict +  years_interstate_conflict  + oil_pc + european_descent + communist_dummy  + polity2_2000 + serv_va_gdp2000, 
+fit_first <- lm(women_politics~ plow + centered_ln_inc + centered_ln_incsq + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged +years_civil_conflict +  years_interstate_conflict  + oil_pc + european_descent + communist_dummy  + polity2_2000 + serv_va_gdp2000, 
                 data = ploughs)
 ```
 
@@ -191,7 +187,7 @@ fit.first <- lm(women_politics~ plow + centered_ln_inc + centered_ln_incsq + agr
 Next, we specify the main formula that, in contrasts to the first stage model, distinguishes between the mediator and other predictors.  The formula should regress $Y$ on $X$ but mediated through $M$, expressed as `yvar ~ xvars | mvars`. The mediators must be named the same way as in the first model. 
 
 ```{r}
-form.main <- women_politics ~ plow + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged | centered_ln_inc + centered_ln_incsq
+form_main <- women_politics ~ plow + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged | centered_ln_inc + centered_ln_incsq
 ```
 
 
@@ -199,10 +195,10 @@ form.main <- women_politics ~ plow + agricultural_suitability +  tropical_climat
 Finally, we enter the two formula for each step into the sequential g-estimation function. It takes the main model specification as the first argument (`formula`), followed by the first stage model used for estimating the de-mediation function (`first_mod`).
 
 ```{r, echo = TRUE, eval = TRUE}
-direct <- sequential_g(formula = form.main,
-                       first_mod = fit.first,
+direct <- sequential_g(formula = form_main,
+                       first_mod = fit_first,
                        data = ploughs,
-                       subset = rownames(ploughs) %in% rownames(model.matrix(fit.first)))
+                       subset = rownames(ploughs) %in% rownames(model.matrix(fit_first)))
 ```
 
 This function, `sequential_g(formula, first_mod, data, ...)`, implements sequential g-estimation in the way outlined in the previous section. Specifically, it first takes the first stage model and constructs the de-mediator function.
@@ -215,10 +211,13 @@ This function, `sequential_g(formula, first_mod, data, ...)`, implements sequent
 How did `sequential_g` estimate the ACDE? The key components of the process center on the de-mediation function. The demediating function used here is the conditional expectation function. We take the coefficients of the mediator from the OLS regression of `Y` on `M`, controlling also for `A` and `X`. In our example the mediators are the log of income and its square, thus the de-mediation function can be expressed as the parabola:
 ```{r, echo = F, fig.width= 7, fig.height=4, warning=F}
 mnames <- c("centered_ln_inc", "centered_ln_incsq")
-coefs <- coefficients(fit.first)[mnames]
+coefs <- coefficients(fit_first)[mnames]
+avgs <- colMeans(model.frame(fit_first))
+avgs[mnames] <- 0
+avgs[1] <- 1
 
 curve.first <- function(x) {
-  yhat <- coefs[1]*x + coefs[2]*x^2
+  yhat <- coefs[1]*x + coefs[2]*x^2 + sum(coef(fit_first)*avgs)
   return(yhat)
 }
 
@@ -246,7 +245,7 @@ In this case, this modifies each value of the dependent variable as follows:
 ```{r, echo = F, fig.width= 7, fig.height=4}
 rawYdat <- ploughs$women_politics
 mDat <- select_(ploughs, .dots = mnames) %>% as.matrix()
-mCoefs <- coefficients(fit.first)[mnames]
+mCoefs <- coefficients(fit_first)[mnames]
 gammaDat <- mDat %*% mCoefs 
 Ydat <- rawYdat - as.numeric(gammaDat)
 
@@ -283,7 +282,7 @@ Functions `summary` and `print` can be applied to a DirectEffects object:
 summary(direct)
 ```
 
-The coefficient on the treatment variable (here, `plow`), is the Average Causal Direct Effect. The results show a negative ACDE of plows, where we have define "direct" in the sense of not flowing through the mediators of income. It is now larger than its effect found from the total effect:
+The coefficient on the treatment variable (here, `plow`), is the estimate of the ACDE. The results show a negative ACDE of plows, where we have define "direct" in the sense of not flowing through the mediators of income. It is now larger than its effect found from the total effect:
 ```{r, echo = F, fig.width= 7, fig.height=4}
 df.coef <- rbind(summary(ate.mod)$coef["plow", ],
                summary(direct)$coef["plow", ]) %>% 
