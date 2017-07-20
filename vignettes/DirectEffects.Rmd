@@ -51,7 +51,8 @@ direct <- sequential_g(formula = women_politics ~ plow + agricultural_suitabilit
 ```
 
 
-# Quantity of Interest
+### Quantity of Interest ###
+
 The main quantity of interest in the DirectEffect package is the Average Controlled Direct Effect (ACDE). This can be illustrated from the following causal structure (Figure 3 in Acharaya, Blackwell, and Sen).
 
 ```{r, echo = F, out.width = "600px"}
@@ -59,21 +60,21 @@ knitr::include_graphics("figures/ABS_fig3.png")
 ```
 
 
-The Controlled Direct Effect defined for a given treatment ($A = a$ vs. $A = a^\prime$) and a given value of the mediator ($M = m$) is 
-$$\mathit{CDE}_{i}(a, a^\prime, m) = Y_i(A = a, M = m) - Y_i(A = a^\prime, M = m)$$
+The controlled direct effect defined for a given treatment ($A = a$ vs. $A = a^\prime$) and a given value of the mediator ($M = m$) is 
+$$CDE_{i}(a, a^\prime, m) = Y_i(a, m) - Y_i(a^\prime, m)$$
 and is the total of tehe dashed lines in the Figure above. Thus, we set the mediator constant across the two treatments. 
 
-Contrast this with the Natural Direct Effect, implemented in mediation analysis, which is "natural"" in the sense that we let the mediator take its potential outcome under treatment.
-$$\mathit{NDE}_{i}(a, a^\prime) = Y_i(A = a, M = M(a)) - Y_i(A = a^\prime, M = M(a^\prime))$$
+Contrast this with the natural direct effect, implemented in mediation analysis, which is "natural" in the sense that we let the mediator take its potential outcome under treatment.
+$$NDE_{i}(a, a^\prime) = Y_i(a, M(a)) - Y_i(a^\prime, M(a))$$
 
-The NDE's counterpart, the Natural Indirect Effect, is the effect that "flows through" the mediator, holding treatment constant
-$$\mathit{NIE}_{i}(a, a^\prime) = Y_i(A = a, M = M(a)) - Y_i(A = a, M = M(a^\prime))$$
+The NDE's counterpart, the natural indirect effect, is the effect that "flows through" the mediator, holding treatment constant
+$$NIE_{i}(a, a^\prime) = Y_i(a, M(a)) - Y_i(a, M(a^\prime))$$
 and involves a ``cross-world'' assumption in the second potential outcome (we never observe $A = a$ and the mediator under $A = a^\prime$ for a given individual $i$.)
 
-The CDE is useful for discriminating between  causal mechanisms, because the average total effect $\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]$ can be decomposed as the sum of the average CDE across observations (_ACDE_), the average natural indirect effect,  and a measure of how much the direct effect of $A$ depends on a particular $M = m$:
-$$\tau(a, a^\prime) = \mathit{ACDE} (a, a^\prime, M = 0) +  \mathit{ANIE} (a, a^\prime) + E[M_i(a)[ \mathit{CDE}(a, a^\prime, M = 1) -  \mathit{CDE}(a, a^\prime, M = 0)]].$$
+The CDE is useful for discriminating between  causal mechanisms, because the average total effect $\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]$ can be decomposed as the sum of the average CDE across observations (ACDE), the average natural indirect effect,  and a measure of how much the direct effect of $A$ depends on a particular $M = m$:
+$$\tau(a, a^\prime) = ACDE (a, a^\prime, m = 0) +  ANIE (a, a^\prime) + E[M_i(a)[ CDE(a, a^\prime, m = 1) -  CDE(a, a^\prime, m = 0)]].$$
 
-Thus, if the _ACDE_ is non-zero, it is evidence that the effect of $A$ is not entirely explained/dominated by its mediated effect _via_ $M.$ We illustrate this with an empirical example.
+Thus, if the ACDE is non-zero, it is evidence that the effect of $A$ is not entirely explained/dominated by its mediated effect _via_ $M.$ We illustrate this with an empirical example.
 
 
 # Estimation by sequential g-estimation
