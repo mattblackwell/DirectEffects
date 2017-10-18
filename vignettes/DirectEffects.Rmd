@@ -62,31 +62,31 @@ knitr::include_graphics("figures/ABS_fig3.png")
 
 The controlled direct effect defined for a given treatment ($A = a$ vs. $A = a^\prime$) and a given value of the mediator ($M = m$) is 
 $$CDE_{i}(a, a^\prime, m) = Y_i(a, m) - Y_i(a^\prime, m)$$
-and is the total of tehe dashed lines in the Figure above. Thus, we set the mediator constant across the two treatments. 
+and is the total of tehe dashed lines in the Figure above. Thus, we hold the mediator constant across the two treatments. 
 
-Contrast this with the natural direct effect, implemented in mediation analysis, which is "natural" in the sense that we let the mediator take its potential outcome under treatment.
-$$NDE_{i}(a, a^\prime) = Y_i(a, M(a)) - Y_i(a^\prime, M(a))$$
+Contrast this with the natural direct effect, the target of inference in mediation analysis, which is "natural" in the sense that we let the mediator take its potential outcome when treatment is equal to $a$:
+$$NDE_{i}(a, a^\prime) = Y_i(a, M(a)) - Y_i(a^\prime, M(a)).$$
 
-The NDE's counterpart, the natural indirect effect, is the effect that "flows through" the mediator, holding treatment constant
-$$NIE_{i}(a, a^\prime) = Y_i(a, M(a)) - Y_i(a, M(a^\prime))$$
-and involves a ``cross-world'' assumption in the second potential outcome (we never observe $A = a$ and the mediator under $A = a^\prime$ for a given individual $i$.)
+The NDE's counterpart, the natural indirect effect, is the effect that "flows through" the mediator, holding treatment constant:
+$$NIE_{i}(a, a^\prime) = Y_i(a, M(a)) - Y_i(a, M(a^\prime)).$$
+This quantity contains one potential outcome that is impossible to observe since we can never observe $A = a$ and the mediator under $A = a^\prime$ for a given individual $i$.
 
-The CDE is useful for discriminating between  causal mechanisms, because the average total effect $\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]$ can be decomposed as the sum of the average CDE across observations (ACDE), the average natural indirect effect,  and a measure of how much the direct effect of $A$ depends on a particular $M = m$:
+The CDE is useful for discriminating between  causal mechanisms, because the average total effect of treatmeant, $\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]$, can be decomposed as the sum of three quantities: (1) the average CDE across observations (ACDE), (2) the average natural indirect effect, and (3) the reference interaction a measure of how much the direct effect of $A$ depends on a particular $M = m$:
 $$\tau(a, a^\prime) = ACDE (a, a^\prime, m = 0) +  ANIE (a, a^\prime) + E[M_i(a)[ CDE(a, a^\prime, m = 1) -  CDE(a, a^\prime, m = 0)]].$$
 
-Thus, if the ACDE is non-zero, it is evidence that the effect of $A$ is not entirely explained/dominated by its mediated effect _via_ $M.$ We illustrate this with an empirical example.
+Thus, if the ACDE is non-zero, it is evidence that the effect of $A$ is not entirely explained by $M$. We illustrate this with an empirical example.
 
 
 # Estimation by sequential g-estimation
 `DirectEffects` estimates the ACDE by sequential g-estimation, a type of structural nested mean model. 
 
-Sequential g-estimation is relevant because it allows us to nonparametrically identify, under the sequential unconfoundedness assumption, the ACDE as follows:
+The key logic of sequential g-setimation is that, under the sequential unconfoundedness assumption, the ACDE can be identified as follows:
 $$E[Y_i(a, 0) - Y_i(0,0)|X_i = x] = E[Y_i - \gamma(a, M_i, x) | A_i = a, x] - E[Y_i - \gamma(0, M_i, x) | A_i = 0, x]$$
 
 The function $\gamma$ above is called the "demediation function" (or "blip-down function") and is computed as follows.
-$$\gamma(a, m, x) = E[Y_i(a, M_i = m)  = Y_i(a, M_i = 0) | X_i = x]$$
+$$\gamma(a, m, x) = E[Y_i(a, m) - Y_i(a, 0) | X_i = x]$$
 
-This function computes the effect of switching from some level of the mediator to 0, and thus is an estimate of the causal effect of the mediator. conditional on the treatment and with treatment held constant. Subtracting its estimates $\gamma(A_i, M_i, X_i)$ from the outcome $Y_i$ will effectively remove the variation due to the mediator.
+This function computes the effect of switching from some level of the mediator to 0, and thus is an estimate of the causal effect of the mediator for a fixed value of the treatment $a$ and within levels of the covariates. Subtracting its estimates $\gamma(A_i, M_i, X_i)$ from the outcome $Y_i$ will effectively remove the variation due to the mediator from the outcome. 
 
 The identification of the ACDE hold under the sequential unconfoundedness condition, using the definitions by Acharaya, Blackwell, and Sen.
 
@@ -103,7 +103,8 @@ While the _average_ CDE is estimated nonparametrically with this assumption, we 
 
 
 ## Estimating the de-mediation function
-However, estimating the de-mediation function itself is hard, because it asks the potential outcomes of the same individuals under different values of the mediator. Under the assumption of _sequential unconcoundedness_, however, it is nonparametrically identified with the usual conditional difference-in-means estimator. This assumption in this context invokes the selection on observables assumption that is necessary to interpret multiple regression coefficients as an average treatment effect. 
+
+Under the assumption of sequential unconcoundedness, the de-mediation function is nonparametrically identified with the usual conditional difference-in-means estimator. This assumption in this context invokes the selection on observables assumption that is necessary to interpret multiple regression coefficients as an average treatment effect. 
 
 When there are no interactions between the mediator and the treatment, nor between the mediator and the pretreatment confounders, the de-mediation function is straightforward to estimate. It is simply $\gamma(a, m, x) = km$, where $k$ is the estimate of the OLS coefficient on the mediator. 
 
