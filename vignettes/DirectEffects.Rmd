@@ -110,11 +110,11 @@ When there are no interactions between the mediator and the treatment, nor betwe
 
 ## Using the de-mediation function to estimate ACDE
 The second stage of sequential g-estimation uses the de-mediated outcome
-$$\tilde{Y_i} = Y_i - \hat{\gamma}(A_i, M_i, X_i; \hat{\alpha})$$
+$$\tilde{Y_i} = Y_i - \widehat{\gamma}(A_i, M_i, X_i; \widehat{\alpha})$$
 and estimates its conditional mean function by regressing it on the treatment and pre-treatment covariates.
 $$E[\tilde{Y_i} | A_i, X_i] = \beta_0 + \beta_1A_i + X_i^T\beta_2$$
-under the assumptions, the $\hat{\beta_1}$  is an estimate of the ACDE. 
-$$\hat{\mathit{ACDE}} = \hat{\beta_1}$$
+under the assumptions, the $\widehat{\beta_1}$  is an estimate of the ACDE. 
+$$\widehat{\mathit{ACDE}} = \widehat{\beta_1}$$
 
 
 
@@ -170,7 +170,7 @@ summary(ate.mod)
 # Implementation
 ## Setup
 
-In this example, we would like to make this assumption and conduct a hypothesis test on whether or not the controlled direct effect of plows net income is substantive. One way to make this inference slightly easier to accomplish is to recenter our mediator, (log income), so that when we demediate with $m = 0$, this will equivalent to demediation with $m$ set to its mean value. Thus, we center the mediator to 0 and use this _centered_ variable as our mediator. Furthermore, we create a squared term of this centered mediator so that we can include it in the demediation function.
+In this example, we would like to estimate the controlled direct effect of plows fixing the value of current income. To do so, we must choose a value at which to fix the value of log income. The standard sequential g-estimation approach will fix the value to 0, which isn't substantively interesting in this case. To avoid this problem, we can recenter our mediator, log income, so that when we demediate with $m = 0$, it will be equivalent to demediation with $m$ set to its mean value. Furthermore, we create a squared term of this centered mediator so that we can include it in the demediation function.
 
 ```{r, echo = TRUE, eval = TRUE}
 ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
@@ -206,85 +206,13 @@ direct <- sequential_g(formula = form_main,
 This function, `sequential_g(formula, first_mod, data, ...)`, implements sequential g-estimation in the way outlined in the previous section. Specifically, it first takes the first stage model and constructs the de-mediator function.
 
 
-## How sequential g-estimation operates
-(Users wishing to interpret the output of the `DirectEffects` package can skip to the next section.)
-
-
-How did `sequential_g` estimate the ACDE? The key components of the process center on the de-mediation function. The demediating function used here is the conditional expectation function. We take the coefficients of the mediator from the OLS regression of `Y` on `M`, controlling also for `A` and `X`. In our example the mediators are the log of income and its square, thus the de-mediation function can be expressed as the parabola:
-```{r, echo = F, fig.width= 7, fig.height=4, warning=F}
-mnames <- c("centered_ln_inc", "centered_ln_incsq")
-coefs <- coefficients(fit_first)[mnames]
-avgs <- colMeans(model.frame(fit_first))
-avgs[mnames] <- 0
-avgs[1] <- 1
-
-curve.first <- function(x) {
-  yhat <- coefs[1]*x + coefs[2]*x^2 + sum(coef(fit_first)*avgs)
-  return(yhat)
-}
-
-ploughs %>% 
-  ggplot(., aes_string(x = mnames[1], y = "women_politics")) + 
-  geom_point() +
-  stat_function(fun = curve.first, size = 1, color = "indianred", size = 2) +
-  labs(title = "De-mediation function (line) overlayed on bivariate relationship (points)") +
-  annotate('text', x = 2, y = -1, 
-           label = paste0("gamma(m)==", coefs[1], "*m + ", coefs[2], "*m^{2}"),
-           parse = TRUE,
-           color = "indianred")  +
-  theme_light()
-```
-
-Using the de-mediation function, `sequential_g` de-mediates the outcome variable for the second stage. 
-```{r, eval = F}
-  rawY <- model.response(mf, "numeric")
-  M <- model.matrix(object = bt, data = mf, contrasts)
-  gamma <- M %*% fcoefs[bvars] # fitted values from de-mediation function 
-  Y <- rawY - gamma
-```
-
-In this case, this modifies each value of the dependent variable as follows:
-```{r, echo = F, fig.width= 7, fig.height=4}
-rawYdat <- ploughs$women_politics
-mDat <- select_(ploughs, .dots = mnames) %>% as.matrix()
-mCoefs <- coefficients(fit_first)[mnames]
-gammaDat <- mDat %*% mCoefs 
-Ydat <- rawYdat - as.numeric(gammaDat)
-
-# plot
-data_frame(Ydat, rawYdat, id = 1:length(rawYdat)) %>%
-  melt(., id = "id") %>% 
-  filter(!is.na(value)) %>% 
-  ggplot(., aes(y = variable, x = value, group = id)) +
-  geom_path(arrow = arrow(angle = 15, length = unit(0.2,"cm"), type = "closed",ends =  "first"),
-            color = "darkgray", alpha = 0.4) +
-  geom_hline(yintercept = 1:2) +
-  geom_point() +
-  scale_y_discrete(name = "", labels = c("de-mediated values", "original values")) +
-  labs(x = "Dependent Variable: Percent of Women in Politics",
-       title = "Implications of de-mediation") +
-  theme_light()
-```
-
-
-The second stage involves regressing the de-mediated dependent variable on the treatment and pre-treatment variables:
-```{r, eval = F}
-  mtX <- terms(formula, data = data, rhs = 1) # Y ~ A + X
-  X <- model.matrix(mtX, mf, contrasts) # numeric matrix
-  out <- lm.fit(X, Y, offset = offset, ...)
-```
-
-
-
-
-
 # Interpretation of Output 
 Functions `summary` and `print` can be applied to a DirectEffects object:
 ```{r, echo = TRUE, eval = TRUE}
 summary(direct)
 ```
 
-The coefficient on the treatment variable (here, `plow`), is the estimate of the ACDE. The results show a negative ACDE of plows, where we have define "direct" in the sense of not flowing through the mediators of income. It is now larger than its effect found from the total effect:
+The coefficient on the treatment variable (here, `plow`), is the estimate of the ACDE. The results show a negative ACDE of plows, where we have defined "direct" in the sense that we are fixing the value of the mediator (income in this case). This controlled direct effect is larger in magnitude than the estimated the total effect:
 ```{r, echo = F, fig.width= 7, fig.height=4}
 df.coef <- rbind(summary(ate.mod)$coef["plow", ],
                summary(direct)$coef["plow", ]) %>% 
@@ -307,28 +235,20 @@ ggplot(df.coef, aes(x = Estimate, y = 0)) +
 ```
 
 
-The estimates are stored in the same way as a `lm` object:
+## Output from the model
+
+There are various quantities and output objects available from the `sequential_g` function. As usual, the coefficient estimates from the second stage can be accessed using the `coef()` function:
 ```{r}
-direct$coefficients
+coef(direct)
 ```
-It also stores the variance covariance-matrix, 
+It also stores the variance covariance-matrix that accounts for the first stage estimation, 
 ```{r}
 direct$vcov
 ```
-
 as well as the the data used, the de-mediated dependent variable, and the model matrix of the treatment and pre-treatment covariates if specified in the function (`model = T`, `x = T`, `y = T`):
 ```{r}
 head(direct$model)
 head(direct$y)
-head(direct$x) # will be non-NULL if the argument x in sequential_g is set to TRUE
-```
-
-
-
-The specifications of the various models is stored in `terms`
-```{r}
-names(direct$terms)
-class(direct$terms$direct)
 ```
 
 
