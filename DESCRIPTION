@@ -15,8 +15,7 @@ Suggests:
     ggplot2,
     reshape2,
     scales
-Description: The DirectEffects package provides functions to estimate controlled
-    direct effects.
+Description: A set of functions to estimate the controlled direct effect of treatment fixing a potential mediator to a specific value. 
 License: GPL (>= 2)
 URL: http://www.mattblackwell.org/software/direct-effects/
 VignetteBuilder: knitr
