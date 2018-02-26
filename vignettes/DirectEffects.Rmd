@@ -226,9 +226,14 @@ There are various quantities and output objects available from the `sequential_g
 ```{r}
 coef(direct)
 ```
-It also stores the variance covariance-matrix that accounts for the first stage estimation, 
+One can access confidence intervals for the coefficients using the usual `confint` function:
 ```{r}
-direct$vcov
+confint(direct, "plow")
+```
+
+The `vcov()` function returns the variance covariance-matrix that accounts for the first stage estimation, 
+```{r}
+vcov(direct)
 ```
 as well as the the data used, the de-mediated dependent variable, and the model matrix of the treatment and pre-treatment covariates if specified in the function (`model = T`, `x = T`, `y = T`):
 ```{r}
