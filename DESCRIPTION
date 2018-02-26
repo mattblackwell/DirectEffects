@@ -1,7 +1,7 @@
 Package: DirectEffects
 Version: 0.1
 Date: 2018-02-25
-Title: Estimating Controlled Direct Effects for Explaing Causal Findings
+Title: Estimating Controlled Direct Effects for Explaining Causal Findings
 Author: Avidit Acharya [aut], Matthew Blackwell [aut, cre], Maya Sen [aut], Shiro Kuriwaki [ctb]
 Maintainer: Matthew Blackwell <mblackwell@gov.harvard.edu>
 Imports:
@@ -15,7 +15,7 @@ Suggests:
     ggplot2,
     reshape2,
     scales
-Description: A set of functions to estimate the controlled direct effect of treatment fixing a potential mediator to a specific value. 
+Description: A set of functions to estimate the controlled direct effect of treatment fixing a potential mediator to a specific value. Implements the sequential g-estimation estimator described in Vansteelandt (2009) <doi:10.1097/EDE.0b013e3181b6f4c9> and Acharya, Blackwell, and Sen (2016) <doi:10.1017/S0003055416000216>.
 License: GPL (>= 2)
 URL: http://www.mattblackwell.org/software/direct-effects/
 VignetteBuilder: knitr
