@@ -121,11 +121,39 @@ with the covariates as specified for the direct effects model.
 
 See the references below for more details.
 }
+\examples{
+data(ploughs)
+ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
+ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
+
+fit_first <- lm(women_politics ~ plow + centered_ln_inc +
+                centered_ln_incsq + agricultural_suitability +
+                tropical_climate +  large_animals +
+                political_hierarchies + economic_complexity +
+                rugged + years_civil_conflict +
+                years_interstate_conflict  + oil_pc +
+                european_descent + communist_dummy + polity2_2000 +
+                serv_va_gdp2000, data = ploughs)
+
+form_main <- women_politics ~ plow + agricultural_suitability +
+  tropical_climate +  large_animals + political_hierarchies +
+  economic_complexity + rugged | centered_ln_inc +
+  centered_ln_incsq
+
+direct <- sequential_g(formula = form_main,
+                      first_mod = fit_first,
+                      data = ploughs,
+                      subset = rownames(ploughs) \%in\%
+  rownames(model.matrix(fit_first)))
+
+summary(direct)
+}
 \references{
 Vansteelandt, S. (2009). Estimating Direct Effects in
 Cohort and Case-Control Studies. Epidemiology, 20(6), 851-860.
 
 Acharya, Avidit, Blackwell, Matthew, and Sen, Maya. (2016)
 "Explaning Causal Effects Without Bias: Detecting and Assessing
-Direct Effects." American Political Science Review 110:3 pp. 512-529
+Direct Effects." American Political Science Review 110:3 pp.
+  512-529
 }

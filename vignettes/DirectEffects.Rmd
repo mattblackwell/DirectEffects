@@ -163,8 +163,12 @@ ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
 The first stage is a linear model of the outcome on both the  $Y$ on $A$ (`plow`), $M$ (`centered_ln_inc` + `centered_ln_incsq`), and both the baseline covariates, $X$, and the intermediate covariates, $Z$. This model will help us estimate the effect of the mediator and, thus, estimate the de-mediation function. 
 
 ```{r, echo = TRUE, eval = TRUE}
-fit_first <- lm(women_politics~ plow + centered_ln_inc + centered_ln_incsq + agricultural_suitability +  tropical_climate +  large_animals + political_hierarchies + economic_complexity + rugged +years_civil_conflict +  years_interstate_conflict  + oil_pc + european_descent + communist_dummy  + polity2_2000 + serv_va_gdp2000, 
-                data = ploughs)
+fit_first <- lm(women_politics ~ plow + centered_ln_inc + centered_ln_incsq +
+                  agricultural_suitability +  tropical_climate +  large_animals +
+                  political_hierarchies + economic_complexity + rugged +
+                  years_civil_conflict +  years_interstate_conflict  + oil_pc +
+                  european_descent + communist_dummy  + polity2_2000 +
+                  serv_va_gdp2000,  data = ploughs)
 ```
 
 
