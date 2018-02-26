@@ -127,6 +127,5 @@ Cohort and Case-Control Studies. Epidemiology, 20(6), 851-860.
 
 Acharya, Avidit, Blackwell, Matthew, and Sen, Maya. (2016)
 "Explaning Causal Effects Without Bias: Detecting and Assessing
-Direct Effects." Forthcoming, American Political Science Review.
+Direct Effects." American Political Science Review 110:3 pp. 512-529
 }
-
