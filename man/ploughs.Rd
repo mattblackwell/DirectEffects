@@ -50,4 +50,3 @@ Alesina, A., Giuliano, P., & Nunn, N. (2013). On the
 Origins of Gender Roles: Women and the Plough. The Quarterly
 Journal of Economics, 128(2), 469-530.
 }
-

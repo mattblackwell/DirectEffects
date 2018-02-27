@@ -72,51 +72,146 @@
 #'
 #' Acharya, Avidit, Blackwell, Matthew, and Sen, Maya. (2016)
 #' "Explaning Causal Effects Without Bias: Detecting and Assessing
-#' Direct Effects." Forthcoming, American Political Science Review.
+#' Direct Effects." American Political Science Review 110:3 pp.
+#'   512-529
+#' @examples
+#' data(ploughs)
+#' ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
+#' ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
+#'
+#' fit_first <- lm(women_politics ~ plow + centered_ln_inc +
+#'                 centered_ln_incsq + agricultural_suitability +
+#'                 tropical_climate +  large_animals +
+#'                 political_hierarchies + economic_complexity +
+#'                 rugged + years_civil_conflict +
+#'                 years_interstate_conflict  + oil_pc +
+#'                 european_descent + communist_dummy + polity2_2000 +
+#'                 serv_va_gdp2000, data = ploughs)
+#'
+#' form_main <- women_politics ~ plow + agricultural_suitability +
+#'   tropical_climate +  large_animals + political_hierarchies +
+#'   economic_complexity + rugged | centered_ln_inc +
+#'   centered_ln_incsq
+#'
+#' direct <- sequential_g(formula = form_main,
+#'                       first_mod = fit_first,
+#'                       data = ploughs,
+#'                       subset = rownames(ploughs) %in%
+#'   rownames(model.matrix(fit_first)))
+#'
+#' summary(direct)
 #' @export
+#' @importFrom stats coef lm.fit lm.wfit model.matrix model.offset
+#'   model.response model.weights pt residuals terms update
 sequential_g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL, ...) {
-  cl <- match.call()
+
+  # store model calls
+  cl <- match.call(expand.dots =  TRUE)
+  mf <- match.call(expand.dots = FALSE)
+
+  m <- match(x = c("formula", "data", "subset", "na.action", "weights", "offset"), table = names(mf), nomatch = 0L)
+  mf <- mf[c(1L, m)]
+  mf$drop.unused.levels <- TRUE
+
+  ## check if the two models share the same dataset
   if (!identical(first_mod$call$data, cl$data)) {
     stop("data must be the same for both models")
   }
 
-  mf <- match.call(expand.dots = FALSE)
-  m <- match(c("formula", "data", "subset", "na.action", "weights", "offset"), names(mf), 0L)
-  mf <- mf[c(1L, m)]
-  mf$drop.unused.levels <- TRUE
+  # must be valid formula
   formula <- Formula::as.Formula(formula)
   stopifnot(length(formula)[1] == 1L, length(formula)[2] %in% 1:2)
   if (inherits(try(terms(formula), silent = TRUE), "try-error")) {
     stop("cannot use dot '.' in formulas")
   }
+
+  ## update formula Y ~ A + M - 1
+  f1 <- formula(formula, rhs = 1) # Y ~ A + X
+  f2 <- formula(formula, lhs = 0, rhs = 2) # ~ M
+  f2 <- update(f2, ~ . - 1) # ~ M - 1, don't model intercept
+  formula <- Formula::as.Formula(f1, f2) # Y ~ A + X | M - 1
+
+
+  ## link mediators across first and second models
   ## ensure that the blip formula doesn't include a constant
-  f1 <- formula(formula, rhs = 1)
-  f2 <- formula(formula, lhs = 0, rhs = 2)
-  f2 <- update(f2, ~ . - 1)
-  formula <- Formula::as.Formula(f1, f2)
-  fcoefs <- coef(first_mod)
-  bt <- terms(formula, data = data, rhs = 2)
-  bnames <- attr(bt, "term.labels")
+  fcoefs <- coef(first_mod) # beta_hat from first model (Y ~ A + M + X)
+  bt <- terms(formula, data = data, rhs = 2) # extract terms from Y ~ M - 1
+  bnames <- attr(bt, "term.labels") # their names
+  ## are all of the Ms found in first stage?
   if (!all(bnames %in% names(fcoefs))) {
     stop("blip.form contains terms not in first_mod")
   }
-  bvars <- match(bnames, names(fcoefs), 0L)
+  bvars <- match(bnames, names(fcoefs), 0L) # which terms in first stage are Ms
+
+  ## create data matricies
+  ### forumla for terms
   mf$formula <- formula
   mf[[1L]] <- as.name("model.frame")
   mf <- eval(mf, parent.frame())
   mt <- attr(mf, "terms")
-  mtX <- terms(formula, data = data, rhs = 1)
-  Y <- model.response(mf, "numeric")
+  mtX <- terms(formula, data = data, rhs = 1) # Y ~ A + X
+
+  ### de-mediated Y
+  rawY <- model.response(mf, "numeric")
   M <- model.matrix(bt, mf, contrasts)
-  Y <- Y - M %*% fcoefs[bvars]
+  gamma <- M %*% fcoefs[bvars] # fitted values from de-mediation function
+  Y <- rawY - gamma
+
+  ### weights
   w <- as.vector(model.weights(mf))
+
+  ### offset parameter
   offset <- as.vector(model.offset(mf))
+
+  ### X (including treatment)
   X <- model.matrix(mtX, mf, contrasts)
+
+
+  ## regress de-mediated outcome on Xs by OLS or WLS
   if (is.null(w)) {
     out <- lm.fit(X, Y, offset = offset, ...)
   } else {
     out <- lm.wfit(X, Y, w, offset = offset, ...)
   }
+
+
+  ## Consistent Variance estimator
+  X1 <- model.matrix(first_mod) # A + X + M
+  n <- NROW(X)
+
+  ### estimator for the Expected inner products of the M's in 1st and 2nd stage
+  Fhat <- crossprod(X, X1)/n
+  Fhat[, !(colnames(X1) %in% bnames)] <- 0
+
+  ### invert X'X
+  p1 <- 1L:first_mod$rank
+  R1 <- chol2inv(first_mod$qr$qr[p1, p1, drop = FALSE])
+
+  ## Xepsilon from second stage
+  efun <- if (is.null(w)) X * out$residual else w * X * out$residual
+
+  ### from first stage
+  w1 <- first_mod$weights
+  res1 <- residuals(first_mod)
+  efun1 <- if (is.null(w1)) X1 * res1 else w1 * X1 * res1
+
+  ### combine previous components to get covariance
+  ghat <- t(efun) + Fhat %*% R1 %*% t(efun1)
+  meat <- crossprod(t(ghat))
+
+  ### "bread" of the consisitent variance estimator
+  p <- 1L:out$rank
+  bread <- chol2inv(out$qr$qr[p, p, drop = FALSE])
+
+  ### degrees of freedom correction
+  dfc <- (n/(n-max(p)))
+
+  ### compute final estimator
+  out.vcov <- dfc * (bread %*% meat %*% bread)
+
+
+
+  ## Combine all components
   out$terms <- list(direct = terms(formula), blip = bt, seqg = mt)
   out$formula <- formula
   out$call <- cl
@@ -124,29 +219,18 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   out$levels <- stats::.getXlevels(mt, mf)
   out$contrasts <- attr(X, "contrasts")
   out$first_mod <- first_mod
-  X1 <- model.matrix(first_mod)
-  n <- NROW(X)
-  Fhat <- crossprod(X, X1)/n
-  Fhat[, !(colnames(X1) %in% bnames)] <- 0
-  p1 <- 1L:first_mod$rank
-  R1 <- chol2inv(first_mod$qr$qr[p1, p1, drop = FALSE])
-  efun <- if (is.null(w)) X * out$residual else w * X * out$residual
-  w1 <- first_mod$weights
-  res1 <- residuals(first_mod)
-  efun1 <- if (is.null(w1)) X1 * res1 else w1 * X1 * res1
-  ghat <- t(efun) + Fhat %*% R1 %*% t(efun1)
-  meat <- crossprod(t(ghat))
-  p <- 1L:out$rank
-  bread <- chol2inv(out$qr$qr[p, p, drop = FALSE])
-  dfc <- (n/(n-max(p)))
-  out$vcov <- dfc * (bread %*% meat %*% bread)
+  dimnames(out.vcov) <- list(names(out$coefficients), names(out$coefficients))
 
+  out$vcov <- out.vcov
   if (model)
     out$model <- mf
   if (x)
     out$x <- X
   if (y)
     out$y <- Y
+
+  ## Declare class
   class(out) <- "seqg"
+
   return(out)
 }
