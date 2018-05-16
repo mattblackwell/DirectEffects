@@ -66,7 +66,7 @@
 #' }
 #' In addition, non-null fits will have components \code{assign},
 #' \code{effects}, and \code{qr} from the output of \code{lm.fit} or
-#' \code{lm.wfit}, whichever is used.
+#' \code{lm.wfit}, whichever is used. 
 #' @references Vansteelandt, S. (2009). Estimating Direct Effects in
 #' Cohort and Case-Control Studies. Epidemiology, 20(6), 851-860.
 #'
