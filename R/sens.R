@@ -14,9 +14,14 @@ seq.g.var <- function(mod.first, mod.direct, med.vars) {
 }
 
 
+#' @param seqg Output from sequential_g
+#' @param trvar character vector for treatment (abstract away later)
+#' @param medvar character vector for mediator (abstract away later, allowing for more than 1)
+#' @param rho A numerical vector of correlations between errors to test for
 cdesens <- function(seqg, trvar = "plow", medvar = "centered_ln_inc", rho =  seq(-0.9,0.9, by = 0.05)) {
   data = seqg$model
   
+  rho <- sort(rho) # reorder if necessary
   acde.sens <- rep(NA, times = length(rho))
   acde.sens.se <- rep(NA, times = length(rho))
   n <- nrow(seqg$model)
