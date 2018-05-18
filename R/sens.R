@@ -13,6 +13,7 @@ seq.g.var <- function(mod.first, mod.direct, med.vars) {
   return(vv)
 }
 
+
 cdesens <- function(seqg, trvar = "plow", medvar = "centered_ln_inc", rho =  seq(-0.9,0.9, by = 0.05)) {
   data = seqg$model
   
@@ -43,9 +44,35 @@ cdesens <- function(seqg, trvar = "plow", medvar = "centered_ln_inc", rho =  seq
     acde.sens.se[i] <- sqrt(sens.vcov[trvar, trvar])
   }
   
-  list(
-    direct = sens.direct,
+  out <- list(
+    rho = rho,
     acde = acde.sens,
-    se = acde.sens.se
+    se = acde.sens.se,
+    direct = sens.direct
   )
+  
+  class(out) <- "cdesens"
+  out
 }
+
+
+#' @param x output from cdesens
+plot.cdesens <- function(x, level = 0.975, ...) {
+  
+  rho <- x$rho
+  acde.sens <- x$acde
+  ci.hi <- x$acde + qnorm(level) * x$se
+  ci.lo <- x$acde - qnorm(level) * x$se
+  
+  plot(rho,
+       acde.sens, 
+       type = "n",
+       ylim = range(c(ci.lo, ci.hi)),
+       xlab = bquote("Correlation between mediator and outcome errors" ~~ (rho)),
+       ylab = "Estimated ACDE", bty = "n", las = 1)
+  polygon(x = c(rho, rev(rho)), y = c(ci.lo, rev(ci.hi)), col = "grey70", border = NA)
+  lines(rho, acde.sens, lwd = 2)
+  abline(v = 0, lty = 2)
+  abline(h = 0, lty = 2)
+}
+
