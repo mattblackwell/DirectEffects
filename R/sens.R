@@ -14,12 +14,40 @@ seq.g.var <- function(mod.first, mod.direct, med.vars) {
 }
 
 
+
+#' Sensitivity of ACDE
+#'
+#' Estimate how ACDE varies by various levels of unmeasured confounding
+#'
 #' @param seqg Output from sequential_g
 #' @param trvar character vector for treatment (abstract away later)
 #' @param medvar character vector for mediator (abstract away later, allowing for more than 1)
-#' @param rho A numerical vector of correlations between errors to test for
-cdesens <- function(seqg, trvar = "plow", medvar = "centered_ln_inc", rho =  seq(-0.9,0.9, by = 0.05)) {
-  data = seqg$model
+#' @param rho A numerical vector of correlations between errors to test for. The 
+#'  original model asusmes \env{rho = 0}
+#' 
+#' @examples
+#' data(fear)  
+#' # First stage
+#' fit_first <- lm(onset ~ ethfrac + warl + gdpenl + lpop + 
+#'                   ncontig + Oil + nwstate + polity2l + relfrac + instab,
+#'                 data = fear) # lm(Y ~ A + X + M)
+#' 
+#' rows_use <- rownames(fear) %in% rownames(model.matrix(fit_first)) # listwise deletion
+#' 
+#' # main formula
+#' form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab # Y ~ A + X | M
+#' 
+#' # estimate CDE
+#' direct <- sequential_g(form_main, fit_first, data = fear, subset = rows_use)
+#' 
+#' # sensitivity 
+#' out_sens <- cdesens(direct, trvar = "ethfrac", medvar = "instab")
+#' 
+#' # show sensitivity
+#' plot(out_sens)
+#' 
+cdesens <- function(seqg, trvar, medvar, rho =  seq(-0.9,0.9, by = 0.05)) {
+  data <- seqg$model # model matrix
   
   rho <- sort(rho) # reorder if necessary
   acde.sens <- rep(NA, times = length(rho))
@@ -61,7 +89,8 @@ cdesens <- function(seqg, trvar = "plow", medvar = "centered_ln_inc", rho =  seq
 }
 
 
-#' @param x output from cdesens
+#' Plot output from cdesens
+#' @param x output from \env{cdesens}
 plot.cdesens <- function(x, level = 0.975, ...) {
   
   rho <- x$rho
