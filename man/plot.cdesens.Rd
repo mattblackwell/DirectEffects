@@ -4,10 +4,14 @@
 \alias{plot.cdesens}
 \title{Plot output from cdesens}
 \usage{
-\method{plot}{cdesens}(x, level = 0.975, ...)
+\method{plot}{cdesens}(x, level = 0.95, ...)
 }
 \arguments{
 \item{x}{output from \env{cdesens}}
+
+\item{level}{Level of confidence interval to plot}
+
+\item{...}{Other parameters to pass on to \env{plot()}}
 }
 \description{
 Plot output from cdesens
