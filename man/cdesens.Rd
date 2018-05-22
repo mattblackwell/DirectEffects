@@ -4,14 +4,10 @@
 \alias{cdesens}
 \title{Sensitivity of ACDE}
 \usage{
-cdesens(seqg, trvar, medvar, rho = seq(-0.9, 0.9, by = 0.05))
+cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05))
 }
 \arguments{
 \item{seqg}{Output from sequential_g}
-
-\item{trvar}{character vector for treatment (abstract away later)}
-
-\item{medvar}{character vector for mediator (abstract away later, allowing for more than 1)}
 
 \item{rho}{A numerical vector of correlations between errors to test for. The 
 original model asusmes \env{rho = 0}}
@@ -36,7 +32,7 @@ form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab
 direct <- sequential_g(form_main, fit_first, data = civilwar, subset = rows_use)
 
 # sensitivity 
-out_sens <- cdesens(direct, trvar = "ethfrac", medvar = "instab")
+out_sens <- cdesens(direct)
 
 # plot sensitivity
 plot(out_sens)
