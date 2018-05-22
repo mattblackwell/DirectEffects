@@ -1,20 +1,3 @@
-seq.g.var <- function(mod.first, mod.direct, med.vars) {
-  require(sandwich)
-  mat.x <- model.matrix(mod.direct)
-  mat.first <- model.matrix(mod.first)
-  n <- nrow(mat.x)
-  Fhat <- crossprod(mat.x, mat.first)/n
-  Fhat[, !(colnames(mat.first) %in% med.vars)] <- 0
-  Mhat.inv <- solve(crossprod(mat.first)/n)
-  ghat <- t(estfun(mod.direct)) + Fhat %*% Mhat.inv %*% t(estfun(mod.first))
-  meat <- crossprod(t(ghat))/n
-  bread <- (t(mat.x)%*%mat.x)/n
-  vv <- (n/(n-ncol(mat.x)))*(solve(bread) %*% meat %*% solve(bread))/n
-  return(vv)
-}
-
-
-
 #' Sensitivity of ACDE
 #'
 #' Estimate how ACDE varies by various levels of unmeasured confounding
@@ -127,5 +110,23 @@ plot.cdesens <- function(x, level = 0.95, ...) {
   lines(rho, acde.sens, lwd = 2)
   abline(v = 0, lty = 2)
   abline(h = 0, lty = 2)
+}
+
+seq.g.var <- function(mod.first, mod.direct, med.vars) {
+  mat.x <- model.matrix(mod.direct)
+  mat.first <- model.matrix(mod.first)
+  n <- nrow(mat.x)
+  
+  Fhat <- crossprod(mat.x, mat.first)/n
+  Fhat[, !(colnames(mat.first) %in% med.vars)] <- 0
+  Mhat.inv <- solve(crossprod(mat.first)/n)
+  
+  ghat <- t(estfun(mod.direct)) + Fhat %*% Mhat.inv %*% t(estfun(mod.first))
+  
+  meat <- crossprod(t(ghat))/n
+  bread <- (t(mat.x) %*% mat.x)/n
+  vv <- (n/(n-ncol(mat.x)))*(solve(bread) %*% meat %*% solve(bread))/n
+  
+  return(vv)
 }
 
