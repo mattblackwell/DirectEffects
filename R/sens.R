@@ -31,6 +31,8 @@
 #' plot(out_sens)
 #' 
 cdesens <- function(seqg, rho =  seq(-0.9,0.9, by = 0.05)) {
+  if (!inherits(seqg, what = "seqg")) 
+    stop("object should be of class seqg, created from sequential_g()")
   data <- seqg$model # model matrix
   
   rho <- sort(rho) # reorder if necessary

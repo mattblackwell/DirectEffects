@@ -4,3 +4,5 @@ README.Rmd
 \.gitignore
 \.DS_Store
 \.\.Rcheck
+^.*\.Rproj$
+^\.Rproj\.user$
