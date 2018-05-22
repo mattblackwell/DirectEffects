@@ -1,4 +1,4 @@
-#' Peform linear sequential g-estimation to estimate the controlled
+#' Perform linear sequential g-estimation to estimate the controlled
 #' direct effect of a treatment net the effect of a mediator.
 #'
 #' @inheritParams stats::lm
@@ -71,7 +71,7 @@
 #' Cohort and Case-Control Studies. Epidemiology, 20(6), 851-860.
 #'
 #' Acharya, Avidit, Blackwell, Matthew, and Sen, Maya. (2016)
-#' "Explaning Causal Effects Without Bias: Detecting and Assessing
+#' "Explaining Causal Effects Without Bias: Detecting and Assessing
 #' Direct Effects." American Political Science Review 110:3 pp.
 #'   512-529
 #' @examples

@@ -4,7 +4,7 @@
 #'
 #' @param seqg Output from sequential_g
 #' @param rho A numerical vector of correlations between errors to test for. The 
-#'  original model asusmes \env{rho = 0}
+#'  original model assumes \env{rho = 0}
 #'  
 #' @export
 #' 

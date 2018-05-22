@@ -10,7 +10,7 @@ cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05))
 \item{seqg}{Output from sequential_g}
 
 \item{rho}{A numerical vector of correlations between errors to test for. The 
-original model asusmes \env{rho = 0}}
+original model assumes \env{rho = 0}}
 }
 \description{
 Estimate how ACDE varies by various levels of unmeasured confounding
