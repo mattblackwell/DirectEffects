@@ -68,19 +68,18 @@ cdesens <- function(seqg, rho =  seq(-0.9,0.9, by = 0.05)) {
     mf.i <- cbind(Ytilde, seqg$model)
     
     # Ytilde ~ A + X
-    sens.direct  <- lm(form.Ytilde, data = mf.i) 
-    acde.sens[i] <- coef(sens.direct)[trvar]
+    sens.direct.i  <- lm(form.Ytilde, data = mf.i) 
+    acde.sens[i] <- coef(sens.direct.i)[trvar]
     
     # errors
-    sens.vcov <- seq.g.var(seqg$first_mod, sens.direct, med.vars = medvar)
-    acde.sens.se[i] <- sqrt(sens.vcov[trvar, trvar])
+    sens.vcov.i <- vcov(sens.direct.i)
+    acde.sens.se[i] <- sqrt(sens.vcov.i[trvar, trvar])
   }
   
   out <- list(
     rho = rho,
     acde = acde.sens,
-    se = acde.sens.se,
-    direct = sens.direct
+    se = acde.sens.se
   )
   
   class(out) <- "cdesens"
@@ -110,23 +109,5 @@ plot.cdesens <- function(x, level = 0.95, ...) {
   lines(rho, acde.sens, lwd = 2)
   abline(v = 0, lty = 2)
   abline(h = 0, lty = 2)
-}
-
-seq.g.var <- function(mod.first, mod.direct, med.vars) {
-  mat.x <- model.matrix(mod.direct)
-  mat.first <- model.matrix(mod.first)
-  n <- nrow(mat.x)
-  
-  Fhat <- crossprod(mat.x, mat.first)/n
-  Fhat[, !(colnames(mat.first) %in% med.vars)] <- 0
-  Mhat.inv <- solve(crossprod(mat.first)/n)
-  
-  ghat <- t(estfun(mod.direct)) + Fhat %*% Mhat.inv %*% t(estfun(mod.first))
-  
-  meat <- crossprod(t(ghat))/n
-  bread <- (t(mat.x) %*% mat.x)/n
-  vv <- (n/(n-ncol(mat.x)))*(solve(bread) %*% meat %*% solve(bread))/n
-  
-  return(vv)
 }
 
