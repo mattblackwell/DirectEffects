@@ -1,0 +1,8 @@
+README.md
+README.Rmd
+\.git
+\.gitignore
+\.DS_Store
+\.\.Rcheck
+^.*\.Rproj$
+^\.Rproj\.user$

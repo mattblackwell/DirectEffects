@@ -2,7 +2,7 @@
 % Please edit documentation in R/DirectEffects.R
 \name{sequential_g}
 \alias{sequential_g}
-\title{Peform linear sequential g-estimation to estimate the controlled
+\title{Perform linear sequential g-estimation to estimate the controlled
 direct effect of a treatment net the effect of a mediator.}
 \usage{
 sequential_g(formula, first_mod, data, subset, weights, na.action,
@@ -98,7 +98,7 @@ In addition, non-null fits will have components \code{assign},
 \code{lm.wfit}, whichever is used.
 }
 \description{
-Peform linear sequential g-estimation to estimate the controlled
+Perform linear sequential g-estimation to estimate the controlled
 direct effect of a treatment net the effect of a mediator.
 }
 \details{
@@ -153,7 +153,7 @@ Vansteelandt, S. (2009). Estimating Direct Effects in
 Cohort and Case-Control Studies. Epidemiology, 20(6), 851-860.
 
 Acharya, Avidit, Blackwell, Matthew, and Sen, Maya. (2016)
-"Explaning Causal Effects Without Bias: Detecting and Assessing
+"Explaining Causal Effects Without Bias: Detecting and Assessing
 Direct Effects." American Political Science Review 110:3 pp.
   512-529
 }
