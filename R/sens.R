@@ -54,9 +54,14 @@ cdesens <- function(seqg, rho =  seq(-0.9,0.9, by = 0.05)) {
   M <- data[, medvar, drop = TRUE]
   
   # residuals
-  res.y <- residuals(seqg$first_mod)
+  # epsilon.tilde.i.y: all variables in first model except medvar
+  form.first.y.A.X <- update(seqg$first_mod$terms, paste0(". ~ . -", medvar)) 
+  res.y <- residuals(lm(form.first.y.A.X, data = seqg$first_mod$model))
+  
+  # epsilon.tilde.i.m: residuals of mediation function
   res.m <- residuals(lm.fit(x = AX, y = M))
-  rho.tilde <- cor(res.y, res.m) # scalar
+  
+  rho.tilde <- cor(res.y, res.m)
   
   # for each value of rho, change mediator value
   rho.factor <- rho*sqrt((1 - rho.tilde^2)/(1 - rho^2))
