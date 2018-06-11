@@ -14,31 +14,31 @@ The default assumes \env{boots = 1000}}
 }
 \value{
 \item{acde.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the direct effects model.}
-\item{ate.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the 
+\item{ate.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the
 average treatment effects effects model.}
-\item{pt.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the 
+\item{pt.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the
 first stage effects model.}
 }
 \description{
 Estimate bootstrap standard errors
 }
 \examples{
-data(civilwar)  
+data(civilwar)
 
 # First stage
-fit_first <- lm(onset ~ ethfrac + warl + gdpenl + lpop + 
+fit_first <- lm(onset ~ ethfrac + warl + gdpenl + lpop +
                   ncontig + Oil + nwstate + polity2l + relfrac + instab,
-                data = civilwar) 
+                data = civilwar)
 
 rows_use <- rownames(civilwar) \%in\% rownames(model.matrix(fit_first)) # listwise deletion
 
 # main formula: Y ~ A + X | M
-form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab 
+form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab
 
 # estimate CDE
 direct <- sequential_g(form_main, fit_first, data = civilwar, subset = rows_use)
 
-# bootstrap 
+# bootstrap
 out_boot <- boots_g(direct)
 
 # print bootstrapped standard errors
