@@ -12,6 +12,13 @@ boots_g(seqg, boots = 1000)
 \item{boots}{A numeric object indicating the number of sample to be drawn in the bootstrapping process.
 The default assumes \env{boots = 1000}}
 }
+\value{
+\item{acde.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the direct effects model.}
+\item{ate.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the 
+average treatment effects effects model.}
+\item{pt.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the 
+first stage effects model.}
+}
 \description{
 Estimate bootstrap standard errors
 }
