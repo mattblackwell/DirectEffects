@@ -45,57 +45,69 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 50) {
   acde.sens <- matrix(NA, nrow = boot, ncol = length(rho)) # bootstrap samples as rows
   acde.sens.se <- rep(NA, times = length(rho))
 
-  for (b in boot) {
+  # identify treatment and mediator
+  trvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 1)), "term.labels")[1]
+  medvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 2)), "term.labels")
+  if (length(medvar) > 1) stop("currently only handles one mediator variables")
+  
+  # formula
+  form.A.X <- formula(seqg$formula, lhs = 0, rhs = 1)
+  form.Ytilde <- update(form.A.X, Ytilde ~ .) # ytilde ~ A + X
+  
+  for (b in 1:boot) {
 
     # create bootstrap sample
     b.index <- sample(1:nrow(data), size = nrow(data), replace = TRUE)
     data.b <- data[b.index, ]
 
-    # identify treatment and mediator
-    trvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 1)), "term.labels")[1]
-    medvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 2)), "term.labels")
-    if (length(medvar) > 1) stop("currently only handles one mediator variables")
-
-    # formula
-    form.A.X <- formula(seqg$formula, lhs = 0, rhs = 1)
-    form.Ytilde <- update(form.A.X, Ytilde ~ .) # ytilde ~ A + X
-
+    # parts
     AX <- model.matrix(form.A.X, data.b)
     M <- data.b[, medvar, drop = TRUE]
+    
+    # re-fit first_mod call with new data
+    first_mod.mm <- seqg$first_mod$model[b.index, ] # bootstrap sample
+    first_mod <- update(seqg$first_mod, . ~ ., data = first_mod.mm)
+    
 
     # residuals
-    # epsilon.tilde.i.y: all variables in first model except medvar
-    form.first.y.A.X <- update(seqg$first_mod$terms, paste0(". ~ . -", medvar))
-    res.y <- residuals(lm(form.first.y.A.X, data = seqg$first_mod$model))
-
     # epsilon.tilde.i.m: residuals of mediation function
     res.m <- residuals(lm.fit(x = AX, y = M))
+    
+    # epsilon.tilde.i.y: all variables in first model except medvar
+    form.first.y.A.X <- update(seqg$first_mod$terms, paste0(". ~ . -", medvar))
+    res.y <- residuals(lm(form.first.y.A.X, data = first_mod.mm))
 
     rho.tilde <- cor(res.y, res.m)
 
     # for each value of rho, change mediator value
     rho.factor <- rho * sqrt((1 - rho.tilde^2) / (1 - rho^2))
-    m.fixed <- coef(seqg$first_mod)[medvar] - sd(res.y) * rho.factor / sd(res.m)
+    m.fixed <- coef(first_mod)[medvar] - sd(res.y) * rho.factor / sd(res.m)
 
     # calculate acde at each rho
-    for (i in 1:length(rho)) {
+    for (r in 1:length(rho)) {
 
       # create ytilde by blipping down with rho
-      Ytilde <- seqg$model[[1]] - m.fixed[i] * (seqg$model[[medvar]])
-      mf.i <- cbind(Ytilde, seqg$model)
+      Ytilde <- seqg$model[b.index, 1] - m.fixed[r] * (seqg$model[b.index, medvar])
+      mf.r <- cbind(Ytilde, seqg$model[b.index, ])
 
-      # Ytilde ~ A + X
-      sens.direct.i <- lm(form.Ytilde, data = mf.i)
-      acde.sens[b, i] <- coef(sens.direct.i)[trvar]
-    }
+      # run Ytilde ~ A + X
+      sens.direct.r <- lm(form.Ytilde, data = mf.r)
+      
+      # save coefficient
+      acde.sens[b, r] <- coef(sens.direct.r)[trvar]
+    } # close rho loop
   } # close bootstrap loop
 
-  acde.sens.se <- apply(acde.sens, MARGIN = 2, sd)
+  # mean of bootstraps
+  acede.means <- apply(acde.sens, MARGIN = 2, mean)
+  
+  # sd of bootstraps
+  acde.se <- apply(acde.sens, MARGIN = 2, sd)
 
   out <- list(
     rho = rho,
-    acde = acde.sens,
-    se = acde.sens.se
+    acde = acede.means,
+    se = acde.se
   )
 
   class(out) <- "cdesens"
