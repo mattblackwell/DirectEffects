@@ -61,7 +61,7 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 50) {
     form.Ytilde <- update(form.A.X, Ytilde ~ .) # ytilde ~ A + X
 
     AX <- model.matrix(form.A.X, data.b)
-    M <- data[, medvar, drop = TRUE]
+    M <- data.b[, medvar, drop = TRUE]
 
     # residuals
     # epsilon.tilde.i.y: all variables in first model except medvar
