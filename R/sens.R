@@ -1,8 +1,12 @@
-#' Sensitivity of ACDE
+#' Estimate sensitivity of ACDE estimates under varying levels of unobserved confounding
 #'
-#' Estimate how ACDE varies by various levels of unmeasured confounding
+#' Estimate how the Average Controlled Direct Effect varies by various levels of 
+#' unobserved confounding. For each value of unmeasured confounding, summarized as
+#' a correlation between residuals, \env{cdesens} computes the ACDE. Standard 
+#' errors are computed by a simple bootstrap. 
 #'
-#' @param seqg Output from sequential_g
+#' @param seqg Output from sequential_g. The function only supports specifications with one 
+#'  mediator variable.
 #' @param rho A numerical vector of correlations between errors to test for. The
 #'  original model assumes \env{rho = 0}
 #' @param boot Number of bootstrap samples to generate. Standard errors around the
@@ -45,7 +49,6 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 100) {
 
   # containers
   acde.sens <- matrix(NA, nrow = boot, ncol = length(rho)) # bootstrap samples as rows
-  acde.sens.se <- rep(NA, times = length(rho))
 
   # identify treatment and mediator
   trvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 1)), "term.labels")[1]
@@ -53,23 +56,25 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 100) {
   if (length(medvar) > 1) stop("currently only handles one mediator variables")
 
   # formula
+  # ~ A + X
   form.A.X <- formula(seqg$formula, lhs = 0, rhs = 1)
-  form.Ytilde <- update(form.A.X, Ytilde ~ .) # ytilde ~ A + X
+  # Ytilde ~ A + X. will create the Ytilde vector later.
+  form.Ytilde <- update(form.A.X, Ytilde ~ .) 
 
+  # start bootstrap 
   for (b in 1:boot) {
 
     # create bootstrap sample
     b.index <- sample(1:nrow(data), size = nrow(data), replace = TRUE)
-    data.b <- data[b.index, ]
+    data.b <- data[b.index, , drop = FALSE]
 
     # parts
     AX <- model.matrix(form.A.X, data.b)
     M <- data.b[, medvar, drop = TRUE]
 
     # re-fit first_mod call with new data
-    first_mod.mm <- seqg$first_mod$model[b.index, ] # bootstrap sample
+    first_mod.mm <- seqg$first_mod$model[b.index, , drop = FALSE] # first mod bootstrap
     first_mod <- update(seqg$first_mod, . ~ ., data = first_mod.mm)
-
 
     # residuals
     # epsilon.tilde.i.m: residuals of mediation function
@@ -85,18 +90,19 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 100) {
     rho.factor <- rho * sqrt((1 - rho.tilde^2) / (1 - rho^2))
     m.fixed <- coef(first_mod)[medvar] - sd(res.y) * rho.factor / sd(res.m)
 
-    # calculate acde at each rho
+    # calculate acde at each rho (indexed by r)
     for (r in 1:length(rho)) {
 
       # create ytilde by blipping down with rho
-      Ytilde <- seqg$model[b.index, 1] - m.fixed[r] * (seqg$model[b.index, medvar])
-      mf.r <- cbind(Ytilde, seqg$model[b.index, ])
+      Ytilde <- model.response(seqg$model)[b.index] - m.fixed[r] * (data.b[[medvar]])
+      mf.r <- cbind(Ytilde, data.b)
 
       # run Ytilde ~ A + X
       sens.direct.r <- lm(form.Ytilde, data = mf.r)
 
       # save coefficient
       acde.sens[b, r] <- coef(sens.direct.r)[trvar]
+      
     } # close rho loop
   } # close bootstrap loop
 
