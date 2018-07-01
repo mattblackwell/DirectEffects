@@ -4,34 +4,37 @@
 \alias{cdesens}
 \title{Sensitivity of ACDE}
 \usage{
-cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05))
+cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05), boot = 100)
 }
 \arguments{
 \item{seqg}{Output from sequential_g}
 
-\item{rho}{A numerical vector of correlations between errors to test for. The 
+\item{rho}{A numerical vector of correlations between errors to test for. The
 original model assumes \env{rho = 0}}
+
+\item{boot}{Number of bootstrap samples to generate. Standard errors around the
+ACDE estimates are computed by a simple bootstrap.}
 }
 \description{
 Estimate how ACDE varies by various levels of unmeasured confounding
 }
 \examples{
-data(civilwar)  
+data(civilwar)
 
 # First stage
-fit_first <- lm(onset ~ ethfrac + warl + gdpenl + lpop + 
+fit_first <- lm(onset ~ ethfrac + warl + gdpenl + lpop +
                   ncontig + Oil + nwstate + polity2l + relfrac + instab,
-                data = civilwar) 
+                data = civilwar)
 
 rows_use <- rownames(civilwar) \%in\% rownames(model.matrix(fit_first)) # listwise deletion
 
 # main formula: Y ~ A + X | M
-form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab 
+form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab
 
 # estimate CDE
 direct <- sequential_g(form_main, fit_first, data = civilwar, subset = rows_use)
 
-# sensitivity 
+# sensitivity
 out_sens <- cdesens(direct)
 
 # plot sensitivity
