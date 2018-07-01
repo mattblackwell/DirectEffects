@@ -30,17 +30,26 @@
 #' # plot sensitivity
 #' plot(out_sens)
 #' 
-cdesens <- function(seqg, rho =  seq(-0.9,0.9, by = 0.05)) {
+
+cdesens <- function(seqg, rho =  seq(-0.9,0.9, by = 0.05), boot = 50) {
   if (!inherits(seqg, what = "seqg")) 
     stop("object should be of class seqg, created from sequential_g()")
-  data <- seqg$model # model matrix
+
+    # model matrix
+  data <- seqg$model 
   
   rho <- sort(rho) # reorder if necessary
-  
+
   # containers
-  acde.sens <- rep(NA, times = length(rho))
+  acde.sens <- matrix(NA, nrow = boot, ncol = length(rho)) # bootstrap samples as rows
   acde.sens.se <- rep(NA, times = length(rho))
   
+  for (b in boot) {
+    
+    # create bootstrap sample
+  b.index <- sample(1:nrow(data), size = nrow(data), replace = TRUE)
+  data.b <- data[b.index, ]
+    
   # identify treatment and mediator
   trvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 1)), "term.labels")[1] 
   medvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 2)), "term.labels")
@@ -50,7 +59,7 @@ cdesens <- function(seqg, rho =  seq(-0.9,0.9, by = 0.05)) {
   form.A.X <- formula(seqg$formula, lhs = 0, rhs = 1) 
   form.Ytilde <- update(form.A.X, Ytilde ~ .) # ytilde ~ A + X
   
-  AX <- model.matrix(form.A.X, data)
+  AX <- model.matrix(form.A.X, data.b)
   M <- data[, medvar, drop = TRUE]
   
   # residuals
@@ -76,12 +85,13 @@ cdesens <- function(seqg, rho =  seq(-0.9,0.9, by = 0.05)) {
     
     # Ytilde ~ A + X
     sens.direct.i  <- lm(form.Ytilde, data = mf.i) 
-    acde.sens[i] <- coef(sens.direct.i)[trvar]
+    acde.sens[b, i] <- coef(sens.direct.i)[trvar]
     
-    # errors
-    sens.vcov.i <- vcov(sens.direct.i)
-    acde.sens.se[i] <- sqrt(sens.vcov.i[trvar, trvar])
   }
+   
+  } # close bootstrap loop
+  
+  acde.sens.se <- apply(acde.sens, MARGIN = 2, sd)
   
   out <- list(
     rho = rho,
