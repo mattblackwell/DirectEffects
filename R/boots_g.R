@@ -3,8 +3,7 @@
 #' Estimate bootstrap standard errors
 #'
 #' @param seqg Output from sequential_g
-#' @param boots A numeric object indicating the number of sample to be drawn in the bootstrapping process.
-#'  The default assumes \env{boots = 1000}
+#' @param boots The number of bootstrap replicates. Defaults to 1000.
 #'
 #'
 #' @export

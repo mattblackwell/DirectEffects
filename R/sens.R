@@ -9,8 +9,7 @@
 #'  mediator variable.
 #' @param rho A numerical vector of correlations between errors to test for. The
 #'  original model assumes \env{rho = 0}
-#' @param boot Number of bootstrap samples to generate. Standard errors around the
-#'  ACDE estimates are computed by a simple bootstrap.
+#' @param boots Number of bootstrap replicates, defaults to 100.
 #'
 #' @export
 #'
@@ -37,7 +36,7 @@
 #' plot(out_sens)
 #'
 
-cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 100) {
+cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boots = 100) {
   if (!inherits(seqg, what = "seqg")) {
     stop("object should be of class seqg, created from sequential_g()")
   }
@@ -48,7 +47,7 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 100) {
   rho <- sort(rho) # reorder if necessary
 
   # containers
-  acde.sens <- matrix(NA, nrow = boot, ncol = length(rho)) # bootstrap samples as rows
+  acde.sens <- matrix(NA, nrow = boots, ncol = length(rho)) # bootstrap samples as rows
 
   # identify treatment and mediator
   trvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 1)), "term.labels")[1]
@@ -61,8 +60,8 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 100) {
   # Ytilde ~ A + X. will create the Ytilde vector later.
   form.Ytilde <- update(form.A.X, Ytilde ~ .) 
 
-  # start bootstrap 
-  for (b in 1:boot) {
+  # start bootstrap (indexed by b)
+  for (b in 1:boots) {
 
     # create bootstrap sample
     b.index <- sample(1:nrow(data), size = nrow(data), replace = TRUE)
@@ -86,7 +85,7 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 100) {
 
     rho.tilde <- cor(res.y, res.m)
 
-    # for each value of rho, change mediator value
+    # for each value of the vector rho, change mediator value
     rho.factor <- rho * sqrt((1 - rho.tilde^2) / (1 - rho^2))
     m.fixed <- coef(first_mod)[medvar] - sd(res.y) * rho.factor / sd(res.m)
 
@@ -100,7 +99,7 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 100) {
       # run Ytilde ~ A + X
       sens.direct.r <- lm(form.Ytilde, data = mf.r)
 
-      # save coefficient
+      # save final estimate
       acde.sens[b, r] <- coef(sens.direct.r)[trvar]
       
     } # close rho loop
@@ -112,6 +111,7 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boot = 100) {
   # sd of bootstraps
   acde.se <- apply(acde.sens, MARGIN = 2, sd)
 
+  # output
   out <- list(
     rho = rho,
     acde = acede.means,

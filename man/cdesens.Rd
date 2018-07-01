@@ -2,21 +2,24 @@
 % Please edit documentation in R/sens.R
 \name{cdesens}
 \alias{cdesens}
-\title{Sensitivity of ACDE}
+\title{Estimate sensitivity of ACDE estimates under varying levels of unobserved confounding}
 \usage{
-cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05), boot = 100)
+cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05), boots = 100)
 }
 \arguments{
-\item{seqg}{Output from sequential_g}
+\item{seqg}{Output from sequential_g. The function only supports specifications with one 
+mediator variable.}
 
 \item{rho}{A numerical vector of correlations between errors to test for. The
 original model assumes \env{rho = 0}}
 
-\item{boot}{Number of bootstrap samples to generate. Standard errors around the
-ACDE estimates are computed by a simple bootstrap.}
+\item{boots}{Number of bootstrap replicates, defaults to 100.}
 }
 \description{
-Estimate how ACDE varies by various levels of unmeasured confounding
+Estimate how the Average Controlled Direct Effect varies by various levels of 
+unobserved confounding. For each value of unmeasured confounding, summarized as
+a correlation between residuals, \env{cdesens} computes the ACDE. Standard 
+errors are computed by a simple bootstrap.
 }
 \examples{
 data(civilwar)
