@@ -9,7 +9,7 @@
 #'
 #' @export
 #' @return
-#' \item{acde.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the direct effects model.}
+#' \item{acde.sd}{a vector of bootstrapped standard errors for each named coefficient for the direct effects model.}
 #' \item{ate.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the
 #' average treatment effects effects model.}
 #' \item{pt.sd}{a vector of bootstrapped stanadard errors for each named coefficient for the
