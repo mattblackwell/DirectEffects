@@ -10,6 +10,7 @@
 #' @param rho A numerical vector of correlations between errors to test for. The
 #'  original model assumes \env{rho = 0}
 #' @param boots Number of bootstrap replicates, defaults to 100.
+#' @param verbose Whether to show progress and messages, defaults to \env{FALSE}
 #'
 #' @export
 #'
@@ -36,7 +37,8 @@
 #' plot(out_sens)
 #'
 
-cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boots = 100) {
+cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boots = 100, 
+                    verbose = FALSE) {
   if (!inherits(seqg, what = "seqg")) {
     stop("object should be of class seqg, created from sequential_g()")
   }
@@ -62,6 +64,11 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boots = 100) {
 
   # start bootstrap (indexed by b)
   for (b in 1:boots) {
+    # message at first boot and every 20
+    if (verbose & (b == 1))
+      cat("Starting Bootstrap estimation:", "\n")
+    if (verbose & (b %% 20 == 0))
+      cat(glue("sample {b} out of {boots}"), "\n")
 
     # create bootstrap sample
     b.index <- sample(1:nrow(data), size = nrow(data), replace = TRUE)

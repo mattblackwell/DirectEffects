@@ -4,7 +4,8 @@
 \alias{cdesens}
 \title{Estimate sensitivity of ACDE estimates under varying levels of unobserved confounding}
 \usage{
-cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05), boots = 100)
+cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05), boots = 100,
+  verbose = FALSE)
 }
 \arguments{
 \item{seqg}{Output from sequential_g. The function only supports specifications with one 
@@ -14,6 +15,8 @@ mediator variable.}
 original model assumes \env{rho = 0}}
 
 \item{boots}{Number of bootstrap replicates, defaults to 100.}
+
+\item{verbose}{Whether to show progress and messages, defaults to \env{FALSE}}
 }
 \description{
 Estimate how the Average Controlled Direct Effect varies by various levels of 
