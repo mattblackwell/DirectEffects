@@ -66,7 +66,7 @@
 #' }
 #' In addition, non-null fits will have components \code{assign},
 #' \code{effects}, and \code{qr} from the output of \code{lm.fit} or
-#' \code{lm.wfit}, whichever is used. 
+#' \code{lm.wfit}, whichever is used.
 #' @references Vansteelandt, S. (2009). Estimating Direct Effects in
 #' Cohort and Case-Control Studies. Epidemiology, 20(6), 851-860.
 #'
@@ -175,50 +175,18 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   }
 
 
-  ## Consistent Variance estimator
-  X1 <- model.matrix(first_mod) # A + X + M
-  n <- NROW(X)
-
-  ### estimator for the Expected inner products of the M's in 1st and 2nd stage
-  Fhat <- crossprod(X, X1)/n
-  Fhat[, !(colnames(X1) %in% bnames)] <- 0
-
-  ### invert X'X
-  p1 <- 1L:first_mod$rank
-  R1 <- chol2inv(first_mod$qr$qr[p1, p1, drop = FALSE])
-
-  ## Xepsilon from second stage
-  efun <- if (is.null(w)) X * out$residual else w * X * out$residual
-
-  ### from first stage
-  w1 <- first_mod$weights
-  res1 <- residuals(first_mod)
-  efun1 <- if (is.null(w1)) X1 * res1 else w1 * X1 * res1
-
-  ### combine previous components to get covariance
-  ghat <- t(efun) + Fhat %*% R1 %*% t(efun1)
-  meat <- crossprod(t(ghat))
-
-  ### "bread" of the consisitent variance estimator
-  p <- 1L:out$rank
-  bread <- chol2inv(out$qr$qr[p, p, drop = FALSE])
-
-  ### degrees of freedom correction
-  dfc <- (n/(n-max(p)))
-
-  ### compute final estimator
-  out.vcov <- dfc * (bread %*% meat %*% bread)
-
-
-
+browser()
   ## Combine all components
   out$terms <- list(direct = terms(formula), blip = bt, seqg = mt)
   out$formula <- formula
   out$call <- cl
   out$na.action <- attr(mf, "na.action")
-  out$levels <- stats::.getXlevels(mt, mf)
+  out$xlevels <- stats::.getXlevels(mt, mf)
   out$contrasts <- attr(X, "contrasts")
   out$first_mod <- first_mod
+
+  ## Consistent Variance estimator
+  out.vcov <- seq.g.vcov(first_mod, out, X1 = model.matrix(first_mod), X2 = X, bnames)
   dimnames(out.vcov) <- list(names(out$coefficients), names(out$coefficients))
 
   out$vcov <- out.vcov
@@ -233,4 +201,39 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   class(out) <- "seqg"
 
   return(out)
+}
+
+
+seq.g.vcov <- function(first_mod, direct_mod, X1, X2, med.vars) {
+  n <- NROW(X2)
+  Fhat <- crossprod(X2, X1)/n
+  Fhat[, !(colnames(X1) %in% med.vars)] <- 0
+
+  ### invert X'X
+  p1 <- 1L:first_mod$rank
+  R1 <- chol2inv(first_mod$qr$qr[p1, p1, drop = FALSE])
+
+  ## Xepsilon from second stage
+  w2 <- direct_mod$weights
+  res2 <- residuals(direct_mod)
+  efun2 <- if (is.null(w2)) X2 * res2 else w2 * X2 * res2
+
+  ### from first stage
+  w1 <- first_mod$weights
+  res1 <- residuals(first_mod)
+  efun1 <- if (is.null(w1)) X1 * res1 else w1 * X1 * res1
+
+  ### combine previous components to get covariance
+  ghat <- t(efun2) + Fhat %*% R1 %*% t(efun1)
+  meat <- crossprod(t(ghat))
+
+  ### "bread" of the consisitent variance estimator
+  p <- 1L:direct_mod$rank
+  bread <- chol2inv(direct_mod$qr$qr[p, p, drop = FALSE])
+
+  ### degrees of freedom correction
+  dfc <- (n/(n-max(p)))
+
+  vv <- dfc * (bread %*% meat %*% bread)
+  return(vv)
 }
