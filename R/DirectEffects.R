@@ -175,7 +175,6 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   }
 
 
-browser()
   ## Combine all components
   out$terms <- list(direct = terms(formula), blip = bt, seqg = mt)
   out$formula <- formula
