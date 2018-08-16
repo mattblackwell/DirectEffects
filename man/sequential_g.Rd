@@ -21,14 +21,12 @@ the blipped down outcome.}
 regression model. Must contain a coefficient for all variables in
 the blip-down model in the \code{formula} argument.}
 
-\item{data}{an optional data frame, list or environment (or object
-    coercible by \code{\link{as.data.frame}} to a data frame) containing
-    the variables in the model.  If not found in \code{data}, the
-    variables are taken from \code{environment(formula)},
-    typically the environment from which \code{lm} is called.}
+\item{data}{A dataframe to apply \code{formula} on. Must be identical to the 
+\code{data} used for \code{first_mod}.}
 
-\item{subset}{an optional vector specifying a subset of observations
-    to be used in the fitting process.}
+\item{subset}{A vector of logicals indicating which rows of \code{data} to keep. By
+default, only the rows of \code{data} that are in the model matrix of \code{first_mod}
+will be kept.}
 
 \item{weights}{an optional vector of weights to be used in the fitting
     process.  Should be \code{NULL} or a numeric vector.
