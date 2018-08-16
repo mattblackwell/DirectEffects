@@ -12,6 +12,11 @@
 #' @param first_mod an \code{lm} output containing the first-stage
 #' regression model. Must contain a coefficient for all variables in
 #' the blip-down model in the \code{formula} argument.
+#' @param data A dataframe to apply \code{formula} on. Must be identical to the 
+#' \code{data} used for \code{first_mod}.
+#' @param subset A vector of logicals indicating which rows of \code{data} to keep. By
+#' default, only the rows of \code{data} that are in the model matrix of \code{first_mod}
+#' will be kept.
 #' @param model logical indicating whether the resulting model frame
 #' should be returned.
 #' @param y logical indicating whether the blipped-down outcome
@@ -119,6 +124,13 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   if (!identical(first_mod$call$data, cl$data)) {
     stop("data must be the same for both models")
   }
+  
+  ## default behavior is to subset to same rows
+  if (!"subset" %in% names(mf)) {
+    mf$subset <- rownames(data) %in% rownames(model.matrix(first_mod))
+    cat(glue::glue("Will drop {sum(!mf$subset)} rows to match first stage model"), "\n")
+  }
+  
 
   # must be valid formula
   formula <- Formula::as.Formula(formula)
