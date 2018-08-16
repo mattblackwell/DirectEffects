@@ -116,6 +116,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
              table = names(mf), 
              nomatch = 0L)
   mf <- mf[c(1L, m)]
+  mf[[1L]] <- as.name("model.frame")
   mf$drop.unused.levels <- TRUE
 
   ## check if the two models share the same dataset
@@ -123,17 +124,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
     stop("data must be the same for both models")
   }
   
-  ## default behavior is to subset to same rows
-  if (!"subset" %in% names(mf)) {
-    row_intersect <- rownames(data) %in% rownames(model.matrix(first_mod))
-    if (!all(row_intersect)) {
-      mf$subset <- row_intersect
-      cat(glue::glue("(Dropping {sum(!row_intersect)} rows to match first stage model.)"), "\n")
-    }
-  }
-  
-
-  # must be valid formula
+  ## must be valid formula
   formula <- Formula::as.Formula(formula)
   stopifnot(length(formula)[1] == 1L, length(formula)[2] %in% 1:2)
   if (inherits(try(terms(formula), silent = TRUE), "try-error")) {
@@ -146,8 +137,6 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   f2 <- update(f2, ~ . - 1) # ~ M - 1, don't model intercept
   formula <- Formula::as.Formula(f1, f2) # Y ~ A + X | M - 1
 
-  # add to mf call
-  mf$formula <- formula
 
   ## link mediators across first and second models
   ## ensure that the blip formula doesn't include a constant
@@ -160,14 +149,12 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   }
   bvars <- match(bnames, names(fcoefs), 0L) # which terms in first stage are Ms
 
-  
-  ## evaluate, create data matricies
-  mf[[1L]] <- as.name("model.frame")
+  ## add to mf call
+  mf$formula <- formula
+
+  #  finally evaluate model.frame, create data matrix
   mf <- eval(mf, parent.frame())
-  
-  ### terms object
-  mt <- attr(mf, "terms")
-  mtX <- terms(formula, data = data, rhs = 1) # Y ~ A + X
+  mt <- attr(mf, "terms") # terms object
 
   ### de-mediated Y
   rawY <- model.response(mf, "numeric")
@@ -182,6 +169,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   offset <- as.vector(model.offset(mf))
 
   ### X (including treatment)
+  mtX <- terms(formula, data = data, rhs = 1) # Y ~ A + X
   X <- model.matrix(mtX, data = mf, contrasts.arg = contrasts)
 
 
