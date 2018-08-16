@@ -127,8 +127,11 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   
   ## default behavior is to subset to same rows
   if (!"subset" %in% names(mf)) {
-    mf$subset <- rownames(data) %in% rownames(model.matrix(first_mod))
-    cat(glue::glue("Will drop {sum(!mf$subset)} rows to match first stage model"), "\n")
+    row_intersect <- rownames(data) %in% rownames(model.matrix(first_mod))
+    if (!all(row_intersect)) {
+      mf$subset <- row_intersect
+      cat(glue::glue("Will drop {sum(!mf$subset)} rows to match first stage model"), "\n")
+    }
   }
   
 
