@@ -31,13 +31,12 @@ fit_first <- lm(onset ~ ethfrac + warl + gdpenl + lpop +
                   ncontig + Oil + nwstate + polity2l + relfrac + instab,
                 data = civilwar)
 
-rows_use <- rownames(civilwar) \%in\% rownames(model.matrix(fit_first)) # listwise deletion
 
 # main formula: Y ~ A + X | M
 form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab
 
 # estimate CDE
-direct <- sequential_g(form_main, fit_first, data = civilwar, subset = rows_use)
+direct <- sequential_g(form_main, fit_first, data = civilwar)
 
 # bootstrap
 out_boot <- boots_g(direct)

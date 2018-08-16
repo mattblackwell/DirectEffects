@@ -100,9 +100,7 @@
 #'
 #' direct <- sequential_g(formula = form_main,
 #'                       first_mod = fit_first,
-#'                       data = ploughs,
-#'                       subset = rownames(ploughs) %in%
-#'   rownames(model.matrix(fit_first)))
+#'                       data = ploughs)
 #'
 #' summary(direct)
 #' @export
@@ -130,7 +128,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
     row_intersect <- rownames(data) %in% rownames(model.matrix(first_mod))
     if (!all(row_intersect)) {
       mf$subset <- row_intersect
-      cat(glue::glue("Will drop {sum(!mf$subset)} rows to match first stage model"), "\n")
+      cat(glue::glue("(Dropping {sum(!row_intersect)} rows to match first stage model.)"), "\n")
     }
   }
   

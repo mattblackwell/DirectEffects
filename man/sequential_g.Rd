@@ -140,9 +140,7 @@ form_main <- women_politics ~ plow + agricultural_suitability +
 
 direct <- sequential_g(formula = form_main,
                       first_mod = fit_first,
-                      data = ploughs,
-                      subset = rownames(ploughs) \%in\%
-  rownames(model.matrix(fit_first)))
+                      data = ploughs)
 
 summary(direct)
 }
