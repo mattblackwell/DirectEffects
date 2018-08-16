@@ -4,6 +4,7 @@
 #'
 #' @param seqg Output from sequential_g
 #' @param boots The number of bootstrap replicates. Defaults to 1000.
+#' @param showbar Show a textbar for progress?
 #'
 #'
 #' @export
@@ -39,15 +40,17 @@
 #'
 
 
-boots_g <- function(seqg, boots = 1000) {
-  require(R.utils)
+boots_g <- function(seqg, boots = 1000, showbar = TRUE) {
+  
   acde.boots <- ate.boots <- pt.boots <- rep(list(NA), times = boots) # holder for boot strap estimates
-  pb <- txtProgressBar(min = 0, max = boots, style = 3) # start progress bar
+  
+  if (showbar) prog.bar <- utils::txtProgressBar(min = 0, max = boots, style = 3) # start progress bar
+  
   for (b in 1:boots) {
-    setTxtProgressBar(pb, b) # update progress bar
+    if (showbar) utils::setTxtProgressBar(prog.bar, b) # update progress bar
 
     # bootstrap sampling
-    draw <- sample(1:nrow(seqg$model), replace = T) # vector for sample with replacement
+    draw <- sample(1:nrow(seqg$model), replace = TRUE) # vector for sample with replacement
     data.draw.first <- seqg$first_mod$model[draw, ] # data for re-estimation of first model
     data.draw.direct <- seqg$model[draw, ] # data for re-estimation of direct effects model
 
@@ -64,24 +67,27 @@ boots_g <- function(seqg, boots = 1000) {
 
     # estimate models
     ate.mod <- lm(formula(seqg$formula, lhs = 1, rhs = 1), data = data.draw) # estimate ATE
-    boot.first <- lm(seqg$first_mod$call[[2]], data = data.draw) # estimate first model
-    boot.direct <- sequential_g(seqg$formula, boot.first, data = data.draw) # estimate direct effects model
-    acde.boots[[b]] <- coef(boot.direct) # store direct effect coefficients
     ate.boots[[b]] <- coef(ate.mod) # store ate coefficients
+    
+    boot.first <- lm(seqg$first_mod$call[[2]], data = data.draw) # estimate first model
     pt.boots[[b]] <- coef(boot.first) # store first model coefficients
+    
+    boot.direct <- sequential_g(seqg$formula, first_mod = boot.first, data = data.draw) # estimate direct effects model
+    acde.boots[[b]] <- coef(boot.direct) # store direct effect coefficients
   }
-  close(pb)
+  
+  if (showbar)  close(prog.bar)
 
   # combine lists into matrices
+  ate.boots  <- do.call(rbind, ate.boots)
   acde.boots <- do.call(rbind, acde.boots)
-  ate.boots <- do.call(rbind, ate.boots)
-  pt.boots <- do.call(rbind, pt.boots)
+  pt.boots   <- do.call(rbind, pt.boots)
 
   # construct output
   out <- list()
-  out$acde.sd <- sapply(as.data.frame(acde.boots), sd)
-  out$ate.sd <- sapply(as.data.frame(ate.boots), sd)
-  out$pt.sd <- sapply(as.data.frame(pt.boots), sd)
+  out$acde.sd  <- sapply(as.data.frame(acde.boots), sd)
+  out$ate.sd   <- sapply(as.data.frame(ate.boots), sd)
+  out$pt.sd    <- sapply(as.data.frame(pt.boots), sd)
 
 
   return(out)
