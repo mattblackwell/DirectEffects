@@ -109,7 +109,9 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   cl <- match.call(expand.dots =  TRUE)
   mf <- match.call(expand.dots = FALSE)
 
-  m <- match(x = c("formula", "data", "subset", "na.action", "weights", "offset"), table = names(mf), nomatch = 0L)
+  m <- match(x = c("formula", "data", "subset", "na.action", "weights", "offset"),
+             table = names(mf), 
+             nomatch = 0L)
   mf <- mf[c(1L, m)]
   mf$drop.unused.levels <- TRUE
 
@@ -131,6 +133,8 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   f2 <- update(f2, ~ . - 1) # ~ M - 1, don't model intercept
   formula <- Formula::as.Formula(f1, f2) # Y ~ A + X | M - 1
 
+  # add to mf call
+  mf$formula <- formula
 
   ## link mediators across first and second models
   ## ensure that the blip formula doesn't include a constant
@@ -143,11 +147,12 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   }
   bvars <- match(bnames, names(fcoefs), 0L) # which terms in first stage are Ms
 
-  ## create data matricies
-  ### forumla for terms
-  mf$formula <- formula
+  
+  ## evaluate, create data matricies
   mf[[1L]] <- as.name("model.frame")
   mf <- eval(mf, parent.frame())
+  
+  ### terms object
   mt <- attr(mf, "terms")
   mtX <- terms(formula, data = data, rhs = 1) # Y ~ A + X
 
@@ -164,7 +169,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   offset <- as.vector(model.offset(mf))
 
   ### X (including treatment)
-  X <- model.matrix(mtX, mf, contrasts)
+  X <- model.matrix(mtX, data = mf, contrasts.arg = contrasts)
 
 
   ## regress de-mediated outcome on Xs by OLS or WLS
