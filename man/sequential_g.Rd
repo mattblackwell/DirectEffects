@@ -21,7 +21,7 @@ the blipped down outcome.}
 regression model. Must contain a coefficient for all variables in
 the blip-down model in the \code{formula} argument.}
 
-\item{data}{A dataframe to apply \code{formula} on. Must be identical to the 
+\item{data}{A dataframe to apply \code{formula} on. Must be identical to the
 \code{data} used for \code{first_mod}.}
 
 \item{subset}{A vector of logicals indicating which rows of \code{data} to keep.
@@ -124,23 +124,23 @@ data(ploughs)
 ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
 ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
 
-fit_first <- lm(women_politics ~ plow + centered_ln_inc +
-                centered_ln_incsq + agricultural_suitability +
-                tropical_climate +  large_animals +
-                political_hierarchies + economic_complexity +
-                rugged + years_civil_conflict +
-                years_interstate_conflict  + oil_pc +
-                european_descent + communist_dummy + polity2_2000 +
-                serv_va_gdp2000, data = ploughs)
+fit_first <- lm(
+  women_politics ~ plow + centered_ln_inc + centered_ln_incsq +
+    agricultural_suitability + tropical_climate +  large_animals +
+    political_hierarchies + economic_complexity +
+    rugged + years_civil_conflict +
+    years_interstate_conflict  + oil_pc +
+    european_descent + communist_dummy + polity2_2000 +
+    serv_va_gdp2000, data = ploughs)
 
-form_main <- women_politics ~ plow + agricultural_suitability +
-  tropical_climate +  large_animals + political_hierarchies +
-  economic_complexity + rugged | centered_ln_inc +
-  centered_ln_incsq
+form_main <- women_politics ~ plow +
+  agricultural_suitability + tropical_climate + large_animals +
+  political_hierarchies + economic_complexity +
+  rugged | centered_ln_inc +centered_ln_incsq
 
 direct <- sequential_g(formula = form_main,
-                      first_mod = fit_first,
-                      data = ploughs)
+                       first_mod = fit_first,
+                       data = ploughs)
 
 summary(direct)
 }
