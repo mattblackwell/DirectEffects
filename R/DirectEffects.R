@@ -217,7 +217,18 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   return(out)
 }
 
-
+#' Consistent Variance estimator
+#' 
+#' Called internally in sequential_g
+#' 
+#' @param first_mod first stage model
+#' @param direct_mod DirectEffects model with terms
+#' @param X1 model matrix of first stage model
+#' @param X2 model matrix of DirectEffects model
+#' @param med.vars vector of term.label attributes for mediators
+#' 
+#' @keywords internal
+#'  
 seq.g.vcov <- function(first_mod, direct_mod, X1, X2, med.vars) {
   n <- NROW(X2)
   Fhat <- crossprod(X2, X1)/n
