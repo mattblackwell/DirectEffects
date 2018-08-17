@@ -9,8 +9,7 @@ Imports:
     sandwich,
     Formula
 Depends:
-    R (>= 3.0.0),
-    glue
+    R (>= 3.0.0)
 Suggests:
     knitr,
     dplyr,

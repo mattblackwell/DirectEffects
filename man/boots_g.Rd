@@ -4,14 +4,14 @@
 \alias{boots_g}
 \title{Bootstrap Standard Errors for Sequential G model object}
 \usage{
-boots_g(seqg, boots = 1000, showbar = TRUE)
+boots_g(seqg, boots = 1000, progress = TRUE)
 }
 \arguments{
 \item{seqg}{Output from sequential_g}
 
 \item{boots}{The number of bootstrap replicates. Defaults to 1000.}
 
-\item{showbar}{Show a textbar for progress?}
+\item{progress}{Show a textbar for progress?}
 }
 \value{
 \item{acde.sd}{a vector of bootstrapped standard errors for each named coefficient for the direct effects model.}

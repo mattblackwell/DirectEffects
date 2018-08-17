@@ -153,8 +153,21 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   mf$formula <- formula
 
   #  finally evaluate model.frame, create data matrix
+  browser()
   mf <- eval(mf, parent.frame())
   mt <- attr(mf, "terms") # terms object
+  
+  browser()
+  
+  # if subset was not provided, then ensure rows match with first_mod
+  if (!"subset" %in% names(mf)) {
+    row_intersect <- rownames(data) %in% rownames(model.matrix(first_mod))
+    if (!all(row_intersect)) {
+      mf$subset <- row_intersect
+      cat(glue::glue("(Dropping {sum(!row_intersect)} rows to match first stage model.)"), "\n")
+    }
+  }
+  
 
   ### de-mediated Y
   rawY <- model.response(mf, "numeric")

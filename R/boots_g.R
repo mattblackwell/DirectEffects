@@ -4,7 +4,7 @@
 #'
 #' @param seqg Output from sequential_g
 #' @param boots The number of bootstrap replicates. Defaults to 1000.
-#' @param showbar Show a textbar for progress?
+#' @param progress Show a textbar for progress?
 #'
 #'
 #' @export
@@ -39,14 +39,14 @@
 #'
 
 
-boots_g <- function(seqg, boots = 1000, showbar = TRUE) {
+boots_g <- function(seqg, boots = 1000, progress = TRUE) {
   
   acde.boots <- ate.boots <- pt.boots <- rep(list(NA), times = boots) # holder for boot strap estimates
   
-  if (showbar) prog.bar <- utils::txtProgressBar(min = 0, max = boots, style = 3) # start progress bar
+  if (progress) prog.bar <- utils::txtProgressBar(min = 0, max = boots, style = 3) # start progress bar
   
   for (b in 1:boots) {
-    if (showbar) utils::setTxtProgressBar(prog.bar, b) # update progress bar
+    if (progress) utils::setTxtProgressBar(prog.bar, b) # update progress bar
 
     # bootstrap sampling
     draw <- sample(1:nrow(seqg$model), replace = TRUE) # vector for sample with replacement
@@ -75,7 +75,7 @@ boots_g <- function(seqg, boots = 1000, showbar = TRUE) {
     acde.boots[[b]] <- coef(boot.direct) # store direct effect coefficients
   }
   
-  if (showbar)  close(prog.bar)
+  if (progress)  close(prog.bar)
 
   # combine lists into matrices
   ate.boots  <- do.call(rbind, ate.boots)

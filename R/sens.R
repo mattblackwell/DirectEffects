@@ -68,7 +68,7 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boots = 100,
     if (verbose & (b == 1))
       cat("Starting Bootstrap estimation:", "\n")
     if (verbose & (b %% 20 == 0))
-      cat(glue("sample {b} out of {boots}"), "\n")
+      cat(glue::glue("sample {b} out of {boots}"), "\n")
 
     # create bootstrap sample
     b.index <- sample(1:nrow(data), size = nrow(data), replace = TRUE)
