@@ -12,7 +12,7 @@
 #' @param first_mod an \code{lm} output containing the first-stage
 #' regression model. Must contain a coefficient for all variables in
 #' the blip-down model in the \code{formula} argument.
-#' @param data A dataframe to apply \code{formula} on. Must be identical to the 
+#' @param data A dataframe to apply \code{formula} on. Must be identical to the
 #' \code{data} used for \code{first_mod}.
 #' @param subset A vector of logicals indicating which rows of \code{data} to keep.
 #' The rows of \code{data} that are not in the model matrix of \code{first_mod}
@@ -84,23 +84,23 @@
 #' ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
 #' ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
 #'
-#' fit_first <- lm(women_politics ~ plow + centered_ln_inc +
-#'                 centered_ln_incsq + agricultural_suitability +
-#'                 tropical_climate +  large_animals +
-#'                 political_hierarchies + economic_complexity +
-#'                 rugged + years_civil_conflict +
-#'                 years_interstate_conflict  + oil_pc +
-#'                 european_descent + communist_dummy + polity2_2000 +
-#'                 serv_va_gdp2000, data = ploughs)
+#' fit_first <- lm(
+#'   women_politics ~ plow + centered_ln_inc + centered_ln_incsq +
+#'     agricultural_suitability + tropical_climate +  large_animals +
+#'     political_hierarchies + economic_complexity +
+#'     rugged + years_civil_conflict +
+#'     years_interstate_conflict  + oil_pc +
+#'     european_descent + communist_dummy + polity2_2000 +
+#'     serv_va_gdp2000, data = ploughs)
 #'
-#' form_main <- women_politics ~ plow + agricultural_suitability +
-#'   tropical_climate +  large_animals + political_hierarchies +
-#'   economic_complexity + rugged | centered_ln_inc +
-#'   centered_ln_incsq
+#' form_main <- women_politics ~ plow +
+#'   agricultural_suitability + tropical_climate + large_animals +
+#'   political_hierarchies + economic_complexity +
+#'   rugged | centered_ln_inc +centered_ln_incsq
 #'
 #' direct <- sequential_g(formula = form_main,
-#'                       first_mod = fit_first,
-#'                       data = ploughs)
+#'                        first_mod = fit_first,
+#'                        data = ploughs)
 #'
 #' summary(direct)
 #' @export
@@ -109,12 +109,14 @@
 sequential_g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL, ...) {
 
   # store model calls
-  cl <- match.call(expand.dots =  TRUE)
+  cl <- match.call(expand.dots = TRUE)
   mf <- match.call(expand.dots = FALSE)
 
-  m <- match(x = c("formula", "data", "subset", "na.action", "weights", "offset"),
-             table = names(mf), 
-             nomatch = 0L)
+  m <- match(
+    x = c("formula", "data", "subset", "na.action", "weights", "offset"),
+    table = names(mf),
+    nomatch = 0L
+  )
   mf <- mf[c(1L, m)]
   mf[[1L]] <- as.name("model.frame")
   mf$drop.unused.levels <- TRUE
@@ -123,7 +125,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   if (!identical(first_mod$call$data, cl$data)) {
     stop("data must be the same for both models")
   }
-  
+
   ## must be valid formula
   formula <- Formula::as.Formula(formula)
   stopifnot(length(formula)[1] == 1L, length(formula)[2] %in% 1:2)
@@ -134,7 +136,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   ## update formula Y ~ A + M - 1
   f1 <- formula(formula, rhs = 1) # Y ~ A + X
   f2 <- formula(formula, lhs = 0, rhs = 2) # ~ M
-  f2 <- update(f2, ~ . - 1) # ~ M - 1, don't model intercept
+  f2 <- update(f2, ~. - 1) # ~ M - 1, don't model intercept
   formula <- Formula::as.Formula(f1, f2) # Y ~ A + X | M - 1
 
 
@@ -151,12 +153,12 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
 
   ## add to mf call
   mf$formula <- formula
-  
+
   #  finally evaluate model.frame, create data matrix
   mf <- eval(mf, parent.frame())
   mt <- attr(mf, "terms") # terms object
-  
-  ## additional subsetting -- all rows in second stage need to have been 
+
+  ## additional subsetting -- all rows in second stage need to have been
   ## present in first stage model matrix
   mf <- mf[which(rownames(mf) %in% rownames(model.matrix(first_mod))), , drop = FALSE]
 
@@ -199,12 +201,15 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   dimnames(out.vcov) <- list(names(out$coefficients), names(out$coefficients))
 
   out$vcov <- out.vcov
-  if (model)
+  if (model) {
     out$model <- mf
-  if (x)
+  }
+  if (x) {
     out$x <- X
-  if (y)
+  }
+  if (y) {
     out$y <- Y
+  }
 
   ## Declare class
   class(out) <- "seqg"
@@ -213,20 +218,20 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
 }
 
 #' Consistent Variance estimator
-#' 
+#'
 #' Called internally in sequential_g
-#' 
+#'
 #' @param first_mod first stage model
 #' @param direct_mod DirectEffects model with terms
 #' @param X1 model matrix of first stage model
 #' @param X2 model matrix of DirectEffects model
 #' @param med.vars vector of term.label attributes for mediators
-#' 
+#'
 #' @keywords internal
-#'  
+#'
 seq.g.vcov <- function(first_mod, direct_mod, X1, X2, med.vars) {
   n <- NROW(X2)
-  Fhat <- crossprod(X2, X1)/n
+  Fhat <- crossprod(X2, X1) / n
   Fhat[, !(colnames(X1) %in% med.vars)] <- 0
 
   ### invert X'X
@@ -252,7 +257,7 @@ seq.g.vcov <- function(first_mod, direct_mod, X1, X2, med.vars) {
   bread <- chol2inv(direct_mod$qr$qr[p, p, drop = FALSE])
 
   ### degrees of freedom correction
-  dfc <- (n/(n-max(p)))
+  dfc <- (n / (n - max(p)))
 
   vv <- dfc * (bread %*% meat %*% bread)
   return(vv)
