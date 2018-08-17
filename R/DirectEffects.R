@@ -152,18 +152,13 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   ## add to mf call
   mf$formula <- formula
   
-  ## if subset was not provided, then at least ensure rows match with first_mod
-  row_intersect <- rownames(data) %in% rownames(model.matrix(first_mod))
-  if (missing(subset) & !all(row_intersect))
-    mf$subset <- row_intersect 
-  
-  ## even if subset was provided, it might not have been enough to ensure match
-  if (!missing(subset) & !all(row_intersect))
-    mf$subset <- mf$subset & row_intersect  # update
-  
   #  finally evaluate model.frame, create data matrix
   mf <- eval(mf, parent.frame())
   mt <- attr(mf, "terms") # terms object
+  
+  ## additional subsetting -- all rows in second stage need to have been 
+  ## present in first stage model matrix
+  mf <- mf[which(rownames(mf) %in% rownames(model.matrix(first_mod))), , drop = FALSE]
 
   ### de-mediated Y
   rawY <- model.response(mf, "numeric")
