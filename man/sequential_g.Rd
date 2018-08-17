@@ -24,9 +24,9 @@ the blip-down model in the \code{formula} argument.}
 \item{data}{A dataframe to apply \code{formula} on. Must be identical to the 
 \code{data} used for \code{first_mod}.}
 
-\item{subset}{A vector of logicals indicating which rows of \code{data} to keep. By
-default, only the rows of \code{data} that are in the model matrix of \code{first_mod}
-will be kept.}
+\item{subset}{A vector of logicals indicating which rows of \code{data} to keep.
+The rows of \code{data} that are not in the model matrix of \code{first_mod}
+will always be dropped, in addition to any user-specified further subsets.}
 
 \item{weights}{an optional vector of weights to be used in the fitting
     process.  Should be \code{NULL} or a numeric vector.

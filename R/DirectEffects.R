@@ -14,9 +14,9 @@
 #' the blip-down model in the \code{formula} argument.
 #' @param data A dataframe to apply \code{formula} on. Must be identical to the 
 #' \code{data} used for \code{first_mod}.
-#' @param subset A vector of logicals indicating which rows of \code{data} to keep. By
-#' default, only the rows of \code{data} that are in the model matrix of \code{first_mod}
-#' will be kept.
+#' @param subset A vector of logicals indicating which rows of \code{data} to keep.
+#' The rows of \code{data} that are not in the model matrix of \code{first_mod}
+#' will always be dropped, in addition to any user-specified further subsets.
 #' @param model logical indicating whether the resulting model frame
 #' should be returned.
 #' @param y logical indicating whether the blipped-down outcome
@@ -140,9 +140,9 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
 
   ## link mediators across first and second models
   ## ensure that the blip formula doesn't include a constant
-  fcoefs <- coef(first_mod) # beta_hat from first model (Y ~ A + M + X)
   bt <- terms(formula, data = data, rhs = 2) # extract terms from Y ~ M - 1
   bnames <- attr(bt, "term.labels") # their names
+  fcoefs <- coef(first_mod) # beta_hat from first model (Y ~ A + M + X)
   ## are all of the Ms found in first stage?
   if (!all(bnames %in% names(fcoefs))) {
     stop("blip.form contains terms not in first_mod")
@@ -151,18 +151,19 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
 
   ## add to mf call
   mf$formula <- formula
-
+  
+  ## if subset was not provided, then at least ensure rows match with first_mod
+  row_intersect <- rownames(data) %in% rownames(model.matrix(first_mod))
+  if (missing(subset) & !all(row_intersect))
+    mf$subset <- row_intersect 
+  
+  ## even if subset was provided, it might not have been enough to ensure match
+  if (!missing(subset) & !all(row_intersect))
+    mf$subset <- mf$subset & row_intersect  # update
+  
   #  finally evaluate model.frame, create data matrix
   mf <- eval(mf, parent.frame())
   mt <- attr(mf, "terms") # terms object
-  
-  ### if subset was not provided, then at least ensure rows match with first_mod
-  row_intersect <- rownames(data) %in% rownames(model.matrix(first_mod))
-  if (missing(subset) & !all(row_intersect)) {
-    mf <- base::subset(mf, row_intersect) # MODIFY data
-    cat(glue::glue("(Dropping {sum(!row_intersect)} rows to match first stage model.)"), "\n")
-  }
-  
 
   ### de-mediated Y
   rawY <- model.response(mf, "numeric")
