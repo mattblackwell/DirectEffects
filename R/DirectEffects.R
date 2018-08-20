@@ -23,6 +23,8 @@
 #' vector should be returned.
 #' @param x logical indicating whether the model matrix of the direct
 #' effects model should be returned.
+#' #' @param bootstrap character of c("none", "standard", "block"), indicating whether to 
+#' include bootstrap standard errors or block bootstrap. Default is "none".
 #' @details The \code{sequential_g} function implements the linear
 #' sequential g-estimator developed by Vansteelandt (2009) with the
 #' consistent variance estimator developed by Acharya, Blackwell, and
@@ -106,7 +108,7 @@
 #' @export
 #' @importFrom stats coef lm.fit lm.wfit model.matrix model.offset
 #'   model.response model.weights pt residuals terms update
-sequential_g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL, ...) {
+sequential_g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL,bootstrap = "none", ...) {
 
   # store model calls
   cl <- match.call(expand.dots = TRUE)
@@ -197,10 +199,12 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   out$first_mod <- first_mod
 
   ## Consistent Variance estimator
+  if(bootstrap == "none"){
   out.vcov <- seq.g.vcov(first_mod, out, X1 = model.matrix(first_mod), X2 = X, bnames)
   dimnames(out.vcov) <- list(names(out$coefficients), names(out$coefficients))
 
   out$vcov <- out.vcov
+  }
   if (model) {
     out$model <- mf
   }
@@ -213,6 +217,10 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
 
   ## Declare class
   class(out) <- "seqg"
+  if(bootstrap == "standard"){
+    boots = boots_g(out)
+    out$boots = boots
+  }
 
   return(out)
 }
@@ -261,4 +269,68 @@ seq.g.vcov <- function(first_mod, direct_mod, X1, X2, med.vars) {
 
   vv <- dfc * (bread %*% meat %*% bread)
   return(vv)
+}
+
+
+#' Bootstrap standard errors
+#'
+#' Called internally in sequential_g
+#'
+#' @param seqg Output from sequential_g
+#' @param boots The number of bootstrap replicates. Defaults to 1000.
+#' @param progress Show a textbar for progress?
+#'
+#'
+#' @keywords internal
+
+boots_g <- function(seqg, boots = 1000, progress = TRUE) {
+  
+  acde.boots <- ate.boots <- pt.boots <- rep(list(NA), times = boots) # holder for boot strap estimates
+  if (progress) prog.bar <- utils::txtProgressBar(min = 0, max = boots, style = 3) # start progress bar
+  
+  for (b in 1:boots) {
+    if (progress) utils::setTxtProgressBar(prog.bar, b) # update progress bar
+    
+    # bootstrap sampling
+    draw <- sample(1:nrow(seqg$model), replace = TRUE) # vector for sample with replacement
+    data.draw.first <- seqg$first_mod$model[draw, ] # data for re-estimation of first model
+    data.draw.direct <- seqg$model[draw, ] # data for re-estimation of direct effects model
+    
+    # combine data
+    shared <- colnames(data.draw.direct)[colnames(data.draw.direct) %in% colnames(data.draw.first)]
+    just.direct <- colnames(data.draw.direct)[!(colnames(data.draw.direct) %in% colnames(data.draw.first))]
+    just.first <- colnames(data.draw.first)[!(colnames(data.draw.first) %in% colnames(data.draw.direct))]
+    data.draw <- cbind(
+      data.draw.direct[, shared],
+      data.draw.direct[, just.direct],
+      data.draw.first[, just.first]
+    )
+    colnames(data.draw) <- c(shared, just.direct, just.first)
+    
+    # estimate models
+    ate.mod <- lm(formula(seqg$formula, lhs = 1, rhs = 1), data = data.draw) # estimate ATE
+    ate.boots[[b]] <- coef(ate.mod) # store ate coefficients
+    
+    boot.first <- lm(seqg$first_mod$call[[2]], data = data.draw) # estimate first model
+    pt.boots[[b]] <- coef(boot.first) # store first model coefficients
+    
+    boot.direct <- sequential_g(seqg$formula, first_mod = boot.first, data = data.draw) # estimate direct effects model
+    acde.boots[[b]] <- coef(boot.direct) # store direct effect coefficients
+  }
+  
+  if (progress)  close(prog.bar)
+  
+  # combine lists into matrices
+  ate.boots  <- do.call(rbind, ate.boots)
+  acde.boots <- do.call(rbind, acde.boots)
+  pt.boots   <- do.call(rbind, pt.boots)
+  
+  # construct output
+  out <- list()
+  out$acde.sd  <- sapply(as.data.frame(acde.boots), sd)
+  out$ate.sd   <- sapply(as.data.frame(ate.boots), sd)
+  out$pt.sd    <- sapply(as.data.frame(pt.boots), sd)
+  
+  
+  return(out)
 }

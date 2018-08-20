@@ -9,7 +9,11 @@ summary.seqg <- function(object, treatment = NULL, ...) {
   r <- z$residuals
   n <- length(r)
   w <- z$weights
+  if(is.null(z$vcov)){
+    se <- z$boots$acde.sd
+  } else {
   se <- sqrt(diag(z$vcov))
+  }
   est <- z$coefficients
   tval <- est/se
   pval <- 2 * pt(abs(tval), rdf, lower.tail = FALSE)

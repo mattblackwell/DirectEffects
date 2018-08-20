@@ -6,7 +6,8 @@
 direct effect of a treatment net the effect of a mediator.}
 \usage{
 sequential_g(formula, first_mod, data, subset, weights, na.action,
-  model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL, ...)
+  model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL,
+  bootstrap = "none", ...)
 }
 \arguments{
 \item{formula}{formula specification of the direct effect and blip-down models.
@@ -48,7 +49,9 @@ should be returned.}
 vector should be returned.}
 
 \item{x}{logical indicating whether the model matrix of the direct
-effects model should be returned.}
+effects model should be returned.
+#' @param bootstrap character of c("none", "standard", "block"), indicating whether to 
+include bootstrap standard errors or block bootstrap. Default is "none".}
 
 \item{offset}{this can be used to specify an \emph{a priori} known
     component to be included in the linear predictor during fitting.
