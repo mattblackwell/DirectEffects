@@ -108,7 +108,7 @@
 #' @export
 #' @importFrom stats coef lm.fit lm.wfit model.matrix model.offset
 #'   model.response model.weights pt residuals terms update
-sequential_g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL,bootstrap = "none", ...) {
+sequential_g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL,bootstrap = "none", boots_n = 1000, verbose = T, ...) {
 
   # store model calls
   cl <- match.call(expand.dots = TRUE)
@@ -218,7 +218,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action, m
   ## Declare class
   class(out) <- "seqg"
   if(bootstrap == "standard"){
-    boots = boots_g(out)
+    boots = boots_g(out, boots = boots_n, progress = verbose)
     out$boots = boots
   }
 
