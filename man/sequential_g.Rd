@@ -7,7 +7,8 @@ direct effect of a treatment net the effect of a mediator.}
 \usage{
 sequential_g(formula, first_mod, data, subset, weights, na.action,
   model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL,
-  bootstrap = "none", ...)
+  bootstrap = c("none", "standard", "block"), boots_n = 1000,
+  verbose = TRUE, ...)
 }
 \arguments{
 \item{formula}{formula specification of the direct effect and blip-down models.
@@ -49,9 +50,7 @@ should be returned.}
 vector should be returned.}
 
 \item{x}{logical indicating whether the model matrix of the direct
-effects model should be returned.
-#' @param bootstrap character of c("none", "standard", "block"), indicating whether to 
-include bootstrap standard errors or block bootstrap. Default is "none".}
+effects model should be returned.}
 
 \item{offset}{this can be used to specify an \emph{a priori} known
     component to be included in the linear predictor during fitting.
@@ -62,6 +61,9 @@ include bootstrap standard errors or block bootstrap. Default is "none".}
 
 \item{contrasts}{an optional list. See the \code{contrasts.arg}
     of \code{\link{model.matrix.default}}.}
+
+\item{bootstrap}{character of c("none", "standard", "block"), indicating whether to
+include bootstrap standard errors or block bootstrap. Default is "none".}
 
 \item{...}{additional arguments to be passed to the low level
     regression fitting functions (see below).}
