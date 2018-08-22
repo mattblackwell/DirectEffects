@@ -23,7 +23,7 @@
 #' vector should be returned.
 #' @param x logical indicating whether the model matrix of the direct
 #' effects model should be returned.
-#' #' @param bootstrap character of c("none", "standard", "block"), indicating whether to
+#' @param bootstrap character of c("none", "standard", "block"), indicating whether to
 #' include bootstrap standard errors or block bootstrap. Default is "none".
 #' @details The \code{sequential_g} function implements the linear
 #' sequential g-estimator developed by Vansteelandt (2009) with the
@@ -108,7 +108,7 @@
 #' @export
 #' @importFrom stats coef lm.fit lm.wfit model.matrix model.offset
 #'   model.response model.weights pt residuals terms update
-sequential_g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL, bootstrap = "none", boots_n = 1000, verbose = T, ...) {
+sequential_g <- function(formula, first_mod, data, subset, weights, na.action, model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL, bootstrap = c("none", "standard", "block"), boots_n = 1000, verbose = TRUE, ...) {
 
   # store model calls
   cl <- match.call(expand.dots = TRUE)
