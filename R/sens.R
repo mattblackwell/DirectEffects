@@ -32,7 +32,7 @@
 #' direct <- sequential_g(form_main, fit_first, data = civilwar)
 #'
 #' # sensitivity
-#' out_sens <- cdesens(direct)
+#' out_sens <- cdesens(direct, boots = 25)
 #'
 #' # plot sensitivity
 #' plot(out_sens)
