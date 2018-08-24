@@ -7,7 +7,8 @@ Maintainer: Matthew Blackwell <mblackwell@gov.harvard.edu>
 Imports:
     stats,
     sandwich,
-    Formula
+    Formula,
+    glue
 Depends:
     R (>= 3.0.0)
 Suggests:
@@ -23,4 +24,4 @@ URL: http://www.mattblackwell.org/software/direct-effects/
 BugReports: https://github.com/mattblackwell/DirectEffects/issues
 VignetteBuilder: knitr
 LazyData: true
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0

@@ -1,11 +1,11 @@
 #' Estimate sensitivity of ACDE estimates under varying levels of unobserved confounding
 #'
-#' Estimate how the Average Controlled Direct Effect varies by various levels of 
+#' Estimate how the Average Controlled Direct Effect varies by various levels of
 #' unobserved confounding. For each value of unmeasured confounding, summarized as
-#' a correlation between residuals, \env{cdesens} computes the ACDE. Standard 
-#' errors are computed by a simple bootstrap. 
+#' a correlation between residuals, \env{cdesens} computes the ACDE. Standard
+#' errors are computed by a simple bootstrap.
 #'
-#' @param seqg Output from sequential_g. The function only supports specifications with one 
+#' @param seqg Output from sequential_g. The function only supports specifications with one
 #'  mediator variable.
 #' @param rho A numerical vector of correlations between errors to test for. The
 #'  original model assumes \env{rho = 0}
@@ -14,6 +14,8 @@
 #'
 #' @export
 #'
+#' @importFrom stats formula lm cor sd
+#' @import glue
 #' @examples
 #' data(civilwar)
 #'
@@ -36,7 +38,7 @@
 #' plot(out_sens)
 #'
 
-cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boots = 100, 
+cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boots = 100,
                     verbose = FALSE) {
   if (!inherits(seqg, what = "seqg")) {
     stop("object should be of class seqg, created from sequential_g()")
@@ -59,7 +61,7 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boots = 100,
   # ~ A + X
   form.A.X <- formula(seqg$formula, lhs = 0, rhs = 1)
   # Ytilde ~ A + X. will create the Ytilde vector later.
-  form.Ytilde <- update(form.A.X, Ytilde ~ .) 
+  form.Ytilde <- update(form.A.X, Ytilde ~ .)
 
   # start bootstrap (indexed by b)
   for (b in 1:boots) {
@@ -107,7 +109,7 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boots = 100,
 
       # save final estimate
       acde.sens[b, r] <- coef(sens.direct.r)[trvar]
-      
+
     } # close rho loop
   } # close bootstrap loop
 
@@ -134,6 +136,8 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05), boots = 100,
 #' @param level Level of confidence interval to plot
 #' @param ... Other parameters to pass on to \env{plot()}
 #' @export
+#' @importFrom graphics plot lines polygon abline
+#' @importFrom stats qnorm
 plot.cdesens <- function(x, level = 0.95, ...) {
   rho <- x$rho
   acde.sens <- x$acde

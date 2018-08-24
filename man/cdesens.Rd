@@ -8,7 +8,7 @@ cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05), boots = 100,
   verbose = FALSE)
 }
 \arguments{
-\item{seqg}{Output from sequential_g. The function only supports specifications with one 
+\item{seqg}{Output from sequential_g. The function only supports specifications with one
 mediator variable.}
 
 \item{rho}{A numerical vector of correlations between errors to test for. The
@@ -19,9 +19,9 @@ original model assumes \env{rho = 0}}
 \item{verbose}{Whether to show progress and messages, defaults to \env{FALSE}}
 }
 \description{
-Estimate how the Average Controlled Direct Effect varies by various levels of 
+Estimate how the Average Controlled Direct Effect varies by various levels of
 unobserved confounding. For each value of unmeasured confounding, summarized as
-a correlation between residuals, \env{cdesens} computes the ACDE. Standard 
+a correlation between residuals, \env{cdesens} computes the ACDE. Standard
 errors are computed by a simple bootstrap.
 }
 \examples{
