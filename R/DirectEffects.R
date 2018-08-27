@@ -25,6 +25,8 @@
 #' effects model should be returned.
 #' @param bootstrap character of c("none", "standard", "block"), indicating whether to
 #' include bootstrap standard errors or block bootstrap. Default is "none".
+#' @param boots_n integer indicating the number of bootstrap iterations.
+#' @param verbose logical indicating whether to suppress progress bar. Default is FALSE.
 #' @details The \code{sequential_g} function implements the linear
 #' sequential g-estimator developed by Vansteelandt (2009) with the
 #' consistent variance estimator developed by Acharya, Blackwell, and

@@ -65,6 +65,10 @@ effects model should be returned.}
 \item{bootstrap}{character of c("none", "standard", "block"), indicating whether to
 include bootstrap standard errors or block bootstrap. Default is "none".}
 
+\item{boots_n}{integer indicating the number of bootstrap iterations.}
+
+\item{verbose}{logical indicating whether to suppress progress bar. Default is FALSE.}
+
 \item{...}{additional arguments to be passed to the low level
     regression fitting functions (see below).}
 }
