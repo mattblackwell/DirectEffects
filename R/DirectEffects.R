@@ -110,10 +110,10 @@
 #' @export
 #' @importFrom stats coef lm.fit lm.wfit model.matrix model.offset
 #'   model.response model.weights pt residuals terms update
-sequential_g <- function(formula, first_mod, data, subset, weights, na.action, 
+sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
                          model = TRUE, y = TRUE, x = FALSE,
-                         offset, contrasts = NULL, 
-                         bootstrap = c("none", "standard", "block"), 
+                         offset, contrasts = NULL,
+                         bootstrap = c("none", "standard", "block"),
                          boots_n = 1000, verbose = TRUE, ...) {
 
   # store model calls
@@ -224,7 +224,8 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
 
   ## Declare class
   class(out) <- "seqg"
-  if (bootstrap == "standard") {
+  if (bootstrap != "none") {
+    if (bootstrap == "block") warning("block bootstrap not implemented yet, using standard...")
     boots <- boots_g(out, boots = boots_n, progress = verbose)
     out$boots <- boots
   }
