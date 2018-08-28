@@ -189,21 +189,29 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05),
 #' @export
 #' @importFrom graphics plot lines polygon abline
 #' @importFrom stats qnorm
-plot.cdesens <- function(x, level = 0.95, ...) {
+plot.cdesens <- function(x, level = 0.95, xlim = NULL, ylim = NULL,
+                         xlab = NULL, ylab = "Estimated ACDE", bty = "n",
+                         ci.col = "grey70", col = "black", lwd = 2,
+                         ref.lines = TRUE, ...) {
   rho <- x$rho
   acde.sens <- x$acde
   ci.hi <- x$acde + qnorm(1 - (1 - level) / 2) * x$se
   ci.lo <- x$acde - qnorm(1 - (1 - level) / 2) * x$se
 
-  plot(rho,
-    acde.sens,
-    type = "n",
-    ylim = range(c(ci.lo, ci.hi)),
-    xlab = bquote("Correlation between mediator and outcome errors" ~ ~ (rho)),
-    ylab = "Estimated ACDE", bty = "n", las = 1, ...
-  )
-  polygon(x = c(rho, rev(rho)), y = c(ci.lo, rev(ci.hi)), col = "grey70", border = NA)
-  lines(rho, acde.sens, lwd = 2)
-  abline(v = 0, lty = 2)
-  abline(h = 0, lty = 2)
+  if (is.null(xlim)) xlim <- range(rho)
+  if (is.null(ylim)) ylim <- range(c(ci.lo, ci.hi))
+  if (is.null(xlab)) xlab <- bquote("Correlation between mediator and outcome errors" ~ ~ (rho))
+  if (is.null(ylab)) ylab <- "Estimated ACDE"
+
+  plot.default(NA, NA, xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
+       bty = bty, ...)
+  polygon(x = c(rho, rev(rho)), y = c(ci.lo, rev(ci.hi)), col = ci.col, border = NA)
+  lines(rho, acde.sens, lwd = lwd, col = col)
+
+  if (ref.lines) {
+    abline(v = 0, lty = 2)
+    abline(h = 0, lty = 2)
+  }
+
+  invisible(NULL)
 }
