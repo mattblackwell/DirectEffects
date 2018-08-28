@@ -184,14 +184,32 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05),
 
 #' Plot output from cdesens
 #' @param x output from \env{cdesens}
-#' @param level Level of confidence interval to plot
+#' @param level level of confidence interval to plot
+#' @param xlim the x limits (x1, x2) of the plot for the sensitivity
+#'   analysis parameter, rho. Default is to use the range of
+#'   \env{rho}.
+#' @param ylim the y limits of the plot for the estimated CDEs.
+#'   Default is to show the all of the confidence intervals.
+#' @param xlab label for the x axis.
+#' @param ylab label for the y axis.
+#' @param bty a character string which determined the type of box
+#'   which is drawn about plots. Defaults to not drawing a box. See
+#'   \link{par} for more information.
+#' @param col color for the line indicating the point estimates of the
+#'   bias-adjusted ACDE.
+#' @param lwd line width for the line indicating the point estimates of the
+#'   bias-adjusted ACDE.
+#' @param ci.col color for the polygon that shows the confidence
+#'   intervals.
+#' @param ref.lines a logical indicating whether horizontal and
+#'   vertical lines at 0 should be plotted.
 #' @param ... Other parameters to pass on to \env{plot()}
 #' @export
-#' @importFrom graphics plot lines polygon abline
+#' @importFrom graphics plot.default lines polygon abline
 #' @importFrom stats qnorm
 plot.cdesens <- function(x, level = 0.95, xlim = NULL, ylim = NULL,
                          xlab = NULL, ylab = "Estimated ACDE", bty = "n",
-                         ci.col = "grey70", col = "black", lwd = 2,
+                         col = "black", lwd = 2, ci.col = "grey70",
                          ref.lines = TRUE, ...) {
   rho <- x$rho
   acde.sens <- x$acde
