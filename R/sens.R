@@ -47,7 +47,7 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05),
     stop("object should be of class seqg, created from sequential_g()")
   }
 
-  if (missing(bootstrap)) bootstrap <- "none"
+  bootstrap <- match.arg(bootstrap)
   # model matrix
   data <- seqg$model
 
