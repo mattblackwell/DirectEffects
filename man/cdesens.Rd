@@ -4,8 +4,8 @@
 \alias{cdesens}
 \title{Estimate sensitivity of ACDE estimates under varying levels of unobserved confounding}
 \usage{
-cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05), boots = 100,
-  verbose = FALSE)
+cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05), bootstrap = c("none",
+  "standard", "block"), boots_n = 1000, verbose = FALSE)
 }
 \arguments{
 \item{seqg}{Output from sequential_g. The function only supports specifications with one
@@ -14,7 +14,10 @@ mediator variable.}
 \item{rho}{A numerical vector of correlations between errors to test for. The
 original model assumes \env{rho = 0}}
 
-\item{boots}{Number of bootstrap replicates, defaults to 100.}
+\item{bootstrap}{character of c("none", "standard", "block"), indicating whether to
+include bootstrap standard errors or block bootstrap. Default is "none".}
+
+\item{boots_n}{Number of bootstrap replicates, defaults to 100.}
 
 \item{verbose}{Whether to show progress and messages, defaults to \env{FALSE}}
 }
@@ -40,7 +43,7 @@ form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab
 direct <- sequential_g(form_main, fit_first, data = civilwar)
 
 # sensitivity
-out_sens <- cdesens(direct, boots = 25)
+out_sens <- cdesens(direct)
 
 # plot sensitivity
 plot(out_sens)
