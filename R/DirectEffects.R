@@ -137,6 +137,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
 
   ## must be valid formula
   formula <- Formula::as.Formula(formula)
+  first_formula <- Formula::as.Formula(first_mod$call$formula)
   stopifnot(length(formula)[1] == 1L, length(formula)[2] %in% 1:2)
   if (inherits(try(terms(formula), silent = TRUE), "try-error")) {
     stop("cannot use dot '.' in formulas")
@@ -146,7 +147,9 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
   f1 <- formula(formula, rhs = 1) # Y ~ A + X
   f2 <- formula(formula, lhs = 0, rhs = 2) # ~ M
   f2 <- update(f2, ~. - 1) # ~ M - 1, don't model intercept
-  formula <- Formula::as.Formula(f1, f2) # Y ~ A + X | M - 1
+  f3 <- formula(first_formula, lhs = 0, rhs = 1) ## ~ A + X + M + Z
+  f3 <- update(f3, ~. -1)
+  formula <- Formula::as.Formula(f1, f2, f3) # Y ~ A + X | M - 1
 
 
   ## link mediators across first and second models
@@ -169,6 +172,8 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
 
   ## additional subsetting -- all rows in second stage need to have been
   ## present in first stage model matrix
+  ## need this even when we have 1st-stage covs in mf b/c user
+  ## might have used subset in the first stage.
   mf <- mf[which(rownames(mf) %in% rownames(model.matrix(first_mod))), , drop = FALSE]
 
   ### de-mediated Y
@@ -197,7 +202,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
 
 
   ## Combine all components
-  out$terms <- list(direct = terms(formula), blip = bt, seqg = mt)
+  out$terms <- list(direct = terms(formula), blip = bt, seqg = mt, ax = mtX)
   out$formula <- formula
   out$call <- cl
   out$na.action <- attr(mf, "na.action")
@@ -211,6 +216,10 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
     dimnames(out.vcov) <- list(names(out$coefficients), names(out$coefficients))
 
     out$vcov <- out.vcov
+  } else {
+    if (bootstrap == "block") warning("block bootstrap not implemented yet, using standard...")
+    boots <- boots_g(out, boots = boots_n, progress = verbose, data = mf)
+    out$boots <- boots
   }
   if (model) {
     out$model <- mf
@@ -224,11 +233,6 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
 
   ## Declare class
   class(out) <- "seqg"
-  if (bootstrap != "none") {
-    if (bootstrap == "block") warning("block bootstrap not implemented yet, using standard...")
-    boots <- boots_g(out, boots = boots_n, progress = verbose)
-    out$boots <- boots
-  }
 
   return(out)
 }
