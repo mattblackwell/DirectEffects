@@ -148,7 +148,6 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
   f2 <- formula(formula, lhs = 0, rhs = 2) # ~ M
   f2 <- update(f2, ~. - 1) # ~ M - 1, don't model intercept
   f3 <- formula(first_formula, lhs = 0, rhs = 1) ## ~ A + X + M + Z
-  f3 <- update(f3, ~. -1)
   formula <- Formula::as.Formula(f1, f2, f3) # Y ~ A + X | M - 1
 
 
@@ -212,7 +211,8 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
 
   ## Consistent Variance estimator
   if (bootstrap == "none") {
-    out.vcov <- seq.g.vcov(first_mod, out, X1 = model.matrix(first_mod), X2 = X, bnames)
+    X1 <- model.matrix(first_mod, data = mf)
+    out.vcov <- seq.g.vcov(first_mod, out, X1 = X1, X2 = X, bnames)
     dimnames(out.vcov) <- list(names(out$coefficients), names(out$coefficients))
 
     out$vcov <- out.vcov
