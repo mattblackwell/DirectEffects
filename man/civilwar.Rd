@@ -89,6 +89,6 @@ A dataset to replicate the analysis in Fearon and Laitin
 }
 }
 \references{
-Fearon, James D., and David A. Laitin (2003). Ethnicity, Insurgency, and Civil War. 
+Fearon, James D., and David A. Laitin (2003). Ethnicity, Insurgency, and Civil War.
 American Political Science Review, 97(1), 75-90. doi:10.1017/S0003055403000534
 }

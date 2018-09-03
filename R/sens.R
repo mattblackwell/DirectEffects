@@ -40,7 +40,7 @@
 #' plot(out_sens)
 #'
 
-cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05),
+cdesens <- function(seqg, rho = seq(-0.9, 0.9, by = 0.05),
                     bootstrap = c("none", "standard", "block"),
                     boots_n = 1000, verbose = FALSE) {
   if (!inherits(seqg, what = "seqg")) {
@@ -74,10 +74,12 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05),
     # start bootstrap (indexed by b)
     for (b in 1:boots_n) {
       # message at first boot and every 20
-      if (verbose & (b == 1))
+      if (verbose & (b == 1)) {
         cat("Starting Bootstrap estimation:", "\n")
-      if (verbose & (b %% 20 == 0))
+      }
+      if (verbose & (b %% 20 == 0)) {
         cat(glue::glue("sample {b} out of {boots_n}"), "\n")
+      }
 
       # create bootstrap sample
       b.index <- sample(1:nrow(data), size = nrow(data), replace = TRUE)
@@ -117,7 +119,6 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05),
 
         # save final estimate
         acde.sens[b, r] <- coef(sens.direct.r)[trvar]
-
       } # close rho loop
     } # close bootstrap loop
 
@@ -126,7 +127,6 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05),
 
     # sd of bootstraps
     acde.se <- apply(acde.sens, MARGIN = 2, sd)
-
   } # close bootstrap if
 
   if (bootstrap == "none") {
@@ -160,12 +160,12 @@ cdesens <- function(seqg, rho =  seq(-0.9, 0.9, by = 0.05),
       # run Ytilde ~ A + X
       sens.direct.r <- lm(form.Ytilde, data = mf.r)
       vcv <- seq.g.vcov(seqg$first_mod, sens.direct.r,
-                        X1 = model.matrix(seqg$first_mod), X2 = AX, medvar)
+        X1 = model.matrix(seqg$first_mod), X2 = AX, medvar
+      )
 
       # save final estimate
       acde.means[r] <- coef(sens.direct.r)[trvar]
       acde.se[r] <- sqrt(diag(vcv)[which(colnames(AX) == trvar)])
-
     } # close rho loop
   } # close bootstrap=="none" if
 
@@ -218,11 +218,13 @@ plot.cdesens <- function(x, level = 0.95, xlim = NULL, ylim = NULL,
 
   if (is.null(xlim)) xlim <- range(rho)
   if (is.null(ylim)) ylim <- range(c(ci.lo, ci.hi))
-  if (is.null(xlab)) xlab <- bquote("Correlation between mediator and outcome errors" ~ ~ (rho))
+  if (is.null(xlab)) xlab <- bquote("Correlation between mediator and outcome errors" ~ ~(rho))
   if (is.null(ylab)) ylab <- "Estimated ACDE"
 
-  plot.default(NA, NA, xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
-       bty = bty, ...)
+  plot.default(NA, NA,
+    xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
+    bty = bty, ...
+  )
   polygon(x = c(rho, rev(rho)), y = c(ci.lo, rev(ci.hi)), col = ci.col, border = NA)
   lines(rho, acde.sens, lwd = lwd, col = col)
 

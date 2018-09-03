@@ -125,6 +125,6 @@ NULL
 #' @usage data(civilwar)
 #' @format A data frame with 6610 observations and 69 variables.
 #' @source \url{https://doi.org/10.1017/S0003055403000534}
-#' @references Fearon, James D., and David A. Laitin (2003). Ethnicity, Insurgency, and Civil War. 
+#' @references Fearon, James D., and David A. Laitin (2003). Ethnicity, Insurgency, and Civil War.
 #' American Political Science Review, 97(1), 75-90. doi:10.1017/S0003055403000534
 NULL

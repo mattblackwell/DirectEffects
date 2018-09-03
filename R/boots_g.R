@@ -23,7 +23,7 @@ boots_g <- function(seqg, boots = 1000, progress = TRUE, data = NULL) {
     draw <- sample(1:nrow(data), replace = TRUE) # vector for sample with replacement
     # bootstrap sampling
 
-    data.draw <- data[draw,]
+    data.draw <- data[draw, ]
 
     ### re-estimate first model on bootstrapped data
     first_mod <- update(seqg$first_mod, data = data.draw) # estimate first model
@@ -56,13 +56,13 @@ boots_g <- function(seqg, boots = 1000, progress = TRUE, data = NULL) {
 
     #####
 
-   # boot.direct <- sequential_g(seqg$formula, first_mod = boot.first, data = data.draw) # estimate direct effects model
+    # boot.direct <- sequential_g(seqg$formula, first_mod = boot.first, data = data.draw) # estimate direct effects model
     acde.boots[[b]] <- coef(boot.direct) # store direct effect coefficients
   }
 
   if (progress) close(prog.bar)
 
- # combine list into matrix
+  # combine list into matrix
   acde.boots <- do.call(rbind, acde.boots)
 
   # construct output
