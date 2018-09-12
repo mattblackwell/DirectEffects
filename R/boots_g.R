@@ -15,7 +15,7 @@
 
 boots_g <- function(seqg, boots = 1000, progress = TRUE, data = NULL, rho = NULL) {
   # if called from cdesens, create acde.sens instead of acde.boots object
-  if(!is.null(rho)){
+  if (!is.null(rho)) {
     acde.sens <- matrix(NA, nrow = boots, ncol = length(rho)) # bootstrap samples as rows
   } else{
     acde.boots <- rep(list(NA), times = boots) # holder for boot strap estimates
@@ -23,6 +23,8 @@ boots_g <- function(seqg, boots = 1000, progress = TRUE, data = NULL, rho = NULL
   if (progress) prog.bar <- utils::txtProgressBar(min = 0, max = boots, style = 3) # start progress bar
   ## must be valid formula
   formula <- Formula::as.Formula(seqg$formula)
+
+  trvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 1)), "term.labels")[1]
 
   for (b in 1:boots) {
     if (progress) utils::setTxtProgressBar(prog.bar, b) # update progress bar
@@ -38,43 +40,39 @@ boots_g <- function(seqg, boots = 1000, progress = TRUE, data = NULL, rho = NULL
     bnames <- attr(seqg$terms$blip, "term.labels") # M names
     bvars <- match(bnames, names(fcoefs), 0L) # which terms in first stage are Ms
 
-
-
     X <- model.matrix(seqg$terms$ax, data = data.draw, seqg$contrasts)
     M <- model.matrix(seqg$terms$blip, data = data.draw, seqg$contrasts)
-    if(!is.null(rho)){
+    if (!is.null(rho)) {
 
       # residuals
       # epsilon.tilde.i.m: residuals of mediation function
       res.m <- residuals(lm.fit(x = X, y = M))
-      
+
       # epsilon.tilde.i.y: all variables in first model except medvar
-      form.first.y.X <- update(seqg$first_mod$terms, paste0(". ~ . -", medvar))
+      form.first.y.X <- update(seqg$first_mod$terms, paste0(". ~ . -", bnames))
       res.y <- residuals(lm(form.first.y.X, data = data.draw))
-      
+
       rho.tilde <- cor(res.y, res.m)
-      
+
       # for each value of the vector rho, change mediator value
       rho.factor <- rho * sqrt((1 - rho.tilde^2) / (1 - rho^2))
-      m.fixed <- coef(first_mod)[medvar] - sd(res.y) * rho.factor / sd(res.m)
-      
+      m.fixed <- coef(first_mod)[bnames] - sd(res.y) * rho.factor / sd(res.m)
+
       # calculate acde at each rho (indexed by r)
       for (r in 1:length(rho)) {
-        
+
         # create ytilde by blipping down with rho
-        Ytilde <- model.response(data.draw, "numeric") - m.fixed[r] * (data.draw[[medvar]])
+        Ytilde <- model.response(data.draw, "numeric") - m.fixed[r] * (data.draw[[bnames]])
         mf.r <- cbind(Ytilde, data.draw)
-        
+
         # run Ytilde ~ A + X
         sens.direct.r <- lm(form.Ytilde, data = mf.r)
-        
+
         # save final estimate
         acde.sens[b, r] <- coef(sens.direct.r)[trvar]
       } # close rho loop
     } else {
-    
-    
-    
+
     rawY <- model.response(data.draw, "numeric")
     gamma <- M %*% fcoefs[bvars] # fitted values from de-mediation function
     Y <- rawY - gamma
@@ -92,9 +90,6 @@ boots_g <- function(seqg, boots = 1000, progress = TRUE, data = NULL, rho = NULL
       boot.direct <- lm.wfit(X, Y, w, offset = offset)
     }
 
-
-    #####
-
     acde.boots[[b]] <- coef(boot.direct) # store direct effect coefficients
     }
   }
@@ -102,21 +97,17 @@ boots_g <- function(seqg, boots = 1000, progress = TRUE, data = NULL, rho = NULL
   if (progress) close(prog.bar)
 
   # if called from cdesens, only output acde.sens
-  if(!is.null(rho)){
+  if (!is.null(rho)) {
     out <- acde.sens
-    return(out)
   } else {
     # combine list into matrix
-    
-  acde.boots <- do.call(rbind, acde.boots)
+    acde.boots <- do.call(rbind, acde.boots)
 
-  # construct output
-  out <- list()
-  out$acde <- acde.boots # matrix of bootstrap coefficients
-  out$acde.sd <- sapply(as.data.frame(acde.boots), sd) # bootstrapped standard errors
-
-
-  return(out)
-  } 
+    # construct output
+    out <- list()
+    out$acde <- acde.boots # matrix of bootstrap coefficients
+    out$acde.sd <- sapply(as.data.frame(acde.boots), sd) # bootstrapped standard errors
   }
+  return(out)
 
+}
