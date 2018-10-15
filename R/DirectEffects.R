@@ -198,7 +198,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
   } else {
     out <- lm.wfit(X, Y, w, offset = offset, ...)
   }
-
+  out$aliased <- is.na(out$coefficient)
 
   ## Combine all components
   out$terms <- list(direct = terms(formula), blip = bt, seqg = mt, ax = mtX)
@@ -212,9 +212,10 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
   ## Consistent Variance estimator
   if (bootstrap == "none") {
     X1 <- model.matrix(first_mod, data = mf)
-    out.vcov <- seq.g.vcov(first_mod, out, X1 = X1, X2 = X, bnames)
+    out.vcov <- matrix(NA, ncol(X), ncol(X))
     dimnames(out.vcov) <- list(names(out$coefficients), names(out$coefficients))
-
+    R <- seq.g.vcov(first_mod, out, X1 = X1, X2 = X[,!out$aliased], bnames)
+    out.vcov[!out$aliased, !out$aliased] <- R
     out$vcov <- out.vcov
   } else {
     if (bootstrap == "block") warning("block bootstrap not implemented yet, using standard...")
