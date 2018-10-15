@@ -1,5 +1,5 @@
 #' @export
-summary.seqg <- function(object, treatment = NULL, ...) {
+summary.seqg <- function(object, ...) {
   z <- object
   p <- z$rank
   rdf <- z$df.residual
@@ -11,8 +11,10 @@ summary.seqg <- function(object, treatment = NULL, ...) {
   w <- z$weights
   if (is.null(z$vcov)) {
     se <- z$boots$acde.sd
+    se.lab <- "Boot Std. Error"
   } else {
     se <- sqrt(diag(z$vcov))
+    se.lab <- "Std. Error"
   }
   est <- z$coefficients
   tval <- est / se
@@ -20,7 +22,7 @@ summary.seqg <- function(object, treatment = NULL, ...) {
   ans <- z[c("call", "terms", if (!is.null(z$weights)) "weights")]
   ans$residuals <- r
   ans$coefficients <- cbind(est, se, tval, pval)
-  dimnames(ans$coefficients) <- list(names(z$coefficients), c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
+  dimnames(ans$coefficients) <- list(names(z$coefficients), c("Estimate", se.lab, "t value", "Pr(>|t|)"))
   ans$df <- c(p, rdf, NCOL(z$qr$qr))
   class(ans) <- "summary.seqg"
   ans

@@ -4,7 +4,8 @@
 \alias{boots_g}
 \title{Bootstrap standard errors}
 \usage{
-boots_g(seqg, boots = 1000, progress = TRUE, data = NULL)
+boots_g(seqg, boots = 1000, progress = TRUE, data = NULL,
+  rho = NULL)
 }
 \arguments{
 \item{seqg}{Output from sequential_g}
@@ -14,6 +15,8 @@ boots_g(seqg, boots = 1000, progress = TRUE, data = NULL)
 \item{progress}{Show a textbar for progress. Defaults to TRUE.}
 
 \item{data}{Dataframe to be used if none provided in seqg.}
+
+\item{rho}{Vector to be used if called from cdesens().}
 }
 \description{
 Called internally in sequential_g
