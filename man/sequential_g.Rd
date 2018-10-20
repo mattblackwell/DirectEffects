@@ -11,13 +11,14 @@ sequential_g(formula, data, subset, weights, na.action, model = TRUE,
   verbose = TRUE, ...)
 }
 \arguments{
-\item{formula}{formula specification of the direct effect and blip-down models.
-Should be of the form \code{y ~ tr + x1 + x2 | med} where \code{tr} is the
-name of the treatment variable, \code{med} is the name of the mediator
-and \code{x1} and \code{x2} are baseline covariates. Before the \code{|} bar
-represents the direct effects model and after the bar represents
-the blip-down model, the latter of which will be used to created
-the blipped down outcome.}
+\item{formula}{formula specification of the first-stage,
+second-stage, and blip-down models. The right-hand side of the
+formula should have three components separated by the \code{|},
+with the first component speficying the first-stage model with
+treatment and any baseline covariates, the second component
+specfying the intermediate covariates for the second-stage, and
+the third component specifying the blip-down model. See Details
+below for more information.}
 
 \item{data}{A dataframe to apply \code{formula} on. Must be identical to the
 \code{data} used for \code{first_mod}.}
@@ -39,19 +40,25 @@ will always be dropped, in addition to any user-specified further subsets.}
     default is \code{\link{na.omit}}.  Another possible value is
     \code{NULL}, no action.  Value \code{\link{na.exclude}} can be useful.}
 
-\item{model}{logical indicating whether the resulting model frame
-should be returned.}
+\item{model}{logicals.  If \code{TRUE} the corresponding
+    components of the fit (the model frame, the model matrix, the
+    response, the QR decomposition) are returned.
+  }
 
-\item{y}{logical indicating whether the blipped-down outcome
-vector should be returned.}
+\item{y}{logicals.  If \code{TRUE} the corresponding
+    components of the fit (the model frame, the model matrix, the
+    response, the QR decomposition) are returned.
+  }
 
-\item{x}{logical indicating whether the model matrix of the direct
-effects model should be returned.}
+\item{x}{logicals.  If \code{TRUE} the corresponding
+    components of the fit (the model frame, the model matrix, the
+    response, the QR decomposition) are returned.
+  }
 
 \item{offset}{this can be used to specify an \emph{a priori} known
     component to be included in the linear predictor during fitting.
-    This should be \code{NULL} or a numeric vector of length equal to
-    the number of cases.  One or more \code{\link{offset}} terms can be
+    This should be \code{NULL} or a numeric vector or matrix of extents
+    matching those of the response.  One or more \code{\link{offset}} terms can be
     included in the formula instead or as well, and if more than one are
     specified their sum is used.  See \code{\link{model.offset}}.}
 
@@ -110,17 +117,21 @@ sequential g-estimator developed by Vansteelandt (2009) with the
 consistent variance estimator developed by Acharya, Blackwell, and
 Sen (2016).
 
-The function takes in a first-stage linear model, \code{first_mod},
-of the \code{lm} class which is assumed to estimate the effect of
-the mediator on the outcome (conditional on the treatment,
-intermediate confounders, and baseline confounders). The formula
-specifies both the second stage, direct effect model of the
-treatment and baseline confounders, but also contains the
-specification of the 'blip-down' or 'demediation' function that is
-used to remove the average effect of the mediator (possibly
-interacted) from the outcome to create the blipped-down outcome.
-This blipped-down outcome is the passed to a standard linear model
-with the covariates as specified for the direct effects model.
+ The formula specifies specifies the full first-stage model
+  including treatment, baseline confounders, intermediate
+  confounders, and the mediators. The user places \code{|} bars to
+  separate out these different components of the model. For
+  example, the formula should have the form \code{y ~ tr + x1 + x2
+  | z1 + z2 | m1 + m2}. where \code{tr} is the name of the
+  treatment variable, \code{x1} and \code{x2} are baseline
+  covariates, \code{z1} and \code{z2} are intermediate covariates,
+  and \code{m1} and \code{m2} are the names of the mediator
+  variables. This last set of variables specify the 'blip-down' or
+  'demediation' function that is used to remove the average effect
+  of the mediator (possibly interacted) from the outcome to create
+  the blipped-down outcome. This blipped-down outcome is the passed
+  to a standard linear model with the covariates as specified for
+  the direct effects model.
 
 See the references below for more details.
 }
@@ -141,10 +152,12 @@ fit_first <- lm(
 form_main <- women_politics ~ plow +
   agricultural_suitability + tropical_climate + large_animals +
   political_hierarchies + economic_complexity +
-  rugged | centered_ln_inc +centered_ln_incsq
+  rugged | + years_civil_conflict +
+  years_interstate_conflict  + oil_pc +
+  european_descent + communist_dummy + polity2_2000 +
+  serv_va_gdp2000 | centered_ln_inc +centered_ln_incsq
 
 direct <- sequential_g(formula = form_main,
-                       first_mod = fit_first,
                        data = ploughs)
 
 summary(direct)

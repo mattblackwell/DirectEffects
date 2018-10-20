@@ -2,24 +2,19 @@
 #' direct effect of a treatment net the effect of a mediator.
 #'
 #' @inheritParams stats::lm
-#' @param formula formula specification of the direct effect and blip-down models.
-#' Should be of the form \code{y ~ tr + x1 + x2 | med} where \code{tr} is the
-#' name of the treatment variable, \code{med} is the name of the mediator
-#' and \code{x1} and \code{x2} are baseline covariates. Before the \code{|} bar
-#' represents the direct effects model and after the bar represents
-#' the blip-down model, the latter of which will be used to created
-#' the blipped down outcome.
+#' @param formula formula specification of the first-stage,
+#'   second-stage, and blip-down models. The right-hand side of the
+#'   formula should have three components separated by the \code{|},
+#'   with the first component speficying the first-stage model with
+#'   treatment and any baseline covariates, the second component
+#'   specfying the intermediate covariates for the second-stage, and
+#'   the third component specifying the blip-down model. See Details
+#'   below for more information.
 #' @param data A dataframe to apply \code{formula} on. Must be identical to the
 #' \code{data} used for \code{first_mod}.
 #' @param subset A vector of logicals indicating which rows of \code{data} to keep.
 #' The rows of \code{data} that are not in the model matrix of \code{first_mod}
 #' will always be dropped, in addition to any user-specified further subsets.
-#' @param model logical indicating whether the resulting model frame
-#' should be returned.
-#' @param y logical indicating whether the blipped-down outcome
-#' vector should be returned.
-#' @param x logical indicating whether the model matrix of the direct
-#' effects model should be returned.
 #' @param bootstrap character of c("none", "standard", "block"), indicating whether to
 #' include bootstrap standard errors or block bootstrap. Default is "none".
 #' @param boots_n integer indicating the number of bootstrap iterations.
@@ -29,17 +24,21 @@
 #' consistent variance estimator developed by Acharya, Blackwell, and
 #' Sen (2016).
 #'
-#' The function takes in a first-stage linear model, \code{first_mod},
-#' of the \code{lm} class which is assumed to estimate the effect of
-#' the mediator on the outcome (conditional on the treatment,
-#' intermediate confounders, and baseline confounders). The formula
-#' specifies both the second stage, direct effect model of the
-#' treatment and baseline confounders, but also contains the
-#' specification of the 'blip-down' or 'demediation' function that is
-#' used to remove the average effect of the mediator (possibly
-#' interacted) from the outcome to create the blipped-down outcome.
-#' This blipped-down outcome is the passed to a standard linear model
-#' with the covariates as specified for the direct effects model.
+#'  The formula specifies specifies the full first-stage model
+#'   including treatment, baseline confounders, intermediate
+#'   confounders, and the mediators. The user places \code{|} bars to
+#'   separate out these different components of the model. For
+#'   example, the formula should have the form \code{y ~ tr + x1 + x2
+#'   | z1 + z2 | m1 + m2}. where \code{tr} is the name of the
+#'   treatment variable, \code{x1} and \code{x2} are baseline
+#'   covariates, \code{z1} and \code{z2} are intermediate covariates,
+#'   and \code{m1} and \code{m2} are the names of the mediator
+#'   variables. This last set of variables specify the 'blip-down' or
+#'   'demediation' function that is used to remove the average effect
+#'   of the mediator (possibly interacted) from the outcome to create
+#'   the blipped-down outcome. This blipped-down outcome is the passed
+#'   to a standard linear model with the covariates as specified for
+#'   the direct effects model.
 #'
 #' See the references below for more details.
 #'
@@ -97,10 +96,12 @@
 #' form_main <- women_politics ~ plow +
 #'   agricultural_suitability + tropical_climate + large_animals +
 #'   political_hierarchies + economic_complexity +
-#'   rugged | centered_ln_inc +centered_ln_incsq
+#'   rugged | + years_civil_conflict +
+#'   years_interstate_conflict  + oil_pc +
+#'   european_descent + communist_dummy + polity2_2000 +
+#'   serv_va_gdp2000 | centered_ln_inc +centered_ln_incsq
 #'
 #' direct <- sequential_g(formula = form_main,
-#'                        first_mod = fit_first,
 #'                        data = ploughs)
 #'
 #' summary(direct)

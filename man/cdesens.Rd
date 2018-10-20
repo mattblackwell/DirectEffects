@@ -6,7 +6,7 @@
 \usage{
 cdesens(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
   bootstrap = c("none", "standard", "block"), boots_n = 1000,
-  verbose = FALSE)
+  verbose = FALSE, ...)
 }
 \arguments{
 \item{seqg}{Output from sequential_g. The function only supports specifications with one
