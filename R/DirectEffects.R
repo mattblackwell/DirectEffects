@@ -9,9 +9,6 @@
 #' represents the direct effects model and after the bar represents
 #' the blip-down model, the latter of which will be used to created
 #' the blipped down outcome.
-#' @param first_mod an \code{lm} output containing the first-stage
-#' regression model. Must contain a coefficient for all variables in
-#' the blip-down model in the \code{formula} argument.
 #' @param data A dataframe to apply \code{formula} on. Must be identical to the
 #' \code{data} used for \code{first_mod}.
 #' @param subset A vector of logicals indicating which rows of \code{data} to keep.
@@ -110,7 +107,7 @@
 #' @export
 #' @importFrom stats coef lm.fit lm.wfit model.matrix model.offset
 #'   model.response model.weights pt residuals terms update
-sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
+sequential_g <- function(formula, data, subset, weights, na.action,
                          model = TRUE, y = TRUE, x = FALSE,
                          offset, contrasts = NULL,
                          bootstrap = c("none", "standard", "block"),
@@ -121,6 +118,7 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
   mf <- match.call(expand.dots = FALSE)
   bootstrap <- match.arg(bootstrap)
 
+
   m <- match(
     x = c("formula", "data", "subset", "na.action", "weights", "offset"),
     table = names(mf),
@@ -130,37 +128,16 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
   mf[[1L]] <- as.name("model.frame")
   mf$drop.unused.levels <- TRUE
 
-  ## check if the two models share the same dataset
-  if (!identical(first_mod$call$data, cl$data)) {
-    stop("data must be the same for both models")
-  }
-
   ## must be valid formula
   formula <- Formula::as.Formula(formula)
-  first_formula <- Formula::as.Formula(first_mod$call$formula)
-  stopifnot(length(formula)[1] == 1L, length(formula)[2] %in% 1:2)
+  stopifnot(length(formula)[1] == 1L, length(formula)[2] %in% 1:3)
   if (inherits(try(terms(formula), silent = TRUE), "try-error")) {
     stop("cannot use dot '.' in formulas")
   }
 
-  ## update formula Y ~ A + M - 1
-  f1 <- formula(formula, rhs = 1) # Y ~ A + X
-  f2 <- formula(formula, lhs = 0, rhs = 2) # ~ M
-  f2 <- update(f2, ~. - 1) # ~ M - 1, don't model intercept
-  f3 <- formula(first_formula, lhs = 0, rhs = 1) ## ~ A + X + M + Z
-  formula <- Formula::as.Formula(f1, f2, f3) # Y ~ A + X | M - 1
-
-
-  ## link mediators across first and second models
-  ## ensure that the blip formula doesn't include a constant
-  bt <- terms(formula, data = data, rhs = 2) # extract terms from Y ~ M - 1
-  bnames <- attr(bt, "term.labels") # their names
-  fcoefs <- coef(first_mod) # beta_hat from first model (Y ~ A + M + X)
-  ## are all of the Ms found in first stage?
-  if (!all(bnames %in% names(fcoefs))) {
-    stop("blip.form contains terms not in first_mod")
-  }
-  bvars <- match(bnames, names(fcoefs), 0L) # which terms in first stage are Ms
+  mt_x <- terms(formula, data = data, rhs = 1)
+  mt_m <- terms(formula, data = data, rhs = 3)
+  mnames <- attr(mt_m, "term.labels")
 
   ## add to mf call
   mf$formula <- formula
@@ -169,17 +146,10 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
   mf <- eval(mf, parent.frame())
   mt <- attr(mf, "terms") # terms object
 
-  ## additional subsetting -- all rows in second stage need to have been
-  ## present in first stage model matrix
-  ## need this even when we have 1st-stage covs in mf b/c user
-  ## might have used subset in the first stage.
-  mf <- mf[which(rownames(mf) %in% rownames(model.matrix(first_mod))), , drop = FALSE]
-
-  ### de-mediated Y
-  rawY <- model.response(mf, "numeric")
-  M <- model.matrix(bt, mf, contrasts)
-  gamma <- M %*% fcoefs[bvars] # fitted values from de-mediation function
-  Y <- rawY - gamma
+  XZM <- model.matrix(mt, mf, contrasts)
+  Y <- model.response(mf, "numeric")
+  X <- model.matrix(mt_x, mf, contrasts)
+  M <- XZM[, mnames, drop = FALSE]
 
   ### weights
   w <- as.vector(model.weights(mf))
@@ -187,54 +157,41 @@ sequential_g <- function(formula, first_mod, data, subset, weights, na.action,
   ### offset parameter
   offset <- as.vector(model.offset(mf))
 
-  ### X (including treatment)
-  mtX <- terms(formula, data = data, rhs = 1) # Y ~ A + X
-  X <- model.matrix(mtX, data = mf, contrasts.arg = contrasts)
-
-
   ## regress de-mediated outcome on Xs by OLS or WLS
   if (is.null(w)) {
-    out <- lm.fit(X, Y, offset = offset, ...)
+    out.first <- lm.fit(XZM, Y, offset = offset, ...)
+    mcoefs <- out.first$coefficients[mnames]
+    Y.blip <- Y - M %*% mcoefs
+    out <- lm.fit(X, Y.blip, offset = offset, ...)
   } else {
-    out <- lm.wfit(X, Y, w, offset = offset, ...)
+    out.first <- lm.wfit(XZM, Y, w, offset = offset, ...)
+    mcoefs <- out.first$coefficients[mnames]
+    Y.blip <- Y - M %*% mcoefs
+    out <- lm.wfit(X, Y.blip, w, offset = offset, ...)
   }
-  out$aliased <- is.na(out$coefficient)
+  out.first$aliased <- is.na(out.first$coefficient)
+  out.first$terms <- mt
+  out.first$contrasts <- attr(XZM, "contrasts")
 
   ## Combine all components
-  out$terms <- list(direct = terms(formula), blip = bt, seqg = mt, ax = mtX)
+  out$aliased <- is.na(out$coefficient)
+
+  out$terms <- list(M = mt_m, X = mt_x)
   out$formula <- formula
   out$call <- cl
   out$na.action <- attr(mf, "na.action")
   out$xlevels <- stats::.getXlevels(mt, mf)
-  out$contrasts <- attr(X, "contrasts")
-  out$first_mod <- first_mod
+  out$contrasts <- list(X = attr(X, "contrasts"), M = attr(M, "contrasts"))
 
-  ## Consistent Variance estimator
-  if (bootstrap == "none") {
-    X1 <- model.matrix(first_mod, data = mf)
-    out.vcov <- matrix(NA, ncol(X), ncol(X))
-    dimnames(out.vcov) <- list(names(out$coefficients), names(out$coefficients))
-    R <- seq.g.vcov(first_mod, out, X1 = X1, X2 = X[,!out$aliased], bnames)
-    out.vcov[!out$aliased, !out$aliased] <- R
-    out$vcov <- out.vcov
-  } else {
-    if (bootstrap == "block") warning("block bootstrap not implemented yet, using standard...")
-    boots <- boots_g(out, boots = boots_n, progress = verbose, data = mf)
-    out$boots <- boots
-  }
-  if (model) {
-    out$model <- mf
-  }
-  if (x) {
-    out$x <- X
-  }
-  if (y) {
-    out$y <- Y
-  }
+  out$model <- mf
+  out$X <- X
+  out$M <- M
+  out$Y <- Y
+  out.first$XZM <- XZM
 
+  out$first_mod <- out.first
   ## Declare class
   class(out) <- "seqg"
-
   return(out)
 }
 

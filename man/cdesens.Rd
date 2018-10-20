@@ -4,12 +4,16 @@
 \alias{cdesens}
 \title{Estimate sensitivity of ACDE estimates under varying levels of unobserved confounding}
 \usage{
-cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05), bootstrap = c("none",
-  "standard", "block"), boots_n = 1000, verbose = FALSE)
+cdesens(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
+  bootstrap = c("none", "standard", "block"), boots_n = 1000,
+  verbose = FALSE)
 }
 \arguments{
 \item{seqg}{Output from sequential_g. The function only supports specifications with one
 mediator variable.}
+
+\item{var}{A character indicating the name of the variable for
+which the estimated ACDE is being evaluated.}
 
 \item{rho}{A numerical vector of correlations between errors to test for. The
 original model assumes \env{rho = 0}}
@@ -43,7 +47,7 @@ form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab
 direct <- sequential_g(form_main, fit_first, data = civilwar)
 
 # sensitivity
-out_sens <- cdesens(direct)
+out_sens <- cdesens(direct, var = "ethfrac")
 
 # plot sensitivity
 plot(out_sens)

@@ -7,6 +7,8 @@
 #'
 #' @param seqg Output from sequential_g. The function only supports specifications with one
 #'  mediator variable.
+#' @param var A character indicating the name of the variable for
+#'   which the estimated ACDE is being evaluated.
 #' @param rho A numerical vector of correlations between errors to test for. The
 #'  original model assumes \env{rho = 0}
 #' @param bootstrap character of c("none", "standard", "block"), indicating whether to
@@ -34,36 +36,33 @@
 #' direct <- sequential_g(form_main, fit_first, data = civilwar)
 #'
 #' # sensitivity
-#' out_sens <- cdesens(direct)
+#' out_sens <- cdesens(direct, var = "ethfrac")
 #'
 #' # plot sensitivity
 #' plot(out_sens)
 #'
 
-cdesens <- function(seqg, rho = seq(-0.9, 0.9, by = 0.05),
+cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
                     bootstrap = c("none", "standard", "block"),
-                    boots_n = 1000, verbose = FALSE) {
+                    boots_n = 1000, verbose = FALSE, ...) {
   if (!inherits(seqg, what = "seqg")) {
     stop("object should be of class seqg, created from sequential_g()")
   }
+  ## save copy of object to use below
 
+  z <- seqg
   bootstrap <- match.arg(bootstrap)
   # model matrix
   data <- seqg$model
 
   rho <- sort(rho) # reorder if necessary
 
-
   # identify treatment and mediator
-  trvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 1)), "term.labels")[1]
-  medvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 2)), "term.labels")
-  if (length(medvar) > 1) stop("currently only handles one mediator variables")
+  mnames <- attr(seqg$terms$M, "term.labels")
+  xnames <- attr(seqg$terms$X, "term.labels")
 
-  # formula
-  # ~ A + X
-  form.A.X <- formula(seqg$formula, lhs = 0, rhs = 1)
-  # Ytilde ~ A + X. will create the Ytilde vector later.
-  form.Ytilde <- update(form.A.X, Ytilde ~ .)
+  if (length(mnames) > 1) stop("currently only handles one mediator variables")
+  if (!(var %in% xnames)) stop("'var' not in the set of baseline variables")
 
   if (bootstrap != "none") {
     if (bootstrap == "block") warning("block bootstrap not implemented yet, using standard...")
@@ -83,42 +82,46 @@ cdesens <- function(seqg, rho = seq(-0.9, 0.9, by = 0.05),
 
       # create bootstrap sample
       b.index <- sample(1:nrow(data), size = nrow(data), replace = TRUE)
-      data.b <- data[b.index, , drop = FALSE]
+      data.b <- data[b.index,]
 
-      # parts
-      AX <- model.matrix(form.A.X, data.b)
-      M <- data.b[, medvar, drop = TRUE]
+      # relevant data matrices
+      X <- model.matrix(seqg$terms$X, data.b, seqg$contrasts$X)
+      XZM <- model.matrix(seqg$first_mod$terms, data.b,
+                          seqg$first_mod$contrasts)
+      M <- XZM[, mnames, drop = FALSE]
+      XZ <- XZM[, !(colnames(XZM) %in% mnames), drop = FALSE]
+      Y <- model.response(data.b)
+      w <- as.vector(model.weights(data.b))
+      offset <- as.vector(model.offset(data.b))
 
-      # re-fit first_mod call with new data
-      first_mod.mm <- seqg$first_mod$model[b.index, , drop = FALSE] # first mod bootstrap
-      first_mod <- update(seqg$first_mod, . ~ ., data = first_mod.mm)
+      # first-stage
+      if (is.null(w)) {
+        out.first <- lm.fit(XZM, Y, offset = offset, ...)
+      } else {
+        out.first <- lm.wfit(XZM, Y, w, offset = offset, ...)
+      }
+      bcoefs <- out.first$coefficients[mnames]
 
-      # residuals
       # epsilon.tilde.i.m: residuals of mediation function
-      res.m <- residuals(lm.fit(x = AX, y = M))
-
-      # epsilon.tilde.i.y: all variables in first model except medvar
-      form.first.y.A.X <- update(seqg$first_mod$terms, paste0(". ~ . -", medvar))
-      res.y <- residuals(lm(form.first.y.A.X, data = first_mod.mm))
-
+      res.m <- residuals(lm.fit(x = X, y = M))
+      res.y <- residuals(lm.fit(x = XZ, y = Y))
       rho.tilde <- cor(res.y, res.m)
 
       # for each value of the vector rho, change mediator value
       rho.factor <- rho * sqrt((1 - rho.tilde^2) / (1 - rho^2))
-      m.fixed <- coef(first_mod)[medvar] - sd(res.y) * rho.factor / sd(res.m)
+      m.fixed <- bcoefs - sd(res.y) * rho.factor / sd(res.m)
 
       # calculate acde at each rho (indexed by r)
       for (r in 1:length(rho)) {
-
         # create ytilde by blipping down with rho
-        Ytilde <- model.response(seqg$model)[b.index] - m.fixed[r] * (data.b[[medvar]])
-        mf.r <- cbind(Ytilde, data.b)
-
-        # run Ytilde ~ A + X
-        sens.direct.r <- lm(form.Ytilde, data = mf.r)
-
+        Ytilde <- Y - m.fixed[r] * M
+        if (is.null(w)) {
+          out <- lm.fit(X, Ytilde, offset = offset, ...)
+        } else {
+          out <- lm.wfit(X, Ytilde, w, offset = offset, ...)
+        }
         # save final estimate
-        acde.sens[b, r] <- coef(sens.direct.r)[trvar]
+        acde.sens[b, r] <- out$coefficients[var]
       } # close rho loop
     } # close bootstrap loop
 
@@ -130,42 +133,43 @@ cdesens <- function(seqg, rho = seq(-0.9, 0.9, by = 0.05),
   } # close bootstrap if
 
   if (bootstrap == "none") {
-    # parts
-    AX <- model.matrix(form.A.X, data)
-    M <- data[, medvar, drop = TRUE]
-
     # residuals
     # epsilon.tilde.i.m: residuals of mediation function
-    res.m <- residuals(lm.fit(x = AX, y = M))
+    XZM <- seqg$first_mod$XZM
+    XZ <- XZM[, !(colnames(XZM) %in% mnames), drop = FALSE]
+    w <- as.vector(model.weights(seqg$model))
+    offset <- as.vector(model.offset(seqg$model))
 
-    # epsilon.tilde.i.y: all variables in first model except medvar
-    form.first.y.A.X <- update(seqg$first_mod$terms, paste0(". ~ . -", medvar))
-    res.y <- residuals(lm(form.first.y.A.X, data = stats::model.frame(seqg$first_mod)))
-
+    res.m <- residuals(lm.fit(x = seqg$X, y = seqg$M))
+    res.y <- residuals(lm.fit(x = XZ, y = seqg$Y))
     rho.tilde <- cor(res.y, res.m)
 
     # for each value of the vector rho, change mediator value
     rho.factor <- rho * sqrt((1 - rho.tilde^2) / (1 - rho^2))
-    m.fixed <- coef(seqg$first_mod)[medvar] - sd(res.y) * rho.factor / sd(res.m)
+    m.fixed <- coef(seqg$first_mod)[mnames] -
+      sd(res.y) * rho.factor / sd(res.m)
 
     acde.means <- acde.se <- rep(NA, times = length(rho))
     # calculate acde at each rho (indexed by r)
     for (r in 1:length(rho)) {
 
       # create ytilde by blipping down with rho
-      Ytilde <- model.response(seqg$model) - m.fixed[r] * (data[[medvar]])
-      mf.r <- cbind(Ytilde, data)
+      Ytilde <- seqg$Y - m.fixed[r] * seqg$M
+      if (is.null(w)) {
+        out <- lm.fit(seqg$X, Ytilde, offset = offset, ...)
+      } else {
+        out <- lm.wfit(seqg$X, Ytilde, w, offset = offset, ...)
+      }
 
-
-      # run Ytilde ~ A + X
-      sens.direct.r <- lm(form.Ytilde, data = mf.r)
-      vcv <- seq.g.vcov(seqg$first_mod, sens.direct.r,
-        X1 = model.matrix(seqg$first_mod), X2 = AX, medvar
-      )
+      # update the saved copy of the object and recalculate vcov
+      z$coefficients <- out$coefficients
+      z$residuals <- out$residuals
+      z$qr <- out$qr
+      vcv <- vcov(z)
 
       # save final estimate
-      acde.means[r] <- coef(sens.direct.r)[trvar]
-      acde.se[r] <- sqrt(diag(vcv)[which(colnames(AX) == trvar)])
+      acde.means[r] <- out$coefficients[var]
+      acde.se[r] <- sqrt(diag(vcv)[which(colnames(seqg$X) == var)])
     } # close rho loop
   } # close bootstrap=="none" if
 
