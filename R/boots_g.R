@@ -21,6 +21,7 @@
 #' out.boots
 #' 
 #' @export
+#' @import foreach
 #'
 boots_g <- function(seqg, boots = 1000) {
   

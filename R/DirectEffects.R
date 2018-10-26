@@ -108,6 +108,7 @@
 #' @export
 #' @importFrom stats coef lm.fit lm.wfit model.matrix model.offset
 #'   model.response model.weights pt residuals terms update
+#'   
 sequential_g <- function(formula, data, subset, weights, na.action,
                          model = TRUE, y = TRUE, x = FALSE,
                          offset, contrasts = NULL,
