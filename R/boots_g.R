@@ -27,7 +27,7 @@ boots_g <- function(seqg, boots = 1000) {
   acde.boots <- foreach(b = 1:boots, .combine = "rbind") %do% {
     draw <- sample(1:nrow(seqg$model), replace = TRUE) 
     seqg.draw <- sequential_g(seqg$formula, seqg$model[draw, ])
-    coef(seqg.draw)
+    coef(seqg.draw)[1:2] # intercept and treatment
   }
   
   out <- list(
