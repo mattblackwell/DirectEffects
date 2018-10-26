@@ -14,3 +14,18 @@ boots_g(seqg, boots = 1000)
 \description{
 Called internally in sequential_g
 }
+\examples{
+
+data(ploughs)
+form <- women_politics ~ plow +
+ agricultural_suitability + tropical_climate + large_animals + rugged | 
+ years_civil_conflict + years_interstate_conflict  + oil_pc +
+ european_descent + communist_dummy + polity2_2000 | 
+ centered_ln_inc + centered_ln_incsq
+s1 <- sequential_g(form, ploughs)
+ 
+out.boots <- boots_g(s1)
+
+out.boots
+
+}
