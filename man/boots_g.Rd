@@ -4,21 +4,13 @@
 \alias{boots_g}
 \title{Bootstrap standard errors}
 \usage{
-boots_g(seqg, boots = 1000, progress = TRUE, data = NULL,
-  rho = NULL)
+boots_g(seqg, boots = 1000)
 }
 \arguments{
 \item{seqg}{Output from sequential_g}
 
 \item{boots}{The number of bootstrap replicates. Defaults to 1000.}
-
-\item{progress}{Show a textbar for progress. Defaults to TRUE.}
-
-\item{data}{Dataframe to be used if none provided in seqg.}
-
-\item{rho}{Vector to be used if called from cdesens().}
 }
 \description{
 Called internally in sequential_g
 }
-\keyword{internal}
