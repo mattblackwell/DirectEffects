@@ -2,17 +2,21 @@
 % Please edit documentation in R/boots_g.R
 \name{boots_g}
 \alias{boots_g}
-\title{Bootstrap standard errors}
+\title{Coefficient Estimates Across Bootstrapped Samples}
 \usage{
 boots_g(seqg, boots = 1000)
 }
 \arguments{
-\item{seqg}{Output from sequential_g}
+\item{seqg}{A fitted sequential_g estimate, an output of sequential_g.}
 
 \item{boots}{The number of bootstrap replicates. Defaults to 1000.}
 }
+\value{
+A matrix with \env{boots} rows and columns for each coefficient
+in the \env{seqg} model.
+}
 \description{
-Called internally in sequential_g
+Coefficient Estimates Across Bootstrapped Samples
 }
 \examples{
 
@@ -26,6 +30,6 @@ s1 <- sequential_g(form, ploughs)
  
 out.boots <- boots_g(s1)
 
-out.boots
+head(out.boots)
 
 }

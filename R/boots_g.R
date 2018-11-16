@@ -1,10 +1,12 @@
 
-#' Bootstrap standard errors
+#' Coefficient Estimates Across Bootstrapped Samples
 #'
-#' Called internally in sequential_g
 #'
-#' @param seqg Output from sequential_g
+#' @param seqg A fitted sequential_g estimate, an output of sequential_g.
 #' @param boots The number of bootstrap replicates. Defaults to 1000.
+#' 
+#' @return A matrix with \env{boots} rows and columns for each coefficient
+#' in the \env{seqg} model.
 #' 
 #' @examples 
 #' 
@@ -18,22 +20,35 @@
 #'  
 #' out.boots <- boots_g(s1)
 #' 
-#' out.boots
+#' head(out.boots)
 #' 
 #' @export
-#' @import foreach
 #'
 boots_g <- function(seqg, boots = 1000) {
+  stopifnot(boots %% 1 == 0 & boots > 0)
   
-  acde.boots <- foreach(b = 1:boots, .combine = "rbind") %do% {
-    draw <- sample(1:nrow(seqg$model), replace = TRUE) 
-    seqg.draw <- sequential_g(seqg$formula, seqg$model[draw, ])
-    coef(seqg.draw)[1:2] # intercept and treatment
+  B <- matrix(NA, 
+              nrow = boots, 
+              ncol = length(coef(seqg)),
+              dimnames = list(NULL, names(coef(seqg))))
+  nobs <- nrow(seqg$model)
+  
+  # init
+  for (i in 1:boots) {
+    if (i == 1) { 
+
+    }
+    
+    # bootstrap model frame
+    draw <- sample(1:nobs, replace = TRUE) 
+    
+    # run seqg
+    seqg.draw <- sequential_g(formula = seqg$formula, 
+                              data = seqg$model[draw, ])
+     
+    # store coef
+    B[i, ] <- coef(seqg.draw)
   }
   
-  out <- list(
-    acde.mean = apply(acde.boots, 2, function(x) mean(x, na.rm = TRUE)),
-    acde.sd = apply(acde.boots, 2, function(x) sd(x, na.rm = TRUE))
-  )
-  return(out)
+  return(B)
 }
