@@ -49,10 +49,50 @@ summary.seqg <- function(object, ...) {
   ans
 }
 
+
+#' @export
+#' @import glue
+summary.seqgboots <- function(object, level = 0.95, ...) {
+  
+  # lower and upper percentile
+  lo <- (1 - level)/2
+  hi <- 1 - (1 - level)/2
+  
+  # column stats
+  est <- colMeans(object)
+  se <- apply(object, 2, sd)
+  tval <- est / se
+  plo <- apply(object, 2, function(x) quantile(x, lo))
+  phi <- apply(object, 2, function(x) quantile(x, hi))
+  
+  # bind
+  coefs <- cbind(est, se, tval, plo, phi)
+  dimnames(coefs) <- list(colnames(object), 
+                          c("Estimate",
+                            "Std. Err.", 
+                            "t value", 
+                            glue("{round(lo*100, 1)} %"),
+                            glue("{round(hi*100, 1)} %")))
+  
+  class(coefs) <- "summary.seqgboots"
+  coefs
+}
+
+
 #' @export
 print.summary.seqg <- function(x, ...) {
   cat("\nt test of coefficients: \n\n")
   stats::printCoefmat(x$coefficients)
+  cat("\n")
+  invisible(x)
+}
+
+
+
+#' @export
+print.summary.seqgboots <- function(x, ...) {
+  cat("\nSummary of bootstrapped coefficients: \n\n")
+  stats::printCoefmat(x)
   cat("\n")
   invisible(x)
 }

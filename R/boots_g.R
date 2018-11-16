@@ -5,8 +5,8 @@
 #' @param seqg A fitted sequential_g estimate, an output of sequential_g.
 #' @param boots The number of bootstrap replicates. Defaults to 1000.
 #' 
-#' @return A matrix with \env{boots} rows and columns for each coefficient
-#' in the \env{seqg} model.
+#' @return An object of type \env{seqgboots} which is a matrix with \env{boots} 
+#' rows and columns for each coefficient in the \env{seqg} model.
 #' 
 #' @examples 
 #' 
@@ -20,7 +20,7 @@
 #'  
 #' out.boots <- boots_g(s1)
 #' 
-#' head(out.boots)
+#' summary(out.boots)
 #' 
 #' @export
 #'
@@ -50,5 +50,6 @@ boots_g <- function(seqg, boots = 1000) {
     B[i, ] <- coef(seqg.draw)
   }
   
+  class(B) <- "seqgboots"
   return(B)
 }
