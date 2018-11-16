@@ -137,8 +137,6 @@ See the references below for more details.
 }
 \examples{
 data(ploughs)
-ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
-ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
 
 fit_first <- lm(
   women_politics ~ plow + centered_ln_inc + centered_ln_incsq +
