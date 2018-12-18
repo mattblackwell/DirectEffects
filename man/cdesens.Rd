@@ -23,7 +23,11 @@ include bootstrap standard errors or block bootstrap. Default is "none".}
 
 \item{boots_n}{Number of bootstrap replicates, defaults to 100.}
 
-\item{verbose}{Whether to show progress and messages, defaults to \env{FALSE}}
+\item{verbose}{Whether to show progress and messages, defaults to
+\env{FALSE}}
+
+\item{...}{Other parameters to pass on to \env{lm.fit()} when
+refitting the model}
 }
 \description{
 Estimate how the Average Controlled Direct Effect varies by various levels of

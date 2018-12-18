@@ -14,7 +14,10 @@
 #' @param bootstrap character of c("none", "standard", "block"), indicating whether to
 #' include bootstrap standard errors or block bootstrap. Default is "none".
 #' @param boots_n Number of bootstrap replicates, defaults to 100.
-#' @param verbose Whether to show progress and messages, defaults to \env{FALSE}
+#' @param verbose Whether to show progress and messages, defaults to
+#'   \env{FALSE}
+#' @param ... Other parameters to pass on to \env{lm.fit()} when
+#'   refitting the model
 #'
 #' @export
 #'
@@ -58,8 +61,8 @@ cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
   rho <- sort(rho) # reorder if necessary
 
   # identify treatment and mediator
-  mnames <- attr(seqg$terms$M, "term.labels")
-  xnames <- attr(seqg$terms$X, "term.labels")
+  xnames <- attr(seqg$terms$mt_x, "term.labels")
+  mnames <- attr(seqg$terms$mt_m, "term.labels")
 
   if (length(mnames) > 1) stop("currently only handles one mediator variables")
   if (!(var %in% xnames)) stop("'var' not in the set of baseline variables")
@@ -85,10 +88,9 @@ cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
       data.b <- data[b.index,]
 
       # relevant data matrices
-      X <- model.matrix(seqg$terms$X, data.b, seqg$contrasts$X)
-      XZM <- model.matrix(seqg$first_mod$terms, data.b,
-                          seqg$first_mod$contrasts)
-      M <- XZM[, mnames, drop = FALSE]
+      X <- seqg$X[b.index, ]
+      XZM <- seqg$XZM[b.index, ]
+      M <- seqg$M[b.index, ]
       XZ <- XZM[, !(colnames(XZM) %in% mnames), drop = FALSE]
       Y <- model.response(data.b)
       w <- as.vector(model.weights(data.b))
@@ -135,7 +137,7 @@ cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
   if (bootstrap == "none") {
     # residuals
     # epsilon.tilde.i.m: residuals of mediation function
-    XZM <- seqg$first_mod$XZM
+    XZM <- seqg$XZM
     XZ <- XZM[, !(colnames(XZM) %in% mnames), drop = FALSE]
     w <- as.vector(model.weights(seqg$model))
     offset <- as.vector(model.offset(seqg$model))
@@ -165,7 +167,7 @@ cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
       z$coefficients <- out$coefficients
       z$residuals <- out$residuals
       z$qr <- out$qr
-      vcv <- vcov(z)
+      vcv <- vcov.seqg(z)
 
       # save final estimate
       acde.means[r] <- out$coefficients[var]

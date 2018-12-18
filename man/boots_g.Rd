@@ -12,7 +12,7 @@ boots_g(seqg, boots = 1000)
 \item{boots}{The number of bootstrap replicates. Defaults to 1000.}
 }
 \value{
-An object of type \env{seqgboots} which is a matrix with \env{boots} 
+An object of type \env{seqgboots} which is a matrix with \env{boots}
 rows and columns for each coefficient in the \env{seqg} model.
 }
 \description{
@@ -22,12 +22,12 @@ Coefficient Estimates Across Bootstrapped Samples
 
 data(ploughs)
 form <- women_politics ~ plow +
- agricultural_suitability + tropical_climate + large_animals + rugged | 
+ agricultural_suitability + tropical_climate + large_animals + rugged |
  years_civil_conflict + years_interstate_conflict  + oil_pc +
- european_descent + communist_dummy + polity2_2000 | 
+ european_descent + communist_dummy + polity2_2000 |
  centered_ln_inc + centered_ln_incsq
 s1 <- sequential_g(form, ploughs)
- 
+
 out.boots <- boots_g(s1)
 
 summary(out.boots)
