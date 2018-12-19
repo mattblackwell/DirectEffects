@@ -1,6 +1,8 @@
 ---
 title: "Estimating controlled direct effects with sequential g-estimation"
 date: "`r Sys.Date()`"
+link-citations: yes
+bibliography: DirectEffects.bib
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Estimating controlled direct effects}
@@ -19,41 +21,20 @@ library(DirectEffects) # devtools::install_github("mattblackwell/DirectEffects",
 
 
 
-The `DirectEffects` package provides the tools for researchers to estimate the controlled direct effect of some treatment, net the effect of some mediator (See [Acharya, Blackwell, and Sen (2016)](https://www.cambridge.org/core/journals/american-political-science-review/article/explaining-causal-findings-without-bias-detecting-and-assessing-direct-effects/D11BEB8666E913A0DCD7D0B9872F5D11)). This goal is often tricky in practice because there are covariates that causally affect the mediator and are causally affected by the treatment. Including such variables in a regression model, for instance, could lead to post-treatment bias when estimating the direct effect of treatment. A large class of models and estimation approaches have been developed to avoid this problem. Currently, the package only implements one approach to estimating the CDE, which is called sequential g-estimation. The idea behind this approach is that if we can estimate the effect of the mediator using a standard linear model, then to estimate the direct effect of treatment without post-treatment bias if we suitably "remove" that effect from the dependent variable. 
+This vignette demonstrates how to estimate the controlled direct effect of some treatment, net the effect of some mediator using the sequential g-estimation approach in `DirectEffects`, as described by  @AchBlaSen16. With standard regression and matching approaches, estimating the controlled direct effect is difficult because it often requires adjusting for covariates that causally affect the mediator and are causally affected by the treatment. Including such variables in a regression model can lead to post-treatment bias when estimating the direct effect of treatment. A large class of models and estimation approaches have been developed to avoid this problem, but here we focus on one called sequential g-estimation. This approach uses a standard linear model to  estimate the effect of the mediator, and then removes that effect from effect from the dependent variable to estimate the direct effect of treatment without post-treatment bias. 
 
+## Quantity of interest 
 
-## Installation
-
-The current version of the package is currently on git.
-```{r, echo = TRUE, eval = FALSE}
-install_github("mattblackwell/DirectEffects", ref = "master")
-library(DirectEffects)
-```
-
-## Quantity of Interest 
-
-The main quantity of interest in the DirectEffect package is the average controlled direct effect (ACDE). This can be illustrated from the following causal structure (Figure 3 in Acharya, Blackwell, and Sen).
+Here we briefly introduce some of the statistical theory behind sequential g-estimation. The main quantity of interest of sequential g-estimation the average controlled direct effect or ACDE. This can be illustrated from the following causal structure [@AchBlaSen16, Figure 3]:
 
 ```{r, echo = FALSE, out.width = "600px", fig.align='center'}
 knitr::include_graphics("figures/ABS_fig3.png")
 ```
 
 
-The controlled direct effect defined for a given treatment ($A_i = a$ vs. $A_i = a^\prime$) and a given value of the mediator ($M_i = m$) is 
-$$CDE_{i}(a, a^\prime, m) = Y_i(a, m) - Y_i(a^\prime, m)$$
-and is the total of tehe dashed lines in the figure above. Thus, we hold the mediator constant across the two treatments. 
-
-Contrast this with the natural direct effect, the target of inference in mediation analysis, which is "natural" in the sense that we let the mediator take its potential outcome when treatment is equal to $a$:
-$$NDE_{i}(a, a^\prime) = Y_i(a, M_i(a)) - Y_i(a^\prime, M_i(a)).$$
-
-The NDE's counterpart, the natural indirect effect, is the effect that "flows through" the mediator, holding treatment constant:
-$$NIE_{i}(a, a^\prime) = Y_i(a, M_i(a)) - Y_i(a, M_i(a^\prime)).$$
-This quantity contains one potential outcome that is impossible to observe since we can never observe $A_i = a$ and the mediator under $A_i = a^\prime$ for a given individual $i$.
-
-The CDE is useful for discriminating between  causal mechanisms, because the average total effect of treatmeant, $\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]$, can be decomposed as the sum of three quantities: (1) the average CDE across observations (ACDE), (2) the average natural indirect effect, and (3) the reference interaction a measure of how much the direct effect of $A$ depends on a particular $M_i = m$:
-$$\tau(a, a^\prime) = ACDE (a, a^\prime, m = 0) +  ANIE (a, a^\prime) + E[M_i(a)[ CDE_i(a, a^\prime, m = 1) -  CDE_i(a, a^\prime, m = 0)]].$$
-
-Thus, if the ACDE is non-zero, it is evidence that the effect of $A_i$ is not entirely explained by $M_i$. We illustrate this with an empirical example.
+The average controlled direct effect defined for a given treatment ($A_i = a$ vs. $A_i = a^\prime$) and a given value of the mediator ($M_i = m$) is 
+$$ACDE(a, a^\prime, m) = E[Y_i(a, m) - Y_i(a^\prime, m)]$$
+and is the total of the dashed lines in the figure above. Thus, we hold the mediator constant when comparing the outcome under each treatment. The ACDE is useful for discriminating between causal mechanisms, because the average total effect of treatmeant, $\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]$, can be decomposed as the sum of three quantities: (1) the ACDE, (2) the average natural indirect effect, and (3) a reference interaction that measures of how much the direct effect of $A_i$ depends on a particular $M_i = m$. Thus, if the ACDE is non-zero, it is evidence that the effect of $A_i$ is not entirely explained by $M_i$. We illustrate this with an empirical example. For more information on this, see @AchBlaSen16. 
 
 
 ## Estimation by sequential g-estimation
@@ -61,12 +42,12 @@ Thus, if the ACDE is non-zero, it is evidence that the effect of $A_i$ is not en
 One way to estimate the ACDE with linear models is by sequential g-estimation, a type of structural nested mean model. The key logic of sequential g-setimation is that, under the sequential unconfoundedness assumption, the ACDE can be identified as follows:
 $$E[Y_i(a, 0) - Y_i(0,0)|X_i = x] = E[Y_i - \gamma(a, M_i, x) | A_i = a, x] - E[Y_i - \gamma(0, M_i, x) | A_i = 0, x]$$
 
-The function $\gamma$ above is called the "demediation function" (or "blip-down function") and is computed as follows.
+The function $\gamma$ above is called the "demediation function" (or "blip-down function") and is defined as follows:
 $$\gamma(a, m, x) = E[Y_i(a, m) - Y_i(a, 0) | X_i = x]$$
 
-This function computes the effect of switching from some level of the mediator to 0, and thus is an estimate of the causal effect of the mediator for a fixed value of the treatment $a$ and within levels of the covariates. Subtracting its estimates $\gamma(A_i, M_i, X_i)$ from the outcome $Y_i$ will effectively remove the variation due to the mediator from the outcome. 
+This function is the effect of switching from some level of the mediator to 0, and thus is an estimate of the causal effect of the mediator for a fixed value of the treatment $a$ and within levels of the covariates. Subtracting its estimates $\gamma(A_i, M_i, X_i)$ from the outcome $Y_i$ will effectively remove the variation due to the mediator from the outcome, or what @AchBlaSen16 call "demediation." 
 
-The identification of the ACDE hold under the sequential unconfoundedness condition, using the definitions by Acharya, Blackwell, and Sen (2016).
+The identification of the ACDE hold under the sequential unconfoundedness condition, using the definitions by @AchBlaSen16.
 
 **Assumption 1 (Sequential Unconfoundedness)** 
 
@@ -82,39 +63,35 @@ While the ACDE is estimated nonparametrically with just this assumption, we need
 Without this assumption, we would have to model the multivariate distribution of the intermediate confounders in order to estimate the ACDE. 
 
 
-### Estimating the de-mediation function
+### Estimating the demediation function
 
-Under the assumption of sequential unconcoundedness, the de-mediation function can be estimated fro a regression of the outcome on the variables in the de-mediation function plus the intermediate confounders, treatment, and baseline confounders. If this regression model is correctly specified, the coefficients on the variables in the de-mediation function are unbiased for the parameters of the de-mediation function. For example, when there are no interactions between the mediator and the treatment, nor between the mediator and the pretreatment confounders, the de-mediation function is straightforward to estimate. In this case, the de-mediation function is  $\gamma(a, m, x) = \alpha m$ and the OLS coefficient on the mediator is an the estimate of $\alpha$. 
+Under the assumption of sequential unconcoundedness, the demediation function can be estimated by a regression of the outcome on the variables in the demediation function ($M_i$) plus the intermediate confounders ($Z_i$), treatment ($A_i$), and baseline confounders ($X_i$). If this regression model is correctly specified, the coefficients on the variables in the demediation function are unbiased for the parameters of the demediation function. For example, when there are no interactions between the mediator and the treatment, nor between the mediator and the pretreatment confounders, the demediation function is straightforward to estimate. In this case, the demediation function is  $\gamma(a, m, x) = \alpha \times m$ and the OLS coefficient on the mediator is an the estimate of $\alpha$. 
 
-### Using the de-mediation function to estimate ACDE
-The second stage of sequential g-estimation uses the de-mediated outcome
+### Using the demediation function to estimate ACDE
+
+The second stage of sequential g-estimation uses the demediated outcome
 $$\tilde{Y}_i = Y_i - \widehat{\gamma}(A_i, M_i, X_i; \widehat{\alpha}).$$
-If there are no interactions or nonlinearities in the de-mediation function, then this becomes $\tilde{Y}_i Y_i - \widehat{\alpha}M_i$. With this de-mediated outcome in hand, we can estimate the ACDE by regressing this outcome on the treatment and pre-treatment covariates:
+If there are no interactions or nonlinearities in the demediation function, then this becomes $\tilde{Y}_i = Y_i - \widehat{\alpha}M_i$. With this demediated outcome in hand, we can estimate the ACDE by regressing this outcome on the treatment and pre-treatment covariates:
 $$E[\tilde{Y}_i | A_i, X_i] = \beta_0 + \beta_1A_i + X_i^T\beta_2.$$
-Under the above assumptions and assuming this regression is correctly specified, the $\widehat{\beta_1}$  is an unbiased estimate of the ACDE. 
-$$\widehat{\mathit{ACDE}} = \widehat{\beta_1}$$
+Under the above assumptions and assuming this regression is correctly specified, the $\widehat{\beta}_1$  is an unbiased estimate of the ACDE. The `sequential_g` function that we demonstrate below will complete both the estimation of the demediation function and the estimation of the ACDE. For more technical details on sequential g-estimation, see @AchBlaSen16. 
 
 
 
 ## Illustrative example
 
-We now work through one example in detail. The data comes from [Alesina, Giuliano, and Nunn, 2013](http://scholar.harvard.edu/files/nunn/files/alesina_giuliano_nunn_qje_2013.pdf?m=1366834674). The dataset comes with the package:
+We now work through one example of using `sequential_g` to estimate the ACDE. The data comes from @AleGiuNun13. The dataset comes with the package:
 ```{r}
 data(ploughs)
 ```
 
-The paper's main argument is that the advent of the capital-intensive agricultural practice of the plow favored men over women participating in agriculture, which have affected gender inequality in modern societies. These authors find that strong effects of plow-based agriculture on female labor-force participation, but not on share of political positions held by women. The authors speculate that this might be due to the (positive) effects of the plow on modern-day income levels, which could offset the direct effects of the plow. The authors control for income and show that a significant effect of the plow appears. We evaluate this approach and try to estimate the ACDE more formally. Thus, in this case, we have the following variables:
+The paper's main argument is that the advent of the capital-intensive agricultural practice of the plow favored men over women participating in agriculture, which have affected gender inequality in modern societies. These authors find that strong effects of plow-based agriculture on female labor-force participation, but not on share of political positions held by women. The authors speculate that this might be due to the (positive) effects of the plow on modern-day income levels, which could offset the direct effects of the plow. The authors control for income and show that a significant effect of the plow appears. We evaluate this approach and try to estimate the ACDE more formally. Thus, in this case, we have the following variables, where $i$ indexes countries:
+
 
 * $Y_i$ is the share of political positions held by women in 2000 (`women_politics`)
 * $A_i$ is the relative proportion of ethnic groups that traditionally used the plow within a country (`plow`)
 * $M_i$ is the log GDP per capita in 2000, mean-centered (`centered_ln_inc`)
 * $Z_i$ are the post-treatment, pre-mediator intermediate confounders (`years_civil_conflict`, `years_interstate_conflict`, `oil_pc`, `european_descent`, `communist_dummy`, `polity2_2000`, `serv_va_gdp2000`)
 * $X_i$ is the pre-treatment characteristics of the country, which are mostly geographic. (`tropical_climate`, `agricultural_suitability`, `large_animals`, `political_hierarchies`, `economic_complexity`, and `rugged`)
-
-where $i$ indexes countries. 
-
-A bivariate relationship between the treatment and the dependent variable show no clear relationship. We seek to estimate the direct effect of a nation adopting a plow, controlling for pre-treatment confounders and accounting for the mediator of current national income. 
-
 
 As a baseline, we first regress $Y_i$ on $A_i$ controlling for the pre-treatment variables $X_i$.
 ```{r}
@@ -129,29 +106,27 @@ summary(ate.mod)
 ```
 
 
-## Implementation
+### Implementation
 
-In this example, we would like to estimate the controlled direct effect of plows fixing the value of current income. To do so, we must choose a value at which to fix this mediator. The standard sequential g-estimation approach will fix the value to 0, which isn't substantively interesting in this case. To avoid this problem, we use the mean-centered version of our mediator, `centered_ln_inc`, so that when we demediate with $m = 0$, it will be equivalent to demediation with $m$ set to the mean of $M_i$. Furthermore, we also use a squared term of this centered mediator, `centered_ln_incsq` ,so that we can include it in the demediation function.
+In this example, we would like to estimate the controlled direct effect of plows fixing the value of the mediator, current national income. To do so, we must choose a value at which to fix this mediator. The standard sequential g-estimation approach will fix the value to 0, which is often not a substantively interesting value---it certainly is not for income or logged income. To avoid this problem, we use the mean-centered version of our logged income, `centered_ln_inc`, so that when we demediate with $m = 0$, it will be equivalent to demediation with $m$ set to the mean of logged national income. Furthermore, we also use a squared term of this centered mediator, `centered_ln_incsq`, so that we can include it in the demediation function to account for nonlinear effects of logged income. 
 
-Next, we specify the main formula that contains a left-hand side that specifies the dependent variable, and a right-hand side that  distinguishes between the baseline variables, the intermediate variables, and the variables in the demediation function. Each of these  sets of variables on the left-hand side is separated by the vertical bar `|`.  Thus, the formula will have the form `yvar ~ treat + xvars | zvars | mvars`. . For example, here we specify that the de-mediation variables are $M_i$ and $M_i^2$:
+Next, we specify the main formula that contains a left-hand side that specifies the dependent variable, and a right-hand side that distinguishes between the baseline variables, the intermediate variables, and the variables in the demediation function. Each of these  sets of variables on the left-hand side is separated by the vertical bar `|`.  Thus, the formula will have the form `yvar ~ treat + xvars | zvars | mvars`. . For example, here we specify that the demediation variables are $M_i$ and $M_i^2$:
 ```{r}
-form_main <- women_politics ~ plow +
-  agricultural_suitability + tropical_climate + large_animals +
-  political_hierarchies + economic_complexity +
-  rugged | years_civil_conflict +
-  years_interstate_conflict  + oil_pc +
-  european_descent + communist_dummy + polity2_2000 +
-  serv_va_gdp2000 | centered_ln_inc + centered_ln_incsq
+form_main <- women_politics ~ plow + agricultural_suitability + tropical_climate +
+  large_animals + political_hierarchies + economic_complexity + rugged |
+  years_civil_conflict + years_interstate_conflict  + oil_pc + european_descent +
+  communist_dummy + polity2_2000 + serv_va_gdp2000 |
+  centered_ln_inc + centered_ln_incsq
 ```
 
 
-`sequential_g()`, implements sequential g-estimation in the way outlined in the previous section. Specifically, it runs the  first stage model, constructs the de-mediator function, and passes it to the second-stage model. At its simplest, it takes in the formula and a data frame:
+`sequential_g()`, implements sequential g-estimation in the way outlined in the previous section. Specifically, it runs the  first stage model, constructs the demediator function, and passes it to the second-stage model. At its simplest, it takes in the formula and a data frame:
 
 ```{r, echo = TRUE, eval = TRUE}
 direct <- sequential_g(formula = form_main, data = ploughs)
 ```
 
-## Output
+### Output
 
 As usual, we can use the `summary` function to the output of the `sequential_g` function:
 ```{r, echo = TRUE, eval = TRUE}
@@ -159,7 +134,8 @@ summary(direct)
 ```
 
 The coefficient on the treatment variable (here, `plow`), is the estimate of the ACDE. The results show a negative ACDE of plows---in other words, the effect of the plough is negative for fixed income levels. This controlled direct effect is larger in magnitude than the estimated the total effect:
-```{r, echo = F, fig.width= 7, fig.height=4}
+
+```{r, echo = FALSE, fig.width= 7, fig.height=4}
 df.coef <- rbind(summary(ate.mod)$coef["plow", ],
                summary(direct)$coef["plow", ]) %>% 
   as.data.frame()  %>%
@@ -195,3 +171,5 @@ The `vcov()` function returns the variance covariance-matrix that accounts for t
 ```{r}
 vcov(direct)[1:3, 1:3]
 ```
+
+## References 
