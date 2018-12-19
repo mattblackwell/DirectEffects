@@ -2,7 +2,7 @@ Package: DirectEffects
 Version: 0.1
 Date: 2018-02-25
 Title: Estimating Controlled Direct Effects for Explaining Causal Findings
-Author: Avidit Acharya [aut], Matthew Blackwell [aut, cre], Maya Sen [aut], Shiro Kuriwaki [ctb]
+Author: Avidit Acharya [aut], Matthew Blackwell [aut, cre], Maya Sen [aut], Shiro Kuriwaki [ctb], Jacob Brown [ctb]
 Maintainer: Matthew Blackwell <mblackwell@gov.harvard.edu>
 Imports:
     stats,

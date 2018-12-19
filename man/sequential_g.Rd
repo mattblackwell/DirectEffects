@@ -5,10 +5,9 @@
 \title{Perform linear sequential g-estimation to estimate the controlled
 direct effect of a treatment net the effect of a mediator.}
 \usage{
-sequential_g(formula, data, subset, weights, na.action, model = TRUE,
-  y = TRUE, x = FALSE, offset, contrasts = NULL,
-  bootstrap = c("none", "standard", "block"), boots_n = 1000,
-  verbose = TRUE, ...)
+sequential_g(formula, data, subset, weights, na.action, offset,
+  contrasts = NULL, bootstrap = c("none", "standard", "block"),
+  boots_n = 1000, verbose = TRUE, ...)
 }
 \arguments{
 \item{formula}{formula specification of the first-stage,
@@ -39,21 +38,6 @@ will always be dropped, in addition to any user-specified further subsets.}
     \code{\link{na.fail}} if that is unset.  The \sQuote{factory-fresh}
     default is \code{\link{na.omit}}.  Another possible value is
     \code{NULL}, no action.  Value \code{\link{na.exclude}} can be useful.}
-
-\item{model}{logicals.  If \code{TRUE} the corresponding
-    components of the fit (the model frame, the model matrix, the
-    response, the QR decomposition) are returned.
-  }
-
-\item{y}{logicals.  If \code{TRUE} the corresponding
-    components of the fit (the model frame, the model matrix, the
-    response, the QR decomposition) are returned.
-  }
-
-\item{x}{logicals.  If \code{TRUE} the corresponding
-    components of the fit (the model frame, the model matrix, the
-    response, the QR decomposition) are returned.
-  }
 
 \item{offset}{this can be used to specify an \emph{a priori} known
     component to be included in the linear predictor during fitting.

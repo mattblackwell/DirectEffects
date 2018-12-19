@@ -38,17 +38,13 @@ errors are computed by a simple bootstrap.
 \examples{
 data(civilwar)
 
-# First stage
-fit_first <- lm(onset ~ ethfrac + warl + gdpenl + lpop +
-                  ncontig + Oil + nwstate + polity2l + relfrac + instab,
-                data = civilwar)
 
-
-# main formula: Y ~ A + X | M
-form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab
+# main formula: Y ~ A + X | Z | M
+form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | warl +
+  gdpenl + lpop + polity2l + relfrac | instab
 
 # estimate CDE
-direct <- sequential_g(form_main, fit_first, data = civilwar)
+direct <- sequential_g(form_main, data = civilwar)
 
 # sensitivity
 out_sens <- cdesens(direct, var = "ethfrac")

@@ -26,17 +26,13 @@
 #' @examples
 #' data(civilwar)
 #'
-#' # First stage
-#' fit_first <- lm(onset ~ ethfrac + warl + gdpenl + lpop +
-#'                   ncontig + Oil + nwstate + polity2l + relfrac + instab,
-#'                 data = civilwar)
 #'
-#'
-#' # main formula: Y ~ A + X | M
-#' form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab
+#' # main formula: Y ~ A + X | Z | M
+#' form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | warl +
+#'   gdpenl + lpop + polity2l + relfrac | instab
 #'
 #' # estimate CDE
-#' direct <- sequential_g(form_main, fit_first, data = civilwar)
+#' direct <- sequential_g(form_main, data = civilwar)
 #'
 #' # sensitivity
 #' out_sens <- cdesens(direct, var = "ethfrac")
@@ -61,8 +57,8 @@ cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
   rho <- sort(rho) # reorder if necessary
 
   # identify treatment and mediator
-  xnames <- attr(seqg$terms$mt_x, "term.labels")
-  mnames <- attr(seqg$terms$mt_m, "term.labels")
+  xnames <- attr(seqg$terms$X, "term.labels")
+  mnames <- attr(seqg$terms$M, "term.labels")
 
   if (length(mnames) > 1) stop("currently only handles one mediator variables")
   if (!(var %in% xnames)) stop("'var' not in the set of baseline variables")
@@ -89,7 +85,7 @@ cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
 
       # relevant data matrices
       X <- seqg$X[b.index, ]
-      XZM <- seqg$XZM[b.index, ]
+      XZM <- seqg$first_mod$XZM[b.index, ]
       M <- seqg$M[b.index, ]
       XZ <- XZM[, !(colnames(XZM) %in% mnames), drop = FALSE]
       Y <- model.response(data.b)
@@ -137,7 +133,7 @@ cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
   if (bootstrap == "none") {
     # residuals
     # epsilon.tilde.i.m: residuals of mediation function
-    XZM <- seqg$XZM
+    XZM <- seqg$first_mod$XZM
     XZ <- XZM[, !(colnames(XZM) %in% mnames), drop = FALSE]
     w <- as.vector(model.weights(seqg$model))
     offset <- as.vector(model.offset(seqg$model))

@@ -19,7 +19,7 @@ rows and columns for each coefficient in the \env{seqg} model.
 Coefficient Estimates Across Bootstrapped Samples
 }
 \examples{
-
+\donttest{
 data(ploughs)
 form <- women_politics ~ plow +
  agricultural_suitability + tropical_climate + large_animals + rugged |
@@ -31,5 +31,5 @@ s1 <- sequential_g(form, ploughs)
 out.boots <- boots_g(s1)
 
 summary(out.boots)
-
+}
 }

@@ -9,7 +9,7 @@
 #' rows and columns for each coefficient in the \env{seqg} model.
 #'
 #' @examples
-#'
+#' \donttest{
 #' data(ploughs)
 #' form <- women_politics ~ plow +
 #'  agricultural_suitability + tropical_climate + large_animals + rugged |
@@ -21,7 +21,7 @@
 #' out.boots <- boots_g(s1)
 #'
 #' summary(out.boots)
-#'
+#' }
 #' @export
 #' @importFrom stats quantile
 #'
