@@ -7,17 +7,11 @@
 #'   formula should have three components separated by the \code{|},
 #'   with the first component speficying the first-stage model with
 #'   treatment and any baseline covariates, the second component
-#'   specfying the intermediate covariates for the second-stage, and
+#'   specfying the intermediate covariates for the first-stage, and
 #'   the third component specifying the blip-down model. See Details
 #'   below for more information.
-#' @param data A dataframe to apply \code{formula} on. Must be identical to the
-#' \code{data} used for \code{first_mod}.
+#' @param data A dataframe to apply \code{formula} on.
 #' @param subset A vector of logicals indicating which rows of \code{data} to keep.
-#' The rows of \code{data} that are not in the model matrix of \code{first_mod}
-#' will always be dropped, in addition to any user-specified further subsets.
-#' @param bootstrap character of c("none", "standard", "block"), indicating whether to
-#' include bootstrap standard errors or block bootstrap. Default is "none".
-#' @param boots_n integer indicating the number of bootstrap iterations.
 #' @param verbose logical indicating whether to suppress progress bar. Default is FALSE.
 #' @details The \code{sequential_g} function implements the linear
 #' sequential g-estimator developed by Vansteelandt (2009) with the
@@ -57,17 +51,23 @@
 #'   \item weights: (only for weighted fits) the specified weights.
 #'   \item df.residual: the residual degrees of freedom for the direct
 #' effects model.
-#'   \item terms: the \code{terms} object used.
+#'   \item aliased: logical vector indidating if any of the terms were
+#'   dropped or aliased due to perfect collinearity.
+#'   \item terms: the list of \code{terms} object used. One for the
+#'   baseline covariates and treatment (\code{X}) and one for the
+#'   variables in the blip-down model (\code{M}).
 #'   \item formula: the \code{formula} object used, possibly modified
 #' to drop a constant in the blip-down model.
 #'   \item call: the matched call.
+#'   \item na.action: (where relevant) information returned by
+#'   \code{model.frame} of the special handling of \code{NA}s.
+#'   \item xlevels: the levels of the factor variables.
 #'   \item contrasts:  the contrasts used for the factor variables.
-#'   \item levels: the levels of the factor variables.
-#'   \item first_mod: the first_mod object used.
-#'   \item vcov: covariance matrix of the direct-effects coefficients.
-#'   \item model: full model frame (if \code{model = TRUE}).
-#'   \item y: the blipped-down response vector (if \code{y = TRUE}).
-#'   \item x: the direct effects model matrix (if \code{x = TRUE}).
+#'   \item first_mod: the output from the first-stage regression model.
+#'   \item model: full model frame, including all variables.
+#'   \item Ytilde: the blipped-down response vector.
+#'   \item X: the model matrix for the second stage.
+#'   \item M: the model matrix for demediation/blip-down function.
 #' }
 #' In addition, non-null fits will have components \code{assign},
 #' \code{effects}, and \code{qr} from the output of \code{lm.fit} or
@@ -88,7 +88,7 @@
 #'   rugged | years_civil_conflict +
 #'   years_interstate_conflict  + oil_pc +
 #'   european_descent + communist_dummy + polity2_2000 +
-#'   serv_va_gdp2000 | centered_ln_inc +centered_ln_incsq
+#'   serv_va_gdp2000 | centered_ln_inc + centered_ln_incsq
 #'
 #' direct <- sequential_g(formula = form_main,
 #'                        data = ploughs)
@@ -99,15 +99,11 @@
 #'   model.response model.weights pt residuals terms update
 #'
 sequential_g <- function(formula, data, subset, weights, na.action,
-                         offset, contrasts = NULL,
-                         bootstrap = c("none", "standard", "block"),
-                         boots_n = 1000, verbose = TRUE, ...) {
+                         offset, contrasts = NULL, verbose = TRUE, ...) {
 
   # store model calls
   cl <- match.call(expand.dots = TRUE)
   mf <- match.call(expand.dots = FALSE)
-  bootstrap <- match.arg(bootstrap)
-
 
   m <- match(
     x = c("formula", "data", "subset", "na.action", "weights", "offset"),
@@ -176,7 +172,7 @@ sequential_g <- function(formula, data, subset, weights, na.action,
   out$model <- mf
   out$X <- X
   out$M <- M
-  out$Y <- Y
+  out$Ytilde <- Y.blip
   out.first$XZM <- XZM
 
   out$first_mod <- out.first

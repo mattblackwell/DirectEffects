@@ -11,8 +11,8 @@
 #'   which the estimated ACDE is being evaluated.
 #' @param rho A numerical vector of correlations between errors to test for. The
 #'  original model assumes \env{rho = 0}
-#' @param bootstrap character of c("none", "standard", "block"), indicating whether to
-#' include bootstrap standard errors or block bootstrap. Default is "none".
+#' @param bootstrap character of c("none", "standard"), indicating whether to
+#' include bootstrap standard errors. Default is "none".
 #' @param boots_n Number of bootstrap replicates, defaults to 100.
 #' @param verbose Whether to show progress and messages, defaults to
 #'   \env{FALSE}
@@ -42,7 +42,7 @@
 #'
 
 cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
-                    bootstrap = c("none", "standard", "block"),
+                    bootstrap = c("none", "standard"),
                     boots_n = 1000, verbose = FALSE, ...) {
   if (!inherits(seqg, what = "seqg")) {
     stop("object should be of class seqg, created from sequential_g()")
@@ -135,11 +135,12 @@ cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
     # epsilon.tilde.i.m: residuals of mediation function
     XZM <- seqg$first_mod$XZM
     XZ <- XZM[, !(colnames(XZM) %in% mnames), drop = FALSE]
+    Y <- model.response(seqg$model)
     w <- as.vector(model.weights(seqg$model))
     offset <- as.vector(model.offset(seqg$model))
 
     res.m <- residuals(lm.fit(x = seqg$X, y = seqg$M))
-    res.y <- residuals(lm.fit(x = XZ, y = seqg$Y))
+    res.y <- residuals(lm.fit(x = XZ, y = Y))
     rho.tilde <- cor(res.y, res.m)
 
     # for each value of the vector rho, change mediator value
@@ -152,7 +153,7 @@ cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
     for (r in 1:length(rho)) {
 
       # create ytilde by blipping down with rho
-      Ytilde <- seqg$Y - m.fixed[r] * seqg$M
+      Ytilde <- Y - m.fixed[r] * seqg$M
       if (is.null(w)) {
         out <- lm.fit(seqg$X, Ytilde, offset = offset, ...)
       } else {
