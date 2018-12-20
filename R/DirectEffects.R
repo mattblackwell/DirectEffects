@@ -5,9 +5,9 @@
 #' @param formula formula specification of the first-stage,
 #'   second-stage, and blip-down models. The right-hand side of the
 #'   formula should have three components separated by the \code{|},
-#'   with the first component speficying the first-stage model with
+#'   with the first component specifying the first-stage model with
 #'   treatment and any baseline covariates, the second component
-#'   specfying the intermediate covariates for the first-stage, and
+#'   specifying the intermediate covariates for the first-stage, and
 #'   the third component specifying the blip-down model. See Details
 #'   below for more information.
 #' @param data A dataframe to apply \code{formula} on.
@@ -51,7 +51,7 @@
 #'   \item weights: (only for weighted fits) the specified weights.
 #'   \item df.residual: the residual degrees of freedom for the direct
 #' effects model.
-#'   \item aliased: logical vector indidating if any of the terms were
+#'   \item aliased: logical vector indicating if any of the terms were
 #'   dropped or aliased due to perfect collinearity.
 #'   \item terms: the list of \code{terms} object used. One for the
 #'   baseline covariates and treatment (\code{X}) and one for the
@@ -216,7 +216,7 @@ seq.g.vcov <- function(first_mod, direct_mod, X1, X2, med.vars) {
   ghat <- t(efun2) + Fhat %*% R1 %*% t(efun1)
   meat <- crossprod(t(ghat))
 
-  ### "bread" of the consisitent variance estimator
+  ### "bread" of the consistent variance estimator
   p <- 1L:direct_mod$rank
   bread <- chol2inv(direct_mod$qr$qr[p, p, drop = FALSE])
 

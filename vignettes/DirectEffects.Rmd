@@ -34,12 +34,12 @@ knitr::include_graphics("figures/ABS_fig3.png")
 
 The average controlled direct effect defined for a given treatment ($A_i = a$ vs. $A_i = a^\prime$) and a given value of the mediator ($M_i = m$) is 
 $$ACDE(a, a^\prime, m) = E[Y_i(a, m) - Y_i(a^\prime, m)]$$
-and is the total of the dashed lines in the figure above. Thus, we hold the mediator constant when comparing the outcome under each treatment. The ACDE is useful for discriminating between causal mechanisms, because the average total effect of treatmeant, $\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]$, can be decomposed as the sum of three quantities: (1) the ACDE, (2) the average natural indirect effect, and (3) a reference interaction that measures of how much the direct effect of $A_i$ depends on a particular $M_i = m$. Thus, if the ACDE is non-zero, it is evidence that the effect of $A_i$ is not entirely explained by $M_i$. We illustrate this with an empirical example. For more information on this, see @AchBlaSen16. 
+and is the total of the dashed lines in the figure above. Thus, we hold the mediator constant when comparing the outcome under each treatment. The ACDE is useful for discriminating between causal mechanisms, because the average total effect of treatment, $\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]$, can be decomposed as the sum of three quantities: (1) the ACDE, (2) the average natural indirect effect, and (3) a reference interaction that measures of how much the direct effect of $A_i$ depends on a particular $M_i = m$. Thus, if the ACDE is non-zero, it is evidence that the effect of $A_i$ is not entirely explained by $M_i$. We illustrate this with an empirical example. For more information on this, see @AchBlaSen16. 
 
 
 ## Estimation by sequential g-estimation
 
-One way to estimate the ACDE with linear models is by sequential g-estimation, a type of structural nested mean model. The key logic of sequential g-setimation is that, under the sequential unconfoundedness assumption, the ACDE can be identified as follows:
+One way to estimate the ACDE with linear models is by sequential g-estimation, a type of structural nested mean model. The key logic of sequential g-estimation is that, under the sequential unconfoundedness assumption, the ACDE can be identified as follows:
 $$E[Y_i(a, 0) - Y_i(0,0)|X_i = x] = E[Y_i - \gamma(a, M_i, x) | A_i = a, x] - E[Y_i - \gamma(0, M_i, x) | A_i = 0, x]$$
 
 The function $\gamma$ above is called the "demediation function" (or "blip-down function") and is defined as follows:

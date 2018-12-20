@@ -12,9 +12,9 @@ sequential_g(formula, data, subset, weights, na.action, offset,
 \item{formula}{formula specification of the first-stage,
 second-stage, and blip-down models. The right-hand side of the
 formula should have three components separated by the \code{|},
-with the first component speficying the first-stage model with
+with the first component specifying the first-stage model with
 treatment and any baseline covariates, the second component
-specfying the intermediate covariates for the first-stage, and
+specifying the intermediate covariates for the first-stage, and
 the third component specifying the blip-down model. See Details
 below for more information.}
 
@@ -37,8 +37,8 @@ below for more information.}
 
 \item{offset}{this can be used to specify an \emph{a priori} known
     component to be included in the linear predictor during fitting.
-    This should be \code{NULL} or a numeric vector or matrix of extents
-    matching those of the response.  One or more \code{\link{offset}} terms can be
+    This should be \code{NULL} or a numeric vector of length equal to
+    the number of cases.  One or more \code{\link{offset}} terms can be
     included in the formula instead or as well, and if more than one are
     specified their sum is used.  See \code{\link{model.offset}}.}
 
@@ -66,7 +66,7 @@ model.
   \item weights: (only for weighted fits) the specified weights.
   \item df.residual: the residual degrees of freedom for the direct
 effects model.
-  \item aliased: logical vector indidating if any of the terms were
+  \item aliased: logical vector indicating if any of the terms were
   dropped or aliased due to perfect collinearity.
   \item terms: the list of \code{terms} object used. One for the
   baseline covariates and treatment (\code{X}) and one for the
