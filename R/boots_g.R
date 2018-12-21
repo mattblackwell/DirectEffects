@@ -1,12 +1,14 @@
-
-#' Coefficient Estimates Across Bootstrapped Samples
+#' Coefficient Estimates across Bootstrapped Samples
+#' 
+#' Performs a simple bootstrap of a fitted DirectEffects model by re-estimating
+#' the model with bootstrap samples. 
 #'
-#'
-#' @param seqg A fitted sequential_g estimate, an output of sequential_g.
+#' @param seqg A fitted sequential_g estimate, computed by \code{\link{sequential_g}}.
 #' @param boots The number of bootstrap replicates. Defaults to 1000.
 #'
 #' @return An object of type \env{seqgboots} which is a matrix with \env{boots}
-#' rows and columns for each coefficient in the \env{seqg} model.
+#' rows and columns for each coefficient in the \env{seqg} model. Use \env{summary} 
+#' to provide summary statistics, such as mean and quantiles.
 #'
 #' @examples
 #' \donttest{

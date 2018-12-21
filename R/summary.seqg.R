@@ -1,4 +1,10 @@
+#' Computes standard errors and p-values of DirectEffects estimates
+#' 
+#' 
+#' @param object An object of class \env{seqg}, computed by \code{\link{sequential_g}}. 
+#' 
 #' @export
+#' 
 summary.seqg <- function(object, ...) {
   z1 <- object$first_mod
   z2 <- object
@@ -50,8 +56,13 @@ summary.seqg <- function(object, ...) {
 }
 
 
+#' Summary of DirectEffect Bootstrap Estimates
+#' 
+#' @param object An output of class \code{seqg} estimated by \code{\link{boots_g}}.
+#' @param level level of intervals to estimate. Defaults to 0.95
+#' 
 #' @export
-#' @import glue
+#' @importFrom glue glue
 summary.seqgboots <- function(object, level = 0.95, ...) {
   
   # lower and upper percentile

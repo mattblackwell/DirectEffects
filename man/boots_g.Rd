@@ -2,21 +2,23 @@
 % Please edit documentation in R/boots_g.R
 \name{boots_g}
 \alias{boots_g}
-\title{Coefficient Estimates Across Bootstrapped Samples}
+\title{Coefficient Estimates across Bootstrapped Samples}
 \usage{
 boots_g(seqg, boots = 1000)
 }
 \arguments{
-\item{seqg}{A fitted sequential_g estimate, an output of sequential_g.}
+\item{seqg}{A fitted sequential_g estimate, computed by \code{\link{sequential_g}}.}
 
 \item{boots}{The number of bootstrap replicates. Defaults to 1000.}
 }
 \value{
 An object of type \env{seqgboots} which is a matrix with \env{boots}
-rows and columns for each coefficient in the \env{seqg} model.
+rows and columns for each coefficient in the \env{seqg} model. Use \env{summary} 
+to provide summary statistics, such as mean and quantiles.
 }
 \description{
-Coefficient Estimates Across Bootstrapped Samples
+Performs a simple bootstrap of a fitted DirectEffects model by re-estimating
+the model with bootstrap samples.
 }
 \examples{
 \donttest{
