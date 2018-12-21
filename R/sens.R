@@ -60,7 +60,7 @@ cdesens <- function(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
   xnames <- attr(seqg$terms$X, "term.labels")
   mnames <- attr(seqg$terms$M, "term.labels")
 
-  if (length(mnames) > 1) stop("currently only handles one mediator variables")
+  if (length(mnames) > 1) stop("currently only handles one mediator variable")
   if (!(var %in% xnames)) stop("'var' not in the set of baseline variables")
 
   if (bootstrap != "none") {
