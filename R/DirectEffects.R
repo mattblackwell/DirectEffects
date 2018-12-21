@@ -90,8 +90,7 @@
 #'   european_descent + communist_dummy + polity2_2000 +
 #'   serv_va_gdp2000 | centered_ln_inc + centered_ln_incsq
 #'
-#' direct <- sequential_g(formula = form_main,
-#'                        data = ploughs)
+#' direct <- sequential_g(form_main, ploughs)
 #'
 #' summary(direct)
 #' @export
