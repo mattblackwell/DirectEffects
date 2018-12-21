@@ -1,5 +1,5 @@
 Package: DirectEffects
-Version: 0.1
+Version: 0.2
 Title: Estimating Controlled Direct Effects for Explaining Causal Findings
 Authors@R: c(
     person("Matthew", "Blackwell", email = "mblackwell@gov.harvard.edu", role = c("aut", "cre")),
