@@ -1,10 +1,12 @@
 #' Computes standard errors and p-values of DirectEffects estimates
-#' 
-#' 
-#' @param object An object of class \env{seqg}, computed by \code{\link{sequential_g}}. 
-#' 
+#'
+#'
+#' @param object An object of class \env{seqg}, computed by
+#'   \code{\link{sequential_g}}.
+#' @param ... additional arguments affecting the summary produced.
+#'
 #' @export
-#' 
+#'
 summary.seqg <- function(object, ...) {
   z1 <- object$first_mod
   z2 <- object
@@ -57,34 +59,35 @@ summary.seqg <- function(object, ...) {
 
 
 #' Summary of DirectEffect Bootstrap Estimates
-#' 
+#'
 #' @param object An output of class \code{seqg} estimated by \code{\link{boots_g}}.
 #' @param level level of intervals to estimate. Defaults to 0.95
-#' 
+#' @param ... additional arguments affecting the summary produced.
+#'
 #' @export
 #' @importFrom glue glue
 summary.seqgboots <- function(object, level = 0.95, ...) {
-  
+
   # lower and upper percentile
   lo <- (1 - level)/2
   hi <- 1 - (1 - level)/2
-  
+
   # column stats
   est <- colMeans(object)
   se <- apply(object, 2, sd)
   tval <- est / se
   plo <- apply(object, 2, function(x) quantile(x, lo))
   phi <- apply(object, 2, function(x) quantile(x, hi))
-  
+
   # bind
   coefs <- cbind(est, se, tval, plo, phi)
-  dimnames(coefs) <- list(colnames(object), 
+  dimnames(coefs) <- list(colnames(object),
                           c("Estimate",
-                            "Std. Err.", 
-                            "t value", 
+                            "Std. Err.",
+                            "t value",
                             glue("{round(lo*100, 1)} %"),
                             glue("{round(hi*100, 1)} %")))
-  
+
   class(coefs) <- "summary.seqgboots"
   coefs
 }

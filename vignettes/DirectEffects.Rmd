@@ -123,7 +123,7 @@ form_main <- women_politics ~ plow + agricultural_suitability + tropical_climate
 `sequential_g()`, implements sequential g-estimation in the way outlined in the previous section. Specifically, it runs the  first stage model, constructs the demediator function, and passes it to the second-stage model. At its simplest, it takes in the formula and a data frame:
 
 ```{r, echo = TRUE, eval = TRUE}
-direct <- sequential_g(form_main, ploughs)
+direct <- sequential_g(form_main, data = ploughs)
 ```
 
 
@@ -133,6 +133,14 @@ As usual, we can use the `summary` function to the output of the `sequential_g` 
 ```{r, echo = TRUE, eval = TRUE}
 summary(direct)
 ```
+
+The standard errors here are based on the asymptotic variance derived in @AchBlaSen16, but it is also possible to use the `boots_g` function to compute standard errors by a simple bootstrap:
+
+```{r}
+out.boots <- boots_g(direct)
+summary(out.boots)
+```
+
 
 
 
@@ -175,7 +183,7 @@ vcov(direct)[1:3, 1:3]
 
 ### Sensitivity
 
-A sensitivity analysis evaluates the ACDE for various levels of confounding. Currently, the function \code{cdesens} only supports a model with only one mediator.
+The `cdesens` function can perform a sensitivity analysis to evaluate how the estimated ACDE changes for various levels of post-treatment confounding of the mediator-outcome relationship. Currently, this function only supports a model with only one mediator. 
 
 
 ```{r}
@@ -190,13 +198,7 @@ out_sens <- cdesens(direct1, var = "plow")
 plot(out_sens)
 ```
 
-
-`boots_g` can also compute standard errors by a simple bootstramp. 
-
-```{r}
-out.boots <- boots_g(direct)
-summary(out.boots)
-```
+The black line shows how the estimated ACDE would be at various levels of correlation between the mediator and outcome errors, while the gray bands show the 95% confidence intervals. Note that when this correlation is 0, we recover the estimated effect from `sequential_g`. See @AchBlaSen16 for more information. 
 
 
 ## References 

@@ -7,7 +7,10 @@
 \method{summary}{seqg}(object, ...)
 }
 \arguments{
-\item{object}{An object of class \env{seqg}, computed by \code{\link{sequential_g}}.}
+\item{object}{An object of class \env{seqg}, computed by
+\code{\link{sequential_g}}.}
+
+\item{...}{additional arguments affecting the summary produced.}
 }
 \description{
 Computes standard errors and p-values of DirectEffects estimates

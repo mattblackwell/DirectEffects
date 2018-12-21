@@ -10,6 +10,8 @@
 \item{object}{An output of class \code{seqg} estimated by \code{\link{boots_g}}.}
 
 \item{level}{level of intervals to estimate. Defaults to 0.95}
+
+\item{...}{additional arguments affecting the summary produced.}
 }
 \description{
 Summary of DirectEffect Bootstrap Estimates
