@@ -2,23 +2,36 @@
 % Please edit documentation in R/boots_g.R
 \name{boots_g}
 \alias{boots_g}
-\title{Bootstrap standard errors}
+\title{Coefficient Estimates across Bootstrapped Samples}
 \usage{
-boots_g(seqg, boots = 1000, progress = TRUE, data = NULL,
-  rho = NULL)
+boots_g(seqg, boots = 1000)
 }
 \arguments{
-\item{seqg}{Output from sequential_g}
+\item{seqg}{A fitted sequential_g estimate, computed by \code{\link{sequential_g}}.}
 
 \item{boots}{The number of bootstrap replicates. Defaults to 1000.}
-
-\item{progress}{Show a textbar for progress. Defaults to TRUE.}
-
-\item{data}{Dataframe to be used if none provided in seqg.}
-
-\item{rho}{Vector to be used if called from cdesens().}
+}
+\value{
+An object of type \env{seqgboots} which is a matrix with \env{boots}
+rows and columns for each coefficient in the \env{seqg} model. Use \env{summary} 
+to provide summary statistics, such as mean and quantiles.
 }
 \description{
-Called internally in sequential_g
+Performs a simple bootstrap of a fitted DirectEffects model by re-estimating
+the model with bootstrap samples.
 }
-\keyword{internal}
+\examples{
+\donttest{
+data(ploughs)
+form <- women_politics ~ plow +
+ agricultural_suitability + tropical_climate + large_animals + rugged |
+ years_civil_conflict + years_interstate_conflict  + oil_pc +
+ european_descent + communist_dummy + polity2_2000 |
+ centered_ln_inc + centered_ln_incsq
+s1 <- sequential_g(form, ploughs)
+
+out.boots <- boots_g(s1)
+
+summary(out.boots)
+}
+}

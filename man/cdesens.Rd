@@ -4,22 +4,30 @@
 \alias{cdesens}
 \title{Estimate sensitivity of ACDE estimates under varying levels of unobserved confounding}
 \usage{
-cdesens(seqg, rho = seq(-0.9, 0.9, by = 0.05), bootstrap = c("none",
-  "standard", "block"), boots_n = 1000, verbose = FALSE)
+cdesens(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
+  bootstrap = c("none", "standard"), boots_n = 1000, verbose = FALSE,
+  ...)
 }
 \arguments{
 \item{seqg}{Output from sequential_g. The function only supports specifications with one
 mediator variable.}
 
+\item{var}{A character indicating the name of the variable for
+which the estimated ACDE is being evaluated.}
+
 \item{rho}{A numerical vector of correlations between errors to test for. The
 original model assumes \env{rho = 0}}
 
-\item{bootstrap}{character of c("none", "standard", "block"), indicating whether to
-include bootstrap standard errors or block bootstrap. Default is "none".}
+\item{bootstrap}{character of c("none", "standard"), indicating whether to
+include bootstrap standard errors. Default is "none".}
 
 \item{boots_n}{Number of bootstrap replicates, defaults to 100.}
 
-\item{verbose}{Whether to show progress and messages, defaults to \env{FALSE}}
+\item{verbose}{Whether to show progress and messages, defaults to
+\env{FALSE}}
+
+\item{...}{Other parameters to pass on to \env{lm.fit()} when
+refitting the model}
 }
 \description{
 Estimate how the Average Controlled Direct Effect varies by various levels of
@@ -30,20 +38,16 @@ errors are computed by a simple bootstrap.
 \examples{
 data(civilwar)
 
-# First stage
-fit_first <- lm(onset ~ ethfrac + warl + gdpenl + lpop +
-                  ncontig + Oil + nwstate + polity2l + relfrac + instab,
-                data = civilwar)
 
-
-# main formula: Y ~ A + X | M
-form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | instab
+# main formula: Y ~ A + X | Z | M
+form_main <- onset ~ ethfrac + lmtnest + ncontig + Oil | warl +
+  gdpenl + lpop + polity2l + relfrac | instab
 
 # estimate CDE
-direct <- sequential_g(form_main, fit_first, data = civilwar)
+direct <- sequential_g(form_main, data = civilwar)
 
 # sensitivity
-out_sens <- cdesens(direct)
+out_sens <- cdesens(direct, var = "ethfrac")
 
 # plot sensitivity
 plot(out_sens)

@@ -22,6 +22,8 @@
 #' \item economic_complexity. Settlement patterns (v30)
 #' \item ln_income. ln (income)
 #' \item ln_income_squared. ln (income) ^2
+#' \item centered_ln_inc. de-meaned ln_inc
+#' \item centered_ln_incsq. de-meaned ln_inc squared
 #' \item country. country name
 #' \item communist_dummy. Communism indicator variable
 #' \item rugged. Ruggedness (Terrain Ruggedness Index, 100 m.)

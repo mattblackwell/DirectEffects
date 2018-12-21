@@ -1,113 +1,54 @@
-
-#' Bootstrap standard errors
+#' Coefficient Estimates across Bootstrapped Samples
+#' 
+#' Performs a simple bootstrap of a fitted DirectEffects model by re-estimating
+#' the model with bootstrap samples. 
 #'
-#' Called internally in sequential_g
-#'
-#' @param seqg Output from sequential_g
+#' @param seqg A fitted sequential_g estimate, computed by \code{\link{sequential_g}}.
 #' @param boots The number of bootstrap replicates. Defaults to 1000.
-#' @param progress Show a textbar for progress. Defaults to TRUE.
-#' @param data Dataframe to be used if none provided in seqg.
-#' @param rho Vector to be used if called from cdesens().
 #'
+#' @return An object of type \env{seqgboots} which is a matrix with \env{boots}
+#' rows and columns for each coefficient in the \env{seqg} model. Use \env{summary} 
+#' to provide summary statistics, such as mean and quantiles.
 #'
-#' @keywords internal
+#' @examples
+#' \donttest{
+#' data(ploughs)
+#' form <- women_politics ~ plow +
+#'  agricultural_suitability + tropical_climate + large_animals + rugged |
+#'  years_civil_conflict + years_interstate_conflict  + oil_pc +
+#'  european_descent + communist_dummy + polity2_2000 |
+#'  centered_ln_inc + centered_ln_incsq
+#' s1 <- sequential_g(form, ploughs)
+#'
+#' out.boots <- boots_g(s1)
+#'
+#' summary(out.boots)
+#' }
+#' @export
+#' @importFrom stats quantile
+#'
+boots_g <- function(seqg, boots = 1000) {
+  stopifnot(boots %% 1 == 0 & boots > 0)
 
+  B <- matrix(NA,
+              nrow = boots,
+              ncol = length(coef(seqg)),
+              dimnames = list(NULL, names(coef(seqg))))
+  nobs <- nrow(seqg$model)
 
-boots_g <- function(seqg, boots = 1000, progress = TRUE, data = NULL, rho = NULL) {
-  # if called from cdesens, create acde.sens instead of acde.boots object
-  if (!is.null(rho)) {
-    acde.sens <- matrix(NA, nrow = boots, ncol = length(rho)) # bootstrap samples as rows
-  } else{
-    acde.boots <- rep(list(NA), times = boots) # holder for boot strap estimates
-  }
-  if (progress) prog.bar <- utils::txtProgressBar(min = 0, max = boots, style = 3) # start progress bar
-  ## must be valid formula
-  formula <- Formula::as.Formula(seqg$formula)
+  # init
+  for (i in 1:boots) {
+    # bootstrap model frame
+    draw <- sample(1:nobs, replace = TRUE)
 
-  trvar <- attr(terms(formula(seqg$formula, lhs = 0, rhs = 1)), "term.labels")[1]
+    # run seqg
+    seqg.draw <- sequential_g(formula = seqg$formula,
+                              data = seqg$model[draw, ])
 
-  for (b in 1:boots) {
-    if (progress) utils::setTxtProgressBar(prog.bar, b) # update progress bar
-    draw <- sample(1:nrow(data), replace = TRUE) # vector for sample with replacement
-    # bootstrap sampling
-
-    data.draw <- data[draw, ]
-
-    ### re-estimate first model on bootstrapped data
-    first_mod <- update(seqg$first_mod, data = data.draw) # estimate first model
-    fcoefs <- coef(first_mod)
-
-    bnames <- attr(seqg$terms$blip, "term.labels") # M names
-    bvars <- match(bnames, names(fcoefs), 0L) # which terms in first stage are Ms
-
-    X <- model.matrix(seqg$terms$ax, data = data.draw, seqg$contrasts)
-    M <- model.matrix(seqg$terms$blip, data = data.draw, seqg$contrasts)
-    if (!is.null(rho)) {
-
-      # residuals
-      # epsilon.tilde.i.m: residuals of mediation function
-      res.m <- residuals(lm.fit(x = X, y = M))
-
-      # epsilon.tilde.i.y: all variables in first model except medvar
-      form.first.y.X <- update(seqg$first_mod$terms, paste0(". ~ . -", bnames))
-      res.y <- residuals(lm(form.first.y.X, data = data.draw))
-
-      rho.tilde <- cor(res.y, res.m)
-
-      # for each value of the vector rho, change mediator value
-      rho.factor <- rho * sqrt((1 - rho.tilde^2) / (1 - rho^2))
-      m.fixed <- coef(first_mod)[bnames] - sd(res.y) * rho.factor / sd(res.m)
-
-      # calculate acde at each rho (indexed by r)
-      for (r in 1:length(rho)) {
-
-        # create ytilde by blipping down with rho
-        Ytilde <- model.response(data.draw, "numeric") - m.fixed[r] * (data.draw[[bnames]])
-        mf.r <- cbind(Ytilde, data.draw)
-
-        # run Ytilde ~ A + X
-        sens.direct.r <- lm(form.Ytilde, data = mf.r)
-
-        # save final estimate
-        acde.sens[b, r] <- coef(sens.direct.r)[trvar]
-      } # close rho loop
-    } else {
-
-    rawY <- model.response(data.draw, "numeric")
-    gamma <- M %*% fcoefs[bvars] # fitted values from de-mediation function
-    Y <- rawY - gamma
-
-    ### weights
-    w <- as.vector(model.weights(data.draw))
-
-    ### offset parameter
-    offset <- as.vector(model.offset(data.draw))
-
-    ## regress de-mediated outcome on Xs by OLS or WLS
-    if (is.null(w)) {
-      boot.direct <- lm.fit(X, Y, offset = offset)
-    } else {
-      boot.direct <- lm.wfit(X, Y, w, offset = offset)
-    }
-
-    acde.boots[[b]] <- coef(boot.direct) # store direct effect coefficients
-    }
+    # store coef
+    B[i, ] <- coef(seqg.draw)
   }
 
-  if (progress) close(prog.bar)
-
-  # if called from cdesens, only output acde.sens
-  if (!is.null(rho)) {
-    out <- acde.sens
-  } else {
-    # combine list into matrix
-    acde.boots <- do.call(rbind, acde.boots)
-
-    # construct output
-    out <- list()
-    out$acde <- acde.boots # matrix of bootstrap coefficients
-    out$acde.sd <- sapply(as.data.frame(acde.boots), sd) # bootstrapped standard errors
-  }
-  return(out)
-
+  class(B) <- "seqgboots"
+  return(B)
 }

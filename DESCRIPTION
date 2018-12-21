@@ -1,9 +1,12 @@
 Package: DirectEffects
 Version: 0.1
-Date: 2018-02-25
 Title: Estimating Controlled Direct Effects for Explaining Causal Findings
-Author: Avidit Acharya [aut], Matthew Blackwell [aut, cre], Maya Sen [aut], Shiro Kuriwaki [ctb]
-Maintainer: Matthew Blackwell <mblackwell@gov.harvard.edu>
+Authors@R: c(
+    person("Matthew", "Blackwell", email = "mblackwell@gov.harvard.edu", role = c("aut", "cre")),
+    person("Avidit", "Acharya", email = "avidit@stanford.edu", role = c("aut")),
+    person("Maya", "Sen", email = "maya_sen@hks.harvard.edu", role = c("aut")),
+    person("Shiro", "Kuriwaki", email = "kuriwaki@g.harvard.edu", role = c("aut")),
+    person("Jacob", "Brown", email = "jrbrown@g.harvard.edu", role = c("aut")))
 Imports:
     stats,
     sandwich,
@@ -24,4 +27,4 @@ URL: http://www.mattblackwell.org/software/direct-effects/
 BugReports: https://github.com/mattblackwell/DirectEffects/issues
 VignetteBuilder: knitr
 LazyData: true
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
