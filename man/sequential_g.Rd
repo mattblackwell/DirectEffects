@@ -2,33 +2,25 @@
 % Please edit documentation in R/DirectEffects.R
 \name{sequential_g}
 \alias{sequential_g}
-\title{Peform linear sequential g-estimation to estimate the controlled
+\title{Perform linear sequential g-estimation to estimate the controlled
 direct effect of a treatment net the effect of a mediator.}
 \usage{
-sequential_g(formula, first_mod, data, subset, weights, na.action,
-  model = TRUE, y = TRUE, x = FALSE, offset, contrasts = NULL, ...)
+sequential_g(formula, data, subset, weights, na.action, offset,
+  contrasts = NULL, verbose = TRUE, ...)
 }
 \arguments{
-\item{formula}{formula specification of the direct effect and blip-down models.
-Should be of the form \code{y ~ tr + x1 + x2 | med} where \code{tr} is the
-name of the treatment variable, \code{med} is the name of the mediator
-and \code{x1} and \code{x2} are baseline covariates. Before the \code{|} bar
-represents the direct effects model and after the bar represents
-the blip-down model, the latter of which will be used to created
-the blipped down outcome.}
+\item{formula}{formula specification of the first-stage,
+second-stage, and blip-down models. The right-hand side of the
+formula should have three components separated by the \code{|},
+with the first component specifying the first-stage model with
+treatment and any baseline covariates, the second component
+specifying the intermediate covariates for the first-stage, and
+the third component specifying the blip-down model. See Details
+below for more information.}
 
-\item{first_mod}{an \code{lm} output containing the first-stage
-regression model. Must contain a coefficient for all variables in
-the blip-down model in the \code{formula} argument.}
+\item{data}{A dataframe to apply \code{formula} on.}
 
-\item{data}{an optional data frame, list or environment (or object
-    coercible by \code{\link{as.data.frame}} to a data frame) containing
-    the variables in the model.  If not found in \code{data}, the
-    variables are taken from \code{environment(formula)},
-    typically the environment from which \code{lm} is called.}
-
-\item{subset}{an optional vector specifying a subset of observations
-    to be used in the fitting process.}
+\item{subset}{A vector of logicals indicating which rows of \code{data} to keep.}
 
 \item{weights}{an optional vector of weights to be used in the fitting
     process.  Should be \code{NULL} or a numeric vector.
@@ -43,24 +35,17 @@ the blip-down model in the \code{formula} argument.}
     default is \code{\link{na.omit}}.  Another possible value is
     \code{NULL}, no action.  Value \code{\link{na.exclude}} can be useful.}
 
-\item{model}{logical indicating whether the resulting model frame
-should be returned.}
-
-\item{y}{logical indicating whether the blipped-down outcome
-vector should be returned.}
-
-\item{x}{logical indicating whether the model matrix of the direct
-effects model should be returned.}
-
 \item{offset}{this can be used to specify an \emph{a priori} known
     component to be included in the linear predictor during fitting.
-    This should be \code{NULL} or a numeric vector of length equal to
-    the number of cases.  One or more \code{\link{offset}} terms can be
+    This should be \code{NULL} or a numeric vector or matrix of extents
+    matching those of the response.  One or more \code{\link{offset}} terms can be
     included in the formula instead or as well, and if more than one are
     specified their sum is used.  See \code{\link{model.offset}}.}
 
 \item{contrasts}{an optional list. See the \code{contrasts.arg}
     of \code{\link{model.matrix.default}}.}
+
+\item{verbose}{logical indicating whether to suppress progress bar. Default is FALSE.}
 
 \item{...}{additional arguments to be passed to the low level
     regression fitting functions (see below).}
@@ -81,24 +66,30 @@ model.
   \item weights: (only for weighted fits) the specified weights.
   \item df.residual: the residual degrees of freedom for the direct
 effects model.
-  \item terms: the \code{terms} object used.
+  \item aliased: logical vector indicating if any of the terms were
+  dropped or aliased due to perfect collinearity.
+  \item terms: the list of \code{terms} object used. One for the
+  baseline covariates and treatment (\code{X}) and one for the
+  variables in the blip-down model (\code{M}).
   \item formula: the \code{formula} object used, possibly modified
 to drop a constant in the blip-down model.
   \item call: the matched call.
+  \item na.action: (where relevant) information returned by
+  \code{model.frame} of the special handling of \code{NA}s.
+  \item xlevels: the levels of the factor variables.
   \item contrasts:  the contrasts used for the factor variables.
-  \item levels: the levels of the factor variables.
-  \item first_mod: the first_mod object used.
-  \item vcov: covariance matrix of the direct-effects coefficients.
-  \item model: full model frame (if \code{model = TRUE}).
-  \item y: the blipped-down response vector (if \code{y = TRUE}).
-  \item x: the direct effects model matrix (if \code{x = TRUE}).
+  \item first_mod: the output from the first-stage regression model.
+  \item model: full model frame, including all variables.
+  \item Ytilde: the blipped-down response vector.
+  \item X: the model matrix for the second stage.
+  \item M: the model matrix for demediation/blip-down function.
 }
 In addition, non-null fits will have components \code{assign},
 \code{effects}, and \code{qr} from the output of \code{lm.fit} or
 \code{lm.wfit}, whichever is used.
 }
 \description{
-Peform linear sequential g-estimation to estimate the controlled
+Perform linear sequential g-estimation to estimate the controlled
 direct effect of a treatment net the effect of a mediator.
 }
 \details{
@@ -107,44 +98,36 @@ sequential g-estimator developed by Vansteelandt (2009) with the
 consistent variance estimator developed by Acharya, Blackwell, and
 Sen (2016).
 
-The function takes in a first-stage linear model, \code{first_mod},
-of the \code{lm} class which is assumed to estimate the effect of
-the mediator on the outcome (conditional on the treatment,
-intermediate confounders, and baseline confounders). The formula
-specifies both the second stage, direct effect model of the
-treatment and baseline confounders, but also contains the
-specification of the 'blip-down' or 'demediation' function that is
-used to remove the average effect of the mediator (possibly
-interacted) from the outcome to create the blipped-down outcome.
-This blipped-down outcome is the passed to a standard linear model
-with the covariates as specified for the direct effects model.
+ The formula specifies specifies the full first-stage model
+  including treatment, baseline confounders, intermediate
+  confounders, and the mediators. The user places \code{|} bars to
+  separate out these different components of the model. For
+  example, the formula should have the form \code{y ~ tr + x1 + x2
+  | z1 + z2 | m1 + m2}. where \code{tr} is the name of the
+  treatment variable, \code{x1} and \code{x2} are baseline
+  covariates, \code{z1} and \code{z2} are intermediate covariates,
+  and \code{m1} and \code{m2} are the names of the mediator
+  variables. This last set of variables specify the 'blip-down' or
+  'demediation' function that is used to remove the average effect
+  of the mediator (possibly interacted) from the outcome to create
+  the blipped-down outcome. This blipped-down outcome is the passed
+  to a standard linear model with the covariates as specified for
+  the direct effects model.
 
 See the references below for more details.
 }
 \examples{
 data(ploughs)
-ploughs$centered_ln_inc <- ploughs$ln_income - mean(ploughs$ln_income, na.rm = TRUE)
-ploughs$centered_ln_incsq <- ploughs$centered_ln_inc^2
 
-fit_first <- lm(women_politics ~ plow + centered_ln_inc +
-                centered_ln_incsq + agricultural_suitability +
-                tropical_climate +  large_animals +
-                political_hierarchies + economic_complexity +
-                rugged + years_civil_conflict +
-                years_interstate_conflict  + oil_pc +
-                european_descent + communist_dummy + polity2_2000 +
-                serv_va_gdp2000, data = ploughs)
+form_main <- women_politics ~ plow +
+  agricultural_suitability + tropical_climate + large_animals +
+  political_hierarchies + economic_complexity +
+  rugged | years_civil_conflict +
+  years_interstate_conflict  + oil_pc +
+  european_descent + communist_dummy + polity2_2000 +
+  serv_va_gdp2000 | centered_ln_inc + centered_ln_incsq
 
-form_main <- women_politics ~ plow + agricultural_suitability +
-  tropical_climate +  large_animals + political_hierarchies +
-  economic_complexity + rugged | centered_ln_inc +
-  centered_ln_incsq
-
-direct <- sequential_g(formula = form_main,
-                      first_mod = fit_first,
-                      data = ploughs,
-                      subset = rownames(ploughs) \%in\%
-  rownames(model.matrix(fit_first)))
+direct <- sequential_g(form_main, ploughs)
 
 summary(direct)
 }
@@ -153,7 +136,7 @@ Vansteelandt, S. (2009). Estimating Direct Effects in
 Cohort and Case-Control Studies. Epidemiology, 20(6), 851-860.
 
 Acharya, Avidit, Blackwell, Matthew, and Sen, Maya. (2016)
-"Explaning Causal Effects Without Bias: Detecting and Assessing
+"Explaining Causal Effects Without Bias: Detecting and Assessing
 Direct Effects." American Political Science Review 110:3 pp.
   512-529
 }

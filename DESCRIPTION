@@ -1,12 +1,17 @@
 Package: DirectEffects
-Version: 0.1
-Date: 2018-02-25
+Version: 0.2
 Title: Estimating Controlled Direct Effects for Explaining Causal Findings
-Author: Avidit Acharya [aut], Matthew Blackwell [aut, cre], Maya Sen [aut], Shiro Kuriwaki [ctb]
-Maintainer: Matthew Blackwell <mblackwell@gov.harvard.edu>
+Authors@R: c(
+    person("Matthew", "Blackwell", email = "mblackwell@gov.harvard.edu", role = c("aut", "cre")),
+    person("Avidit", "Acharya", email = "avidit@stanford.edu", role = c("aut")),
+    person("Maya", "Sen", email = "maya_sen@hks.harvard.edu", role = c("aut")),
+    person("Shiro", "Kuriwaki", email = "kuriwaki@g.harvard.edu", role = c("aut")),
+    person("Jacob", "Brown", email = "jrbrown@g.harvard.edu", role = c("aut")))
 Imports:
     stats,
-    Formula
+    sandwich,
+    Formula,
+    glue
 Depends:
     R (>= 3.0.0)
 Suggests:
@@ -14,10 +19,12 @@ Suggests:
     dplyr,
     ggplot2,
     reshape2,
-    scales
+    scales,
+    testthat
 Description: A set of functions to estimate the controlled direct effect of treatment fixing a potential mediator to a specific value. Implements the sequential g-estimation estimator described in Vansteelandt (2009) <doi:10.1097/EDE.0b013e3181b6f4c9> and Acharya, Blackwell, and Sen (2016) <doi:10.1017/S0003055416000216>.
 License: GPL (>= 2)
 URL: http://www.mattblackwell.org/software/direct-effects/
+BugReports: https://github.com/mattblackwell/DirectEffects/issues
 VignetteBuilder: knitr
 LazyData: true
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1
