@@ -17,61 +17,94 @@
 #' @param s1.formula  A formula object denoting the stage 1 formula. The outcome should appear on the left-hand side.
 #' Treatment, pre- and post-treatment covariates should appear on the right-hand side. The mediator is omitted as the model
 #' is fit only within the subset of observations with \code{mediator} equal to 0.
-#' @param s2.formula A formula object denoting the stage 2 formula.
+#' @param s2.formula A formula object denoting the stage 2 formula estimating the ACDE of treatment using the demediated
+#' matches from the first stage. The outcome should appear on the left-hand side.
+#' Treatment and pre-treatment covariates should appear on the right-hand side.
 #' @param data A dataframe containing columns referenced by
 #' \code{outcome}, \code{treatment} and \code{mediator} along with any variables
 #' referenced in \code{s1.formula} and \code{s2.formula}.
-#' @param subset A vector of logicals indicating which rows of \code{data} to keep.
-#' @param verbose logical indicating whether to display progress information. Default is TRUE.
+#' @param L Number of matches to use for each unit in first and second stages. Default is 5.
+#' @param boot logical indicating whether to conduct inference using the weighted bootstrap 
+#' for matching estimators extended from Otsu and Rai (2017) (\code{TRUE}) or the asymptotic variance 
+#' estimator from Blackwell and Strezhnev (2019) (\code{FALSE}). Defaults to \code{FALSE}.
+#' @param nBoot If \code{boot} is \code{TRUE}, number of bootstrap iterations to use. Default is \code{5000}.
+#' @param ci percent level of confidence interval to return. If \code{boot} is \code{FALSE}, returns symmetric asymptotic 
+#' interval centered on the estimated treatment effect. If \code{boot} is \code{TRUE} returns the \code{(100 - ci)/2} and
+#' \code{100 - (100 - ci)/2} percentiles of the bootstrap distribution. Must be in the interval \code{(0, 100)}. Defaults to 95.
+#' @param verbose logical indicating whether to display progress information. Default is \code{TRUE}.
 #' 
+#' @details The \code{telescope_match} function implements the two-stage
+#' "telescope matching" procedure developed by Blackwell and Strezhnev 
+#' (2019).
 #' 
-#' 
-#' @details The \code{telescope_match} function implements the linear
-#' sequential g-estimator developed by Vansteelandt (2009) with the
-#' consistent variance estimator developed by Acharya, Blackwell, and
-#' Sen (2016).
-#'
-#'  The formula specifies specifies the full first-stage model
-#'   including treatment, baseline confounders, intermediate
-#'   confounders, and the mediators. The user places \code{|} bars to
-#'   separate out these different components of the model. For
-#'   example, the formula should have the form \code{y ~ tr + x1 + x2
-#'   | z1 + z2 | m1 + m2}. where \code{tr} is the name of the
-#'   treatment variable, \code{x1} and \code{x2} are baseline
-#'   covariates, \code{z1} and \code{z2} are intermediate covariates,
-#'   and \code{m1} and \code{m2} are the names of the mediator
-#'   variables. This last set of variables specify the 'blip-down' or
-#'   'demediation' function that is used to remove the average effect
-#'   of the mediator (possibly interacted) from the outcome to create
-#'   the blipped-down outcome. This blipped-down outcome is the passed
-#'   to a standard linear model with the covariates as specified for
-#'   the direct effects model.
+#'  The procedure first estimates a demediated outcome using a combination
+#'  of matching and a regression bias-correction. The first stage formula 
+#'  \code{s1.formula} specifies the pre- and post-treatment covariates to be used
+#'  in matching along with the specification for the bias-correction regression. In this stage,
+#'  all units with M = 1 to units with M = 0 with identical treatment values and 
+#'  similar pre- and post-treatment covariates. The potential outcomes under M = 0
+#'  are imputed using the average of the matches + the bias correction from the regression
+#'  model. The second stage estimates the controlled direct effect of treatment
+#'  on this demediated outcome using a similar matching/bias-correction procedure with
+#'  the formula specified in \code{s2.formula} indicating the pre-treatment covariates used
+#'  along with the treatment.
 #'
 #' See the references below for more details.
 #'
-#' @return Returns an object of \code{class} A \code{telescopeM}. Contains the following components
+#' @return Returns an object of \code{class} A \code{tmatch}. Contains the following components
 #' \itemize{
 #' \item estimate: Estimated ACDE fixing M=0
-#' \item se: Standard deviation of bootstrapped estimates
-#' \item ci_low: Lower bound of `ci` confidence interval for the estimate - percentile of the bootstrapped distribution
-#' \item ci_high: Upper bound of `ci` confidence interval for the estimate - percentile of the bootstrapped distribution
-#' \item match_fs: Matching object returned from the first matching stage (on the mediator)
-#' \item match.ss.c: Matching object returned from the second matching stage - matching treated units to control
-#' \item match.ss.t: Matching object returned from the second matching stage - matching control units to treated
+#' \item std.err: Estimated asymptotic standard error. \code{NULL} if \code{boot} is \code{TRUE}
+#' \item boot.dist: Bootstrap distribution of \code{estimate}. \code{NULL} if \code{boot} is \code{FALSE}
+#' \item conf.low: Lower bound of \code{ci} confidence interval for the estimate
+#' \item conf.high: Upper bound of \code{ci} confidence interval for the estimate
+#' \item ci: Level of the confidence interval
+#' \item outcome: Name of outcome variable
+#' \item treatment: Name of treatment variable
+#' \item mediator: Name of mediator variable
+#' \item s1.formula: Stage 1 bias-correction regression formula (pre-/post-treatment covariates)
+#' \item s2.formula: Stage 2 bias-correction regression formula (pre-treatment covariates)
+#' \item N: Number of observations
+#' \item N_summary: Number of observations in each treatment/mediator combination.
 #' }
-#' 
+
 #' @references Blackwell, Matthew, and Strezhnev, Anton (2019)
 #' "Telescope Matching: Reducing Model Dependence 
 #' in the Estimation of Direct Effects." Working Paper.
 #' 
 #' @examples
 #' data(jobcorps)
-#'
+#' 
+#' ## Make abs(1-Mediator) for estimating ATE(1)
+#' jobcorps <- jobcorps %>% mutate(work2year2qREV = abs(1 - work2year2q))
+#' 
+#' ## Split male/female
+#' jobcorps_female <- jobcorps %>% filter(female == 1)
+#' 
+#' 
+#' ## Telescope matching - First stage (X and Z)
+#' tm_stage1 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
+#'                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh + rwhite + everarr + hhsize + hhsizemis +  hhinc12 + hhinc8 + fdstamp +
+#'                                    welf1 + welf2 + publicass + emplq4 + emplq4full + pemplq4 + pemplq4mis + vocq4 + vocq4mis + 
+#'                                    health1212 + health123 + pe_prb12 + pe_prb12mis  + 
+#'                                    narry1 + numkidhhf1zero + numkidhhf1onetwo + pubhse12 + h_ins12a + h_ins12amis)
+#' 
+#' ## Telescope matching - second stage (X)
+#' tm_stage2 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
+#'                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh +  rwhite + everarr + hhsize + hhsizemis + hhinc12 + hhinc8 + fdstamp +
+#'                                    welf1 + welf2 + publicass)
+#' 
+#' 
+#' ### Estimate ACDE for women holding employment at 0
+#' telescopeMatch.result.0 <-  telescope_match(outcome = "exhealth30", treatment = "treat", mediator = "work2year2q", 
+#'                                            s1.formula = tm_stage1, 
+#'                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=F, nBoot=1000, verbose=T, ci=95)
+#' 
 #' @export
 #' @importFrom Matching Match
 #'
-telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula, data, subset=NULL,
-                            boot = F, nBoot=5000, L=5, verbose=T){
+telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula, data, L=5,
+                            boot = F, nBoot=5000, ci = 95, verbose=T){
 
   ########################
   ### Quick pre-processing
@@ -87,20 +120,17 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   ### Number of observations
   N <- nrow(data)
 
-  ### If subset isn't null
-  if !is.null(subset){
-    if (!is.logical(subset)){
-      stop("Error: 'subset' must be a logical vector equal in length to the number of rows in 'data'")
-    }else if(length(subset) != N){
-      stop("Error: Length of 'subset' must equal the number of rows in 'data'")
-    }else{
-      data <- data[subset,]
-    }
-  }
   
   ####################
   #### Sanity checks 
   ####################
+  
+  ### Check -2 - Is the ci within (0, 100).
+  if (ci <= 0 | ci >= 100){
+    warning("Warning: 'ci' must be within the interval (0, 100). Defaulting to 95% confidence intervals.")
+    ci <- 95
+  }
+  ci.alpha <- 1 - ci/100
   
   ### Check -1 - Outcome, Treatment, Mediator are in data?
   if (!is.character(outcome)| !is.character(treatment)| !is.character(mediator)){
@@ -116,9 +146,9 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
     stop("Error: 'outcome' not in s1.formula or s2.formula.")
   }
   
-  ## Check 1 - Treatment is in s1.formula
-  if (!(treatment %in% s1.terms)){
-    stop("Error: 'treatment' is not in s1.formula")
+  ## Check 1 - Treatment is in s1.terms and s2.terms
+  if (!(treatment %in% s1.terms)|!(treatment %in% s2.terms)){
+    stop("Error: 'treatment' is not in s1.formula or s2.formula")
   }
   
   ## Check 2 - Mediator isn't in either s1.formula, s2.formula
@@ -144,7 +174,7 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   pre.treatment <- s2.terms[!(s2.terms %in% c(outcome, treatment, mediator))]
   s1.covariates <- s1.terms[!(s1.terms %in% c(outcome, treatment, mediator))]
   
-  ### Are there any s2.terms that aren't in s1?
+  ### Check 5 - Are there any s2.terms that aren't in s1?
   if (any(!(pre.treatment %in% s1.covariates))){
     stop("Error: some covariates in second stage 's2.formula' not in the first stage 's1.formula'")
   }  
@@ -185,6 +215,9 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
     cat("Number of observations with 'mediator' = 0: ", sum(1 - data[[mediator]]), "\n", sep = "")
     cat("\n")
   }
+  
+  ### Summarize sample sizes with mediator/treatment
+  n_summary = table(data[[treatment]],data[[mediator]])
   
   ### Count of # of matches for each M=0 unit in the first stage (K_L^m)
   KLm <- table(tm.first$index.control)
@@ -281,12 +314,17 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   
   ## Point estimate
   tau <- mean(data$tau.i)
-  
-  ###############
-  ### Asymptotic variance
-  ###################
+
+  ########################################
+  ## Variance estimation
+  ########################################
   
   if (boot == F){
+    
+    ###############
+    ### Asymptotic variance
+    ###################
+    
     ### Calculate weights
     data$ww <- (1 - data[[mediator]]) * (1 + data$KLa/L + data$KLm/L + data$SLm/(L^2))
     
@@ -312,10 +350,14 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
     ### No bootstrap
     Tstar <- NULL
     
+    ### CI bounds
+    ci.low = tau - abs(qnorm(ci.alpha/2))*se.est2
+    ci.high = tau + abs(qnorm(ci.alpha/2))*se.est2
+    
   }else{
     
     ################
-    ### Bootstrap
+    ### Wild Bootstrap
     ################
     
     ## De-mean
@@ -328,12 +370,24 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
     ## Apply bootstrap weights to each "observation"
     Tstar <- (t(Wstar) %*% tau.norm)
     
+    ## Add in tau
+    Tstar <- Tstar + tau
+    
     ### Asypmtotic estimate is null
     se.est2 <- NULL
     
+    ### Get quantiles for the CI
+    ci.low = quantile(Tstar, ci.alpha/2)
+    ci.high = quantile(Tstar, 1 - ci.alpha/2)
   }
   
   ### Return output
-  return(list(estimate=tau, boot.dist=as.vector(Tstar), se.asymp=se.est2))
+  output <- list(outcome = outcome, treatment = treatment, mediator = mediator, s1.formula = s1.formula, s2.formula = s2.formula,
+                 N = N, N_summary = n_summary,
+                 estimate=tau, std.err = se.est2, boot.dist=as.vector(Tstar),
+                 conf.low = ci.low, conf.high = ci.high, ci.level = ci)
+  
+  class(output) <- "tmatch"
+  return(output)
   
 }
