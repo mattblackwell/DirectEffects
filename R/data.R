@@ -130,3 +130,63 @@ NULL
 #' @references Fearon, James D., and David A. Laitin (2003). Ethnicity, Insurgency, and Civil War.
 #' American Political Science Review, 97(1), 75-90. doi:10.1017/S0003055403000534
 NULL
+
+#' Data on health and employment outcomes measured as part of the
+#' U.S. Job Corps employment training experiment.
+#'
+#' A dataset to replicate the analysis in Huber (2014).
+#'
+#' \itemize{
+#' \item treat. 1 = in program group. 0 = in control group.
+#' \item schobef. "in school 1yr before eligibility"
+#' \item trainyrbef. "training in year before Job Corps"
+#' \item jobeverbef. "ever had a job before Job Corps"
+#' \item jobyrbef. "job in year before job corps"
+#' \item health012.  "good or very good health at assignment"
+#' \item health0mis.  "general health at assignment missing"
+#' \item pe_prb0.  "physical/emotional problems at assignment"
+#' \item pe_prb0mis. "missing - physical/emotional problems at assignment" 
+#' \item everalc. "ever abused alcohol before assignment"
+#' \item alc12. "alcohol abuse one yr after assignment"
+#' \item everilldrugs. "ever took illegal drugs before assignment"
+#' \item age_cat. "age at application in years 16-24"
+#' \item edumis. "education missing"
+#' \item eduhigh. "higher education"
+#' \item rwhite. "white"
+#' \item everarr. "ever arrested before Job Corps"
+#' \item hhsize. "household size at assignment"
+#' \item hhsizemis. "household size at assignment missing"
+#' \item hhinc12. "low household income at assignment"
+#' \item hhinc8. "high household income at assignment"
+#' \item fdstamp. "received foodstamps in yr before assignment"
+#' \item welf1. "once on welfare while growing up"
+#' \item welf2.  "twice on welfare while growing up"
+#' \item publicass. "public assistance in yr before assignment"
+#' \item emplq. "worked some time 9-12 months after assignment"
+#' \item emplq4full. "worked all the time in 9-12 months after assignment"
+#' \item pemplq4. "proportion of weeks worked 9-12 months after assignment"
+#' \item pemplq4mis. "missing - proportion of weeks worked 9-12 months after assignment"
+#' \item vocq4.  "in vocational training 9-12 months after assignment"
+#' \item vocq4mis. "missing - in vocational training 9-12 months after assignment"
+#' \item health1212. "very good or good health 1 yr after assignment"
+#' \item health123. "fair health 1 yr after assignment"
+#' \item pe_prb12. "1=phys/emot probs at 12 mths 0=no prob"
+#' \item pe_prb12mis. "missing - physical/emotional problems 1 yr after assignment"
+#' \item narry1. "number of arrests in year 1"
+#' \item numkidhhf1zero.  "no own kids living in household 1 yr after assignment"
+#' \item numkidhhf1onetwo. "one or two own kids living in household 1 yr after assignment"
+#' \item pubhse12.  "1=in public housing 1 yr after assignment, 0=not in"
+#' \item h_ins12a. "afdc and other transfers one yr after assignment"
+#' \item h_ins12amis.  "missing - afdc and other transfers one yr after assignment"
+#' \item ... other variables as annotated in the source.
+#' }
+#'
+#' @docType data
+#' @name jobcorps
+#' @usage data(jobcorps)
+#' @format A data frame with 10025 observations and 62 variables.
+#' @source \url{https://doi.org/10.1002/jae.2341}
+#' @references  Huber, M. (2014). Identifying causal mechanisms 
+#' (primarily) based on inverse probability weighting. Journal of 
+#' Applied Econometrics, 29(6), 920-943.
+NULL

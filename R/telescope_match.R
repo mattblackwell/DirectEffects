@@ -48,22 +48,31 @@
 #'  on this demediated outcome using a similar matching/bias-correction procedure with
 #'  the formula specified in \code{s2.formula} indicating the pre-treatment covariates used
 #'  along with the treatment.
+#'  
+#'  Matching is performed using the \code{Match()} routine from the \code{Matching} package.
+#'  By default, matching is L-to-1 nearest neighbor with replacement using Mahalanobis distance.
+#'  
 #'
 #' See the references below for more details.
 #'
-#' @return Returns an object of \code{class} A \code{tmatch}. Contains the following components
+#' @return Returns an object of \code{class} \code{tmatch}. Contains the following components
 #' \itemize{
 #' \item estimate: Estimated ACDE fixing M=0
 #' \item std.err: Estimated asymptotic standard error. \code{NULL} if \code{boot} is \code{TRUE}
 #' \item boot.dist: Bootstrap distribution of \code{estimate}. \code{NULL} if \code{boot} is \code{FALSE}
 #' \item conf.low: Lower bound of \code{ci} confidence interval for the estimate
 #' \item conf.high: Upper bound of \code{ci} confidence interval for the estimate
-#' \item ci: Level of the confidence interval
+#' \item ci.level: Level of the confidence interval
 #' \item outcome: Name of outcome variable
 #' \item treatment: Name of treatment variable
 #' \item mediator: Name of mediator variable
+#' \item pre.treatment: Vector of names of pre-treatment confounders (appear in both stage 1 and 2)
+#' \item post.treatment: Vector of names of post-treatment confounders (appear only in stage 1)
 #' \item s1.formula: Stage 1 bias-correction regression formula (pre-/post-treatment covariates)
 #' \item s2.formula: Stage 2 bias-correction regression formula (pre-treatment covariates)
+#' \item outcome.vec: Vector of outcomes used in estimation
+#' \item treatment.vec: Vector of treatment indicators used in estimation
+#' \item mediator.vec: Vector of mediator indicators used in estimation
 #' \item N: Number of observations
 #' \item N_summary: Number of observations in each treatment/mediator combination.
 #' }
@@ -75,21 +84,17 @@
 #' @examples
 #' data(jobcorps)
 #' 
-#' ## Make abs(1-Mediator) for estimating ATE(1)
-#' jobcorps <- jobcorps %>% mutate(work2year2qREV = abs(1 - work2year2q))
-#' 
 #' ## Split male/female
 #' jobcorps_female <- jobcorps %>% filter(female == 1)
 #' 
-#' 
-#' ## Telescope matching - First stage (X and Z)
+#' ## Telescope matching formula - First stage (X and Z)
 #' tm_stage1 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
 #'                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh + rwhite + everarr + hhsize + hhsizemis +  hhinc12 + hhinc8 + fdstamp +
 #'                                    welf1 + welf2 + publicass + emplq4 + emplq4full + pemplq4 + pemplq4mis + vocq4 + vocq4mis + 
 #'                                    health1212 + health123 + pe_prb12 + pe_prb12mis  + 
 #'                                    narry1 + numkidhhf1zero + numkidhhf1onetwo + pubhse12 + h_ins12a + h_ins12amis)
 #' 
-#' ## Telescope matching - second stage (X)
+#' ## Telescope matching formula - second stage (X)
 #' tm_stage2 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
 #'                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh +  rwhite + everarr + hhsize + hhsizemis + hhinc12 + hhinc8 + fdstamp +
 #'                                    welf1 + welf2 + publicass)
@@ -120,11 +125,10 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   ### Number of observations
   N <- nrow(data)
 
-  
   ####################
   #### Sanity checks 
   ####################
-  
+
   ### Check -2 - Is the ci within (0, 100).
   if (ci <= 0 | ci >= 100){
     warning("Warning: 'ci' must be within the interval (0, 100). Defaulting to 95% confidence intervals.")
@@ -217,7 +221,8 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   }
   
   ### Summarize sample sizes with mediator/treatment
-  n_summary = table(data[[treatment]],data[[mediator]])
+  n_summary = data.frame(c(0,1,0,1), c(0,0,1,1), as.vector(table(data[[treatment]],data[[mediator]])))
+  colnames(n_summary) <- c(treatment, mediator, "N")
   
   ### Count of # of matches for each M=0 unit in the first stage (K_L^m)
   KLm <- table(tm.first$index.control)
@@ -384,10 +389,87 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   ### Return output
   output <- list(outcome = outcome, treatment = treatment, mediator = mediator, s1.formula = s1.formula, s2.formula = s2.formula,
                  N = N, N_summary = n_summary,
-                 estimate=tau, std.err = se.est2, boot.dist=as.vector(Tstar),
-                 conf.low = ci.low, conf.high = ci.high, ci.level = ci)
+                 estimate=tau, std.err = se.est2, boot.dist=as.vector(Tstar), KLm = data$KLm, KLa = data$KLa, pre.treatment = pre.treatment, post.treatment = post.treatment,
+                 conf.low = ci.low, conf.high = ci.high, ci.level = ci, outcome.vec = data[[outcome]], treatment.vec = data[[treatment]],
+                 mediator.vec = data[[mediator]])
   
   class(output) <- "tmatch"
   return(output)
   
+}
+
+#' Summarize telescope match objects
+#' 
+#' @details \code{summary} method for \code{tmatch} objects returned by
+#' \code{telescope_match}
+#'
+#' @param object an object of class \code{tmatch} -- results from a call to \code{telescope_match} 
+#' 
+summary.tmatch <- function(object){
+  
+  summary_obj <- NULL
+  
+  ### Names of treatments/outcome
+  summary_obj$outcome <- object$outcome
+  summary_obj$treatment <- object$treatment
+  summary_obj$mediator <- object$mediator
+  
+  ### Covariates
+  summary_obj$pre.treatment <- object$pre.treatment
+  summary_obj$post.treatment <- object$post.treatment
+  
+  ### Sample size
+  summary_obj$sizes <- object$N_summary
+  
+  ### Estimates
+  if (!is.null(object$std.err)){
+    summary_obj$se.type = "Asymptotic"
+    summary_obj$std.err = object$std.err
+  }else{
+    summary_obj$se.type = "Bootstrap"
+    summary_obj$std.err = sd(object$boot.dist)
+  }
+  
+  summary_obj$estimate = object$estimate
+  summary_obj$ci.level = object$ci.level
+  summary_obj$conf.low = object$conf.low
+  summary_obj$conf.high = object$conf.high
+  
+  class(summary_obj) <- "summary.tmatch"
+  
+  return(summary_obj)
+  
+}
+
+print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3)){
+  cat("Telescope matching results\n")
+  cat("----------------------------\n")
+  cat("Variables:\n")
+  cat(paste("Outcome: ", object$outcome, "\n", sep=""))
+  cat(paste("Treatment: ", object$treatment, "\n", sep=""))
+  cat(paste("Mediator: ", object$mediator, "\n", sep=""))
+  cat("----------------------------\n")
+  cat(paste("Pre-treatment Covariates: ", paste(object$pre.treatment, collapse = ", "), "\n", sep=""))
+  cat(paste("Post-treatment Covariates: ", paste(object$post.treatment, collapse = ", "), "\n", sep=""))
+  cat("----------------------------\n")
+  cat("Results:\n")
+  if (object$se.type == "Asymptotic"){
+    cat(paste("Estimated ACDE: ", format(object$estimate, digits=digits), "\n", sep=""))
+    cat(paste("Asymptotic Standard Error: ", format(object$std.err, digits=digits), "\n", sep=""))
+    cat(paste("Asymptotic ", format(object$ci.level, digits=digits), "% confidence interval: [", format(object$conf.low, digits=digits), ", ", format(object$conf.high, digits=digits), "]\n", sep=""))
+  }else if (object$se.type == "Bootstrap"){
+    cat(paste("Estimated ACDE: ", format(object$estimate, digits=digits), "\n", sep=""))
+    cat(paste("Bootstrap Standard Error: ", format(object$std.err, digits=digits), "\n", sep=""))
+    cat(paste("Bootstrap ", format(object$ci.level, digits=digits), "% confidence interval (percentile): [", format(object$conf.low, digits=digits), ", ", format(object$conf.low, digits=digits), "]\n", sep=""))
+  }else{
+    cat("Something went wrong with the summary - SEs not Asymptotic or Bootstrap\n")
+  }
+  cat("----------------------------\n")
+  cat("Sample sizes (N):\n")
+  cat(paste("Treatment = 0, Mediator = 0: ", object$sizes$N[object$sizes[[object$treatment]] == 0&object$sizes[[object$mediator]] == 0], "\n", sep=""))
+  cat(paste("Treatment = 0, Mediator = 1: ", object$sizes$N[object$sizes[[object$treatment]] == 0&object$sizes[[object$mediator]] == 1], "\n", sep=""))
+  cat(paste("Treatment = 1, Mediator = 0: ", object$sizes$N[object$sizes[[object$treatment]] == 1&object$sizes[[object$mediator]] == 0], "\n", sep=""))
+  cat(paste("Treatment = 1, Mediator = 1: ", object$sizes$N[object$sizes[[object$treatment]] == 1&object$sizes[[object$mediator]] == 1], "\n", sep=""))
+  cat("----------------------------\n")
+
 }
