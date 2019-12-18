@@ -73,6 +73,8 @@
 #' \item outcome.vec: Vector of outcomes used in estimation
 #' \item treatment.vec: Vector of treatment indicators used in estimation
 #' \item mediator.vec: Vector of mediator indicators used in estimation
+#' \item KLm: Number of times unit is used as a match in the first stage mediator matching procedure
+#' \item KLa: Number of times unit is used as a match in the second stage treatment matching procedure
 #' \item N: Number of observations
 #' \item N_summary: Number of observations in each treatment/mediator combination.
 #' }
