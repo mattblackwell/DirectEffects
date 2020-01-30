@@ -412,8 +412,10 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   
   ### Return output
   output <- list(outcome = outcome, treatment = treatment, mediator = mediator, s1.formula = s1.formula, s2.formula = s2.formula,
-                 N = N, L_m = L_m, L_a = L_a, N_summary = n_summary, tm.first = tm.first, tm.second.a0 = tm.second.a0, tm.second.a1 = tm.second.a1,
-                 estimate=tau, std.err = se.est2, boot.dist=as.vector(Tstar), KLm = data$KLm, KLa = data$KLa, pre.treatment = pre.treatment, post.treatment = post.treatment,
+                 N = N, L_m = L_m, L_a = L_a, N_summary = n_summary, 
+                 estimate=tau, std.err = se.est2, boot.dist=as.vector(Tstar), KLm = data$KLm,
+                 KLa = data$KLa, outcome.vec = data[[outcome]], treatment.vec = data[[treatment]], mediator.vec = data[[mediator]],
+                 pre.treatment = pre.treatment, post.treatment = post.treatment,
                  conf.low = ci.low, conf.high = ci.high, ci.level = ci)
   
   class(output) <- "tmatch"
@@ -639,42 +641,18 @@ balance.tmatch <- function(object, vars, data){
 }
 
 
-## Balance function for diagnostics
+
+#' Histograms of matching weights
+#' 
+#' @details Provides histograms of the number of times each unit is used as a match given a  \code{tmatch} object returned by
+#' \code{telescope_match}
+#'
+#' @param object an object of class \code{tmatch} -- results from a call to \code{telescope_match} 
+#' @param stage a character vector equal to either 'mediator' or 'treatment'. If equal to 'mediator', returns a histogram
+#' of matching weights for units with mediator = 0. If equal to 'treatment', returns a histogram of matching weights for
+#' all units.
+
 plotDiag.tmatch <- function(object, stage = "mediator"){
-  
-  ##################
-  ### Internal helper functions
-  ##################
-  
-  ## Weighted variance, ecdf
-  ### Taken from hadley/bigvis
-  weighted.var <- function(x, w = NULL, na.rm = FALSE) {
-    if (na.rm) {
-      na <- is.na(x) | is.na(w)
-      x <- x[!na]
-      w <- w[!na]
-    }
-    
-    sum(w * (x - weighted.mean(x, w)) ^ 2) / (sum(w) - 1)
-  }
-  
-  weighted.ecdf <- function(x, w) {
-    stopifnot(length(x) == length(w))
-    stopifnot(anyDuplicated(x) == 0)
-    
-    ord <- order(x)
-    x <- x[ord]
-    w <- w[ord]
-    
-    n <- sum(w)
-    wts <- cumsum(w / n)
-    
-    f <- approxfun(x, wts, method = "constant", yleft = 0, yright = 1, f = 0)
-    class(f) <- c("wecdf", "ecdf", "stepfun", class(f))
-    attr(f, "call") <- sys.call()
-    environment(f)$nobs <- n
-    f
-  }
   
   ##################
   ### Sanity checks
@@ -685,24 +663,23 @@ plotDiag.tmatch <- function(object, stage = "mediator"){
     stop("Error: 'object' not of class 'tmatch'")
   }
   
-  ### Does N of data match number of obs 
-  if (nrow(data) != object$N){
-    stop("Error: number of rows in data not equal to 'N' parameter in object")
+  if (stage != "mediator" & stage != "treatment"){
+    stop("Error: 'stage' must be either 'mediator' or 'treatment'.")
   }
-  
-  ### Is outcome, treatment, mediator in data?
-  if (!(object$outcome %in% colnames(data))|!(object$treatment %in% colnames(data))|!(object$mediator %in% colnames(data))){
-    stop("Error: 'outcome', 'treatment', or 'mediator' not in 'data'.")
-  }
-  
-  ### Does the number in each mediator/treatment combination line up with data
-  
   
   #######################
   ### Main output
   #######################
   
-  ##
-  stop()
+  ### If it's mediator, plot the histogram of K_Lm for mediator == 0
+  if (stage == "mediator"){
+    plot_title = paste("Matching weights for first stage (mediator) among M = 0\nNumber of matches per unit = ", object$L_m, sep = "")
+    hist(object$KLm[object$mediator.vec == 0], main=plot_title, xlab="Number of times unit is matched")
+    abline(v = object$L_m, col="red", lty=2, lwd=2)
+  }else if (stage == "treatment"){
+    plot_title = paste("Matching weights for second stage (treatment) \nNumber of matches per unit = ", object$L_a, sep = "")
+    hist(object$KLa, main=plot_title, xlab="Number of times unit is matched")
+    abline(v = object$L_a, col="red", lty=2, lwd=2)
+  }
   
 }
