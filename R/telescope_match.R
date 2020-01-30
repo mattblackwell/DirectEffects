@@ -23,7 +23,10 @@
 #' @param data A dataframe containing columns referenced by
 #' \code{outcome}, \code{treatment} and \code{mediator} along with any variables
 #' referenced in \code{s1.formula} and \code{s2.formula}.
-#' @param L Number of matches to use for each unit in first and second stages. Default is 5.
+#' @param L Number of matches to use for each unit. Must be a numeric vector of eitehr length 1 or 2. If length 1, L 
+#' sets the number of matches used in both the first stage (matching on mediator) and in the second stage (matching on treatment).
+#' If length 2, the first element sets the number of matches used in the first stage (matching on mediator) and the second element
+#' sets the number of matches used in the second stage (matching on treatment) Default is 5.
 #' @param boot logical indicating whether to conduct inference using the weighted bootstrap 
 #' for matching estimators extended from Otsu and Rai (2017) (\code{TRUE}) or the asymptotic variance 
 #' estimator from Blackwell and Strezhnev (2019) (\code{FALSE}). Defaults to \code{FALSE}.
@@ -73,6 +76,8 @@
 #' \item outcome.vec: Vector of outcomes used in estimation
 #' \item treatment.vec: Vector of treatment indicators used in estimation
 #' \item mediator.vec: Vector of mediator indicators used in estimation
+#' \item L_m: Number of matches found for each unit in the first stage mediator matching procedure
+#' \item L_a: Number of matches found for each unit in the second stage mediator matching procedure
 #' \item KLm: Number of times unit is used as a match in the first stage mediator matching procedure
 #' \item KLa: Number of times unit is used as a match in the second stage treatment matching procedure
 #' \item N: Number of observations
@@ -110,13 +115,26 @@
 #' @export
 #' @importFrom Matching Match
 #'
-telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula, data, L=5,
+telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula, data, L=5, 
                             boot = F, nBoot=5000, ci = 95, verbose=T){
 
   ########################
   ### Quick pre-processing
   ########################
   
+  ### If length of L is 1, L_a and L_m are the same 
+  if (!is.numeric(L)|!is.vector(L)){
+    stop("Error: L must be a numeric vector of length 1 or 2")
+  }else if (length(L) > 2|length(L) < 1){
+    stop("Error: L must be a numeric vector of length 1 or 2")
+  }else if (length(L) == 2){
+    L_m <- L[1]
+    L_a <- L[2]
+  }else if (length(L) == 1){
+    L_m <- L
+    L_a <- L
+  }
+
   ### Force data to be a data frame. Tidy tibbles crash the existing code
   data <- as.data.frame(data)
   
@@ -203,6 +221,8 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
     cat(paste("Mediator: ", mediator, "\n", sep=""))
     cat(paste("Pre-treatment Covariates: ", paste(pre.treatment, collapse = ", "), "\n", sep=""))
     cat(paste("Post-treatment Covariates: ", paste(post.treatment, collapse = ", "), "\n", sep=""))
+    cat(paste("Number of matches in first stage (mediator): ", L_m, "\n", sep=""))
+    cat(paste("Number of matches in second stage (treatment): ", L_a, "\n", sep=""))
     cat("\n")
   }
   
@@ -210,13 +230,14 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   ### First-stage: Estimate Y(a, 0) conditional on pre-/post-treatment covariates
   ######################
   
-  ### First stage matching - inexact on all pre.treatment/post.treatment covariates, exact on A
+  ### First stage matching - inexact on all pre.treatment/post.treatment covariates, exact on A"
   tm.first <- Match(Y = data[[outcome]], Tr = data[[mediator]], X = data[,c(all.covariates, treatment)], 
-                    exact = c(rep(FALSE, length(all.covariates)), TRUE), M=L, BiasAdjust=FALSE, estimand = "ATT", ties=F)
+                    exact = c(rep(FALSE, length(all.covariates)), TRUE), M=L_m, BiasAdjust=FALSE, estimand = "ATT", ties=F)
 
   ### Summarize input - First Stage
   if (verbose){
     cat("First-stage matching: Mediator on pre-treatment, post-treatment\n")
+    cat("Number of observations with 'mediator' = 0 matched to each observation with 'mediator' = 1: ", L_m, "\n", sep="")
     cat("Number of observations with 'mediator' = 1: ", sum(data[[mediator]]), "\n", sep = "" )
     cat("Number of observations with 'mediator' = 0: ", sum(1 - data[[mediator]]), "\n", sep = "")
     cat("\n")
@@ -260,6 +281,7 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   ### Summarize input - Second stage
   if (verbose){
     cat("Second-stage matching: Treatment on pre-treatment\n")
+    cat("Number of observations matched to each unit with opposite treatment: ", L_a,  "\n", sep="")
     cat("Number of observations with 'treatment' = 1: ", sum(data[[treatment]]), "\n", sep = "" )
     cat("Number of observations with 'treatment' = 0: ", sum(1 - data[[treatment]]), "\n", sep = "")
     cat("\n")
@@ -286,10 +308,10 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   data$pred.Y.1.A <- data[[treatment]] * data$pred.Y.a0 + (1 - data[[treatment]]) * data$pred.Y.a1 ## Predict counterfactual
   
   ### Match controls to treated
-  tm.second.a1 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], estimand = "ATT", M = L, ties=F)
+  tm.second.a1 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], estimand = "ATT", M = L_a, ties=F)
   KLa0 <- table(tm.second.a1$index.control) ## Count of matched controls - stage 2
   ### Match treateds to control
-  tm.second.a0 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], estimand = "ATC", M = L, ties=F)
+  tm.second.a0 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], estimand = "ATC", M = L_a, ties=F)
   KLa1 <- table(tm.second.a0$index.treated) ## Count of matched treated - stage 2
   
   ## Total match counts - stage 2
@@ -313,9 +335,9 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   data$pred.Y.1.A.r <- data[[treatment]] * data$Yhat00.r + (1 - data[[treatment]]) * data$Yhat10.r
   
   ## Linearized form for bootstrapping
-  sm.part <- (1 - data[[mediator]]) * (1 + data$KLa/L + data$KLm/L + data$SLm/(L^2)) * data[[outcome]]
-  bm.part <- ((1 - data[[mediator]])*(data$KLm/L + data$SLm/(L^2)) - data[[mediator]]*(1 + data$KLa/L))*data$pred.Y.m0
-  ba.part <- data$pred.Y.1.A + (data$KLa/L)*data$pred.Y.A
+  sm.part <- (1 - data[[mediator]]) * (1 + data$KLa/L_a + data$KLm/L_m + data$SLm/(L_a*L_m)) * data[[outcome]]
+  bm.part <- ((1 - data[[mediator]])*(data$KLm/L_a + data$SLm/(L_a*L_m)) - data[[mediator]]*(1 + data$KLa/L_a))*data$pred.Y.m0
+  ba.part <- data$pred.Y.1.A + (data$KLa/L_a)*data$pred.Y.A
   
   data$tau.i <- (2 * data[[treatment]] - 1) * (sm.part - bm.part - ba.part)
   
@@ -333,7 +355,7 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
     ###################
     
     ### Calculate weights
-    data$ww <- (1 - data[[mediator]]) * (1 + data$KLa/L + data$KLm/L + data$SLm/(L^2))
+    data$ww <- (1 - data[[mediator]]) * (1 + data$KLa/L_a + data$KLm/L_m + data$SLm/(L_a*L_m))
     
     ### Number of units with M=0
     N0 <- sum(1 - data[[mediator]])
@@ -352,7 +374,7 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
     tau.var <- mean((data$pred.Y.a1 - data$pred.Y.a0 - tau)^2)
     
     ### combine all three components
-    se.est2 <- sqrt(tau.var/N + (mean((1-data[[mediator]]) * data$ww^2 * data$em.var) + mean((1+data$KLa/L)^2*data$ea.var))/N)
+    se.est2 <- sqrt(tau.var/N + (mean((1-data[[mediator]]) * data$ww^2 * data$em.var) + mean((1+data$KLa/L_a)^2*data$ea.var))/N)
     
     ### No bootstrap
     Tstar <- NULL
@@ -390,10 +412,9 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   
   ### Return output
   output <- list(outcome = outcome, treatment = treatment, mediator = mediator, s1.formula = s1.formula, s2.formula = s2.formula,
-                 N = N, N_summary = n_summary,
+                 N = N, L_m = L_m, L_a = L_a, N_summary = n_summary, tm.first = tm.first, tm.second.a0 = tm.second.a0, tm.second.a1 = tm.second.a1,
                  estimate=tau, std.err = se.est2, boot.dist=as.vector(Tstar), KLm = data$KLm, KLa = data$KLa, pre.treatment = pre.treatment, post.treatment = post.treatment,
-                 conf.low = ci.low, conf.high = ci.high, ci.level = ci, outcome.vec = data[[outcome]], treatment.vec = data[[treatment]],
-                 mediator.vec = data[[mediator]])
+                 conf.low = ci.low, conf.high = ci.high, ci.level = ci)
   
   class(output) <- "tmatch"
   return(output)
@@ -422,6 +443,10 @@ summary.tmatch <- function(object){
   
   ### Sample size
   summary_obj$sizes <- object$N_summary
+  
+  ### Number of units matched in each stage
+  summary_obj$L_m <- object$L_m
+  summary_obj$L_a <- object$L_a
   
   ### Estimates
   if (!is.null(object$std.err)){
@@ -454,6 +479,9 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
   cat(paste("Pre-treatment Covariates: ", paste(object$pre.treatment, collapse = ", "), "\n", sep=""))
   cat(paste("Post-treatment Covariates: ", paste(object$post.treatment, collapse = ", "), "\n", sep=""))
   cat("----------------------------\n")
+  cat(paste("Number of units matched to each observation in first stage (mediator): ", object$L_m, "\n", sep=""))
+  cat(paste("Number of units matched to each observation in second stage (treatment): ", object$L_a, "\n", sep=""))
+  cat("----------------------------\n")
   cat("Results:\n")
   if (object$se.type == "Asymptotic"){
     cat(paste("Estimated ACDE: ", format(object$estimate, digits=digits), "\n", sep=""))
@@ -474,4 +502,207 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
   cat(paste("Treatment = 1, Mediator = 1: ", object$sizes$N[object$sizes[[object$treatment]] == 1&object$sizes[[object$mediator]] == 1], "\n", sep=""))
   cat("----------------------------\n")
 
+}
+
+#' Diagnostics for Telescope Match objects
+#' 
+#' @details Provides matching diagnostics for \code{tmatch} objects returned by
+#' \code{telescope_match}
+#'
+#' @param object an object of class \code{tmatch} -- results from a call to \code{telescope_match} 
+#' @param vars a formula object containing either the treatment or the mediator as the dependent variable (which denotes whether first-stage or
+#' second-stage balance diagnostics are returned) and the covariates for which balance diagnostics are requested as the independent variables. Each covariate
+#' or function of covariates (e.g. higher-order polynomials or interactions) should be separated by a +.
+#' @param data the data frame used in the call to \code{telescope_match}
+
+balance.tmatch <- function(object, vars, data){
+  
+  
+  ##################
+  ### Internal helper functions
+  ##################
+  
+  ## Weighted variance, ecdf
+  ### Taken from hadley/bigvis
+  weighted.var <- function(x, w = NULL, na.rm = FALSE) {
+    if (na.rm) {
+      na <- is.na(x) | is.na(w)
+      x <- x[!na]
+      w <- w[!na]
+    }
+    
+    sum(w * (x - weighted.mean(x, w)) ^ 2) / (sum(w) - 1)
+  }
+  
+  weighted.ecdf <- function(x, w) {
+    stopifnot(length(x) == length(w))
+    stopifnot(anyDuplicated(x) == 0)
+    
+    ord <- order(x)
+    x <- x[ord]
+    w <- w[ord]
+    
+    n <- sum(w)
+    wts <- cumsum(w / n)
+    
+    f <- approxfun(x, wts, method = "constant", yleft = 0, yright = 1, f = 0)
+    class(f) <- c("wecdf", "ecdf", "stepfun", class(f))
+    attr(f, "call") <- sys.call()
+    environment(f)$nobs <- n
+    f
+  }
+  
+  ##################
+  ### Sanity checks
+  ##################
+  
+  ### Is the class a 'tmatch'
+  if (class(object) != "tmatch"){
+    stop("Error: 'object' not of class 'tmatch'")
+  }
+  
+  ### Does N of data match number of obs 
+  if (nrow(data) != object$N){
+    stop("Error: number of rows in data not equal to 'N' parameter in object")
+  }
+  
+  ##########################
+  ### Validating the formula
+  if (object$treatment == as.character(vars[2])){
+    ### Balance diagnostics for treatment
+    get.balance = "treatment"
+  }else if (object$mediator == as.character(vars[2])){
+    ### Balance diagnostics for mediator
+    get.balance = "mediator"
+  }else{
+    stop("Error: Left-hand side of 'vars' must be either the 'treatment' or the 'mediator' from 'object'")
+  }
+  
+  ###########################
+  ### Validating the data frame
+  covariate.frame = tryCatch({model.matrix(vars, data)[,-1]},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
+  
+  ### Generate weights on each observation
+  if (get.balance == "mediator"){
+    ### If it's the mediator, all M=1 units get KLm+1, all M=0 get KLm
+    obs.weights <- (object$KLm/object$L_m + 1)*(data[[object$mediator]] == 1) + (object$KLm/object$L_m)*(data[[object$mediator]] == 0)
+    augmented.frame <- data.frame(cbind(data[[object$mediator]], obs.weights, covariate.frame))
+    colnames(augmented.frame)[1] <- "mediator"
+                            
+  }else if (get.balance == "treatment"){
+    ### If it's the treatment, all A=1 units get KLa+1, all A=0 get KLa+1
+    obs.weights <- (object$KLa/object$L_a + 1)
+    augmented.frame <- data.frame(cbind(data[[object$treatment]], obs.weights, covariate.frame))
+    colnames(augmented.frame)[1] <- "treatment"
+    
+  }
+  
+  ## Make a data-frame containing balance results
+  if (get.balance == "mediator"){
+    balance.frame <- data.frame(variable = colnames(augmented.frame)[-c(1,2)], Before_M0 = NA, Before_M1 = NA, After_M0 = NA, After_M1= NA)
+  }else if (get.balance == "treatment"){
+    balance.frame <- data.frame(variable = colnames(augmented.frame)[-c(1,2)], Before_A0 = NA, Before_A1 = NA, After_A0 = NA, After_A1= NA)
+  }
+  
+  ### For each term in vars (aside from the treatment and the weights)
+  for (variable in colnames(augmented.frame)[-c(1,2)]){
+
+    ## Run the regression to get difference-in-means
+    if (get.balance == "mediator"){
+      ## Unweighted difference
+      un.weight.reg <- lm(as.formula(paste(variable, "~", "mediator")), data=augmented.frame)
+      balance.frame[balance.frame$variable == variable,]$Before_M0 = coef(un.weight.reg)[1] ## Intercept is M = 0
+      balance.frame[balance.frame$variable == variable,]$Before_M1 = coef(un.weight.reg)[1] + coef(un.weight.reg)[2] ## Intercept + Beta1 is M = 1
+      ## Weighted difference
+      balance.reg <- lm(as.formula(paste(variable, "~", "mediator")), data=augmented.frame, weights=obs.weights)
+      balance.frame[balance.frame$variable == variable,]$After_M0 = coef(balance.reg)[1] ## Intercept is M = 0
+      balance.frame[balance.frame$variable == variable,]$After_M1 = coef(balance.reg)[1] + coef(balance.reg)[2] ## Intercept + Beta1 is M = 1
+      
+    }else if (get.balance == "treatment"){
+      ## Unweighted difference
+      un.weight.reg <- lm(as.formula(paste(variable, "~", "treatment")), data=augmented.frame)
+      balance.frame[balance.frame$variable == variable,]$Before_A0 = coef(un.weight.reg)[1] ## Intercept is A = 0
+      balance.frame[balance.frame$variable == variable,]$Before_A1 = coef(un.weight.reg)[1] + coef(un.weight.reg)[2] ## Intercept + Beta1 is A = 1
+      
+      ## Weighted difference
+      balance.reg <- lm(as.formula(paste(variable, "~", "treatment")), data=augmented.frame, weights=obs.weights)
+      balance.frame[balance.frame$variable == variable,]$After_A0 = coef(balance.reg)[1] ## Intercept is M = 0
+      balance.frame[balance.frame$variable == variable,]$After_A1 = coef(balance.reg)[1] + coef(balance.reg)[2] ## Intercept + Beta1 is M = 1
+      
+    }
+    
+  }
+  
+  ## Output
+  return(balance.frame)
+  
+}
+
+
+## Balance function for diagnostics
+plotDiag.tmatch <- function(object, stage = "mediator"){
+  
+  ##################
+  ### Internal helper functions
+  ##################
+  
+  ## Weighted variance, ecdf
+  ### Taken from hadley/bigvis
+  weighted.var <- function(x, w = NULL, na.rm = FALSE) {
+    if (na.rm) {
+      na <- is.na(x) | is.na(w)
+      x <- x[!na]
+      w <- w[!na]
+    }
+    
+    sum(w * (x - weighted.mean(x, w)) ^ 2) / (sum(w) - 1)
+  }
+  
+  weighted.ecdf <- function(x, w) {
+    stopifnot(length(x) == length(w))
+    stopifnot(anyDuplicated(x) == 0)
+    
+    ord <- order(x)
+    x <- x[ord]
+    w <- w[ord]
+    
+    n <- sum(w)
+    wts <- cumsum(w / n)
+    
+    f <- approxfun(x, wts, method = "constant", yleft = 0, yright = 1, f = 0)
+    class(f) <- c("wecdf", "ecdf", "stepfun", class(f))
+    attr(f, "call") <- sys.call()
+    environment(f)$nobs <- n
+    f
+  }
+  
+  ##################
+  ### Sanity checks
+  ##################
+  
+  ### Is the class a 'tmatch'
+  if (class(object) != "tmatch"){
+    stop("Error: 'object' not of class 'tmatch'")
+  }
+  
+  ### Does N of data match number of obs 
+  if (nrow(data) != object$N){
+    stop("Error: number of rows in data not equal to 'N' parameter in object")
+  }
+  
+  ### Is outcome, treatment, mediator in data?
+  if (!(object$outcome %in% colnames(data))|!(object$treatment %in% colnames(data))|!(object$mediator %in% colnames(data))){
+    stop("Error: 'outcome', 'treatment', or 'mediator' not in 'data'.")
+  }
+  
+  ### Does the number in each mediator/treatment combination line up with data
+  
+  
+  #######################
+  ### Main output
+  #######################
+  
+  ##
+  stop()
+  
 }
