@@ -640,8 +640,6 @@ balance.tmatch <- function(object, vars, data){
   
 }
 
-
-
 #' Histograms of matching weights
 #' 
 #' @details Provides histograms of the number of times each unit is used as a match given a  \code{tmatch} object returned by
@@ -673,13 +671,13 @@ plotDiag.tmatch <- function(object, stage = "mediator"){
   
   ### If it's mediator, plot the histogram of K_Lm for mediator == 0
   if (stage == "mediator"){
-    plot_title = paste("Matching weights for first stage (mediator) among M = 0\nNumber of matches per unit = ", object$L_m, sep = "")
-    hist(object$KLm[object$mediator.vec == 0], main=plot_title, xlab="Number of times unit is matched")
-    abline(v = object$L_m, col="red", lty=2, lwd=2)
+    plot_title = paste("Matching weights for first stage (mediator) among M = 0")
+    hist(object$KLm[object$mediator.vec == 0]/object$L_m, main=plot_title, xlab="Number of times unit is matched")
+    abline(v = 1, col="red", lty=2, lwd=2)
   }else if (stage == "treatment"){
-    plot_title = paste("Matching weights for second stage (treatment) \nNumber of matches per unit = ", object$L_a, sep = "")
-    hist(object$KLa, main=plot_title, xlab="Number of times unit is matched")
-    abline(v = object$L_a, col="red", lty=2, lwd=2)
+    plot_title = paste("Matching weights for second stage (treatment)")
+    hist(object$KLa/object$L_a, main=plot_title, xlab="Number of times unit is matched")
+    abline(v = 1, col="red", lty=2, lwd=2)
   }
   
 }
