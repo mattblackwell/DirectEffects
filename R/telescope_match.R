@@ -643,9 +643,12 @@ balance.tmatch <- function(object, vars, data){
   
   ## Do model.frame first to parse any functions
   covariate.frame = tryCatch({model.frame(vars, data[,-1])},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
-
+  #print(head(covariate.frame))
   ## Do model.matrix to get interactions
   covariate.frame = tryCatch({model.matrix(vars, covariate.frame)},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
+
+  ## Strip out the "(Intercept) column
+  covariate.frame <- covariate.frame[,!(colnames(covariate.frame) %in% c("(Intercept)"))]
 
   ### Generate weights on each observation
   if (get.balance == "mediator"){
@@ -664,10 +667,11 @@ balance.tmatch <- function(object, vars, data){
   
   ## Make a data-frame containing balance results
   if (get.balance == "mediator"){
-    balance.frame <- data.frame(variable = colnames(augmented.frame)[-c(1,2)], Before_M0 = NA, Before_M1 = NA, After_M0 = NA, After_M1= NA)
+    balance.frame <- data.frame(variable = colnames(augmented.frame)[-c(1,2)], Before_M0 = NA, Before_M1 = NA, After_M0 = NA, After_M1= NA, SD= NA)
   }else if (get.balance == "treatment"){
-    balance.frame <- data.frame(variable = colnames(augmented.frame)[-c(1,2)], Before_A0 = NA, Before_A1 = NA, After_A0 = NA, After_A1= NA)
+    balance.frame <- data.frame(variable = colnames(augmented.frame)[-c(1,2)], Before_A0 = NA, Before_A1 = NA, After_A0 = NA, After_A1= NA, SD = NA)
   }
+
   
   ### For each term in vars (aside from the treatment and the weights)
   for (variable in colnames(augmented.frame)[-c(1,2)]){
@@ -678,6 +682,8 @@ balance.tmatch <- function(object, vars, data){
       un.weight.reg <- lm(as.formula(paste(variable, "~", "mediator")), data=augmented.frame)
       balance.frame[balance.frame$variable == variable,]$Before_M0 = coef(un.weight.reg)[1] ## Intercept is M = 0
       balance.frame[balance.frame$variable == variable,]$Before_M1 = coef(un.weight.reg)[1] + coef(un.weight.reg)[2] ## Intercept + Beta1 is M = 1
+      balance.frame[balance.frame$variable == variable,]$SD <- sd(augmented.frame[[variable]]) ## Get the marginal SD of the variable in the unweighted data.
+        
       ## Weighted difference
       balance.reg <- lm(as.formula(paste(variable, "~", "mediator")), data=augmented.frame, weights=obs.weights)
       balance.frame[balance.frame$variable == variable,]$After_M0 = coef(balance.reg)[1] ## Intercept is M = 0
@@ -688,7 +694,8 @@ balance.tmatch <- function(object, vars, data){
       un.weight.reg <- lm(as.formula(paste(variable, "~", "treatment")), data=augmented.frame)
       balance.frame[balance.frame$variable == variable,]$Before_A0 = coef(un.weight.reg)[1] ## Intercept is A = 0
       balance.frame[balance.frame$variable == variable,]$Before_A1 = coef(un.weight.reg)[1] + coef(un.weight.reg)[2] ## Intercept + Beta1 is A = 1
-      
+      balance.frame[balance.frame$variable == variable,]$SD <- sd(augmented.frame[[variable]])  ## Get the marginal SD of the variable in the unweighted data.
+        
       ## Weighted difference
       balance.reg <- lm(as.formula(paste(variable, "~", "treatment")), data=augmented.frame, weights=obs.weights)
       balance.frame[balance.frame$variable == variable,]$After_A0 = coef(balance.reg)[1] ## Intercept is M = 0
@@ -697,6 +704,22 @@ balance.tmatch <- function(object, vars, data){
     }
     
   }
+  
+  ## Save the standardized differences in means
+  if (get.balance == "mediator"){
+    balance.frame$Before_Diff <- balance.frame$Before_M1 - balance.frame$Before_M0
+    balance.frame$Before_Std_Diff <- balance.frame$Before_Diff/balance.frame$SD
+    
+    balance.frame$After_Diff <- balance.frame$After_M1 - balance.frame$After_M0
+    balance.frame$After_Std_Diff <- balance.frame$After_Diff/balance.frame$SD    
+  }else if (get.balance == "treatment"){
+    balance.frame$Before_Diff <- balance.frame$Before_A1 - balance.frame$Before_A0
+    balance.frame$Before_Std_Diff <- balance.frame$Before_Diff/balance.frame$SD
+    
+    balance.frame$After_Diff <- balance.frame$After_A1 - balance.frame$After_A0
+    balance.frame$After_Std_Diff <- balance.frame$After_Diff/balance.frame$SD    
+  }
+  
   
   ## Output
   return(balance.frame)
