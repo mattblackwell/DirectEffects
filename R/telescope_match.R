@@ -649,22 +649,26 @@ balance.tmatch <- function(object, vars, data){
 
   ## Strip out the "(Intercept) column
   covariate.frame <- covariate.frame[,!(colnames(covariate.frame) %in% c("(Intercept)"))]
-
+  
   ### Generate weights on each observation
   if (get.balance == "mediator"){
     ### If it's the mediator, all M=1 units get KLm+1, all M=0 get KLm
     obs.weights <- (object$KLm/object$L_m + 1)*(data[[object$mediator]] == 1) + (object$KLm/object$L_m)*(data[[object$mediator]] == 0)
     augmented.frame <- data.frame(cbind(data[[object$mediator]], obs.weights, covariate.frame))
     colnames(augmented.frame)[1] <- "mediator"
-                            
+    ## Fix column names
+    colnames(augmented.frame)[-c(1,2)] <- colnames(covariate.frame)
+
   }else if (get.balance == "treatment"){
     ### If it's the treatment, all A=1 units get KLa+1, all A=0 get KLa+1
     obs.weights <- (object$KLa/object$L_a + 1)
     augmented.frame <- data.frame(cbind(data[[object$treatment]], obs.weights, covariate.frame))
     colnames(augmented.frame)[1] <- "treatment"
+    ## Fix column names
+    colnames(augmented.frame)[-c(1,2)] <- colnames(covariate.frame)
     
   }
-  
+
   ## Make a data-frame containing balance results
   if (get.balance == "mediator"){
     balance.frame <- data.frame(variable = colnames(augmented.frame)[-c(1,2)], Before_M0 = NA, Before_M1 = NA, After_M0 = NA, After_M1= NA, SD= NA)
