@@ -430,6 +430,64 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
 #'
 #' @param object an object of class \code{tmatch} -- results from a call to \code{telescope_match} 
 #' 
+#' @details Returns a summary data frame containing 
+#'
+#' @return Returns an object of \code{class} \code{tmatch}. Contains the following components
+#' \itemize{
+#' \item estimate: Estimated ACDE fixing M=0
+#' \item std.err: Estimated asymptotic standard error. \code{NULL} if \code{boot} is \code{TRUE}
+#' \item boot.dist: Bootstrap distribution of \code{estimate}. \code{NULL} if \code{boot} is \code{FALSE}
+#' \item conf.low: Lower bound of \code{ci} confidence interval for the estimate
+#' \item conf.high: Upper bound of \code{ci} confidence interval for the estimate
+#' \item ci.level: Level of the confidence interval
+#' \item outcome: Name of outcome variable
+#' \item treatment: Name of treatment variable
+#' \item mediator: Name of mediator variable
+#' \item pre.treatment: Vector of names of pre-treatment confounders (appear in both stage 1 and 2)
+#' \item post.treatment: Vector of names of post-treatment confounders (appear only in stage 1)
+#' \item s1.formula: Stage 1 bias-correction regression formula (pre-/post-treatment covariates)
+#' \item s2.formula: Stage 2 bias-correction regression formula (pre-treatment covariates)
+#' \item outcome.vec: Vector of outcomes used in estimation
+#' \item treatment.vec: Vector of treatment indicators used in estimation
+#' \item mediator.vec: Vector of mediator indicators used in estimation
+#' \item L_m: Number of matches found for each unit in the first stage mediator matching procedure
+#' \item L_a: Number of matches found for each unit in the second stage mediator matching procedure
+#' \item KLm: Number of times unit is used as a match in the first stage mediator matching procedure
+#' \item KLa: Number of times unit is used as a match in the second stage treatment matching procedure
+#' \item N: Number of observations
+#' \item N_summary: Number of observations in each treatment/mediator combination.
+#' }
+
+#' @references Blackwell, Matthew, and Strezhnev, Anton (2019)
+#' "Telescope Matching: Reducing Model Dependence 
+#' in the Estimation of Direct Effects." Working Paper.
+#' 
+#' @examples
+#' data(jobcorps)
+#' 
+#' ## Split male/female
+#' jobcorps_female <- jobcorps %>% filter(female == 1)
+#' 
+#' ## Telescope matching formula - First stage (X and Z)
+#' tm_stage1 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
+#'                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh + rwhite + everarr + hhsize + hhsizemis +  hhinc12 + hhinc8 + fdstamp +
+#'                                    welf1 + welf2 + publicass + emplq4 + emplq4full + pemplq4 + pemplq4mis + vocq4 + vocq4mis + 
+#'                                    health1212 + health123 + pe_prb12 + pe_prb12mis  + 
+#'                                    narry1 + numkidhhf1zero + numkidhhf1onetwo + pubhse12 + h_ins12a + h_ins12amis)
+#' 
+#' ## Telescope matching formula - second stage (X)
+#' tm_stage2 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
+#'                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh +  rwhite + everarr + hhsize + hhsizemis + hhinc12 + hhinc8 + fdstamp +
+#'                                    welf1 + welf2 + publicass)
+#' 
+#' 
+#' ### Estimate ACDE for women holding employment at 0
+#' telescopeMatch.result.0 <-  telescope_match(outcome = "exhealth30", treatment = "treat", mediator = "work2year2q", 
+#'                                            s1.formula = tm_stage1, 
+#'                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=F, nBoot=1000, verbose=T, ci=95)
+#' 
+#' @export
+#' @importFrom Matching Match
 summary.tmatch <- function(object){
   
   summary_obj <- NULL
@@ -582,8 +640,12 @@ balance.tmatch <- function(object, vars, data){
   
   ###########################
   ### Validating the data frame
-  covariate.frame = tryCatch({model.matrix(vars, data)[,-1]},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
   
+  ## Do model.frame first to parse any functions
+  covariate.frame = tryCatch({model.frame(vars, data[,-1])},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
+  ## Do model.matrix to get interactions
+  covariate.frame = tryCatch({model.matrix(vars, covariate.frame)},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
+
   ### Generate weights on each observation
   if (get.balance == "mediator"){
     ### If it's the mediator, all M=1 units get KLm+1, all M=0 get KLm
