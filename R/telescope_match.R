@@ -643,6 +643,7 @@ balance.tmatch <- function(object, vars, data){
   
   ## Do model.frame first to parse any functions
   covariate.frame = tryCatch({model.frame(vars, data[,-1])},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
+
   ## Do model.matrix to get interactions
   covariate.frame = tryCatch({model.matrix(vars, covariate.frame)},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
 
