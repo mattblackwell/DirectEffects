@@ -129,7 +129,7 @@ See the references below for more details.
 data(jobcorps)
 
 ## Split male/female
-jobcorps_female <- jobcorps \%>\% filter(female == 1)
+jobcorps_female <- subset(jobcorps, female == 1)
 
 ## Telescope matching formula - First stage (X and Z)
 tm_stage1 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
@@ -147,7 +147,7 @@ tm_stage2 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + 
 ### Estimate ACDE for women holding employment at 0
 telescopeMatch.result.0 <-  telescope_match(outcome = "exhealth30", treatment = "treat", mediator = "work2year2q", 
                                            s1.formula = tm_stage1, 
-                                           s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=F, nBoot=1000, verbose=T, ci=95)
+                                           s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=FALSE, nBoot=1000, verbose=TRUE, ci=95)
 
 }
 \references{

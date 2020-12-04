@@ -264,7 +264,7 @@ data(jobcorps)
 The original @Hub14 paper looks at separate controlled effects for female and male participants. We start by subsetting the dataset down to the female participants
 
 ```{r}
-jobcorps_female <- jobcorps %>% filter(female == 1)
+jobcorps_female <- subset(jobcorps, female == 1)
 ```
 
 We define the two formula objects used for matching, the first including all pre- and post-treatment covariates $X_i$ and $Z_i$ along with all treatment-covariate interactions. The second includes only the pre-treatment covariates and treatment-covariate interactions.
@@ -290,7 +290,7 @@ By default, the `telescope_match()` function will estimate the effect of the tre
 ### Estimate ACDE for women holding employment at 0
 telescopeMatch.result.0 <-  telescope_match(outcome = "exhealth30", treatment = "treat", mediator = "work2year2q", 
                                             s1.formula = tm_stage1, 
-                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=F, verbose=T, ci=95)
+                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=FALSE, verbose=TRUE, ci=95)
 ```
 
 The `summary()` function will print the output (estimate + standard error and confidence interval) to the console. The elements of the output can be accessed directly from the returned `tmatch` object.
@@ -304,26 +304,26 @@ telescopeMatch.result.0$estimate # Point estimate
 telescopeMatch.result.0$std.err #Standard error
 ```
 
-Additional diagnostics can be conducted by calling the `balance()` function on the returned `tmatch` object to assess the change in pre-/post-matching covariate balance in both the first and second stages.
+Additional diagnostics can be conducted by calling the `balance.tmatch()` function on the returned `tmatch` object to assess the change in pre-/post-matching covariate balance in both the first and second stages.
 
 ```{r}
 
 ## Assess mediator balance on selected pre- and post- treatment covariates
-balance(telescopeMatch.result.0, vars = work2year2q ~ schobef + emplq4, data=jobcorps_female)
+balance.tmatch(telescopeMatch.result.0, vars = work2year2q ~ schobef + emplq4, data=jobcorps_female)
 
 ## Assess treatment balance on selected pre-treatment covariates
-balance(telescopeMatch.result.0, vars = treat ~ trainyrbef + hhsize, data=jobcorps_female)
+balance.tmatch(telescopeMatch.result.0, vars = treat ~ trainyrbef + hhsize, data=jobcorps_female)
 ```
 
-Calling the `plotDiag()` function will return a histogram of the number of times each unit is used as a match ($K/L$) in either the first (mediator) stage or the second (treatment) stage.
+Calling the `plotDiag.tmatch()` function will return a histogram of the number of times each unit is used as a match ($K/L$) in either the first (mediator) stage or the second (treatment) stage.
 
 ```{r}
 
 # Number of times each unit is used as a match in the mediator (first) stage
-plotDiag(telescopeMatch.result.0, stage="mediator")
+plotDiag.tmatch(telescopeMatch.result.0, stage="mediator")
 
 # Number of times each unit is used as a match in the treatment (second) stage
-plotDiag(telescopeMatch.result.0, stage="treatment")
+plotDiag.tmatch(telescopeMatch.result.0, stage="treatment")
 
 ```
 

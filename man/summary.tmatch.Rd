@@ -4,7 +4,7 @@
 \alias{summary.tmatch}
 \title{Summarize telescope match objects}
 \usage{
-\method{summary}{tmatch}(object)
+\method{summary}{tmatch}(object, ...)
 }
 \arguments{
 \item{object}{an object of class \code{tmatch} -- results from a call to \code{telescope_match}}

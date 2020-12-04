@@ -96,7 +96,7 @@
 #' data(jobcorps)
 #' 
 #' ## Split male/female
-#' jobcorps_female <- jobcorps %>% filter(female == 1)
+#' jobcorps_female <- subset(jobcorps, female == 1)
 #' 
 #' ## Telescope matching formula - First stage (X and Z)
 #' tm_stage1 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
@@ -114,10 +114,11 @@
 #' ### Estimate ACDE for women holding employment at 0
 #' telescopeMatch.result.0 <-  telescope_match(outcome = "exhealth30", treatment = "treat", mediator = "work2year2q", 
 #'                                            s1.formula = tm_stage1, 
-#'                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=F, nBoot=1000, verbose=T, ci=95)
+#'                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=FALSE, nBoot=1000, verbose=TRUE, ci=95)
 #' 
 #' @export
 #' @importFrom Matching Match
+#' @importFrom stats as.formula model.frame predict rbinom
 #'
 telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula, data,  caliper = NULL, L=5, 
                             boot = F, nBoot=5000, ci = 95, verbose=T){
@@ -456,7 +457,7 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
 #' \item conf.high: Upper bound of the `ci.level` asymptotically normal confidence interval
 #' }
 #' @export
-summary.tmatch <- function(object){
+summary.tmatch <- function(object, ...){
   
   summary_obj <- NULL
   
@@ -566,6 +567,7 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
 #' }
 #' 
 #' @export
+#' @importFrom stats as.formula model.frame
 
 
 balance.tmatch <- function(object, vars, data){
@@ -600,7 +602,7 @@ balance.tmatch <- function(object, vars, data){
   ### Validating the data frame
   
   ## Do model.frame first to parse any functions
-  covariate.frame = tryCatch({model.frame(vars, data[,-1])},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
+  covariate.frame = tryCatch({model.frame(vars, data)},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
   #print(head(covariate.frame))
   ## Do model.matrix to get interactions
   covariate.frame = tryCatch({model.matrix(vars, covariate.frame)},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
@@ -701,6 +703,7 @@ balance.tmatch <- function(object, vars, data){
 #' @returns Outputs a `plot()` object containing the histogram of match counts
 #' 
 #' @export 
+#' @importFrom graphics hist
 
 plotDiag.tmatch <- function(object, stage = "mediator"){
   
