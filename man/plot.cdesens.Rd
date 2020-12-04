@@ -4,9 +4,20 @@
 \alias{plot.cdesens}
 \title{Plot output from cdesens}
 \usage{
-\method{plot}{cdesens}(x, level = 0.95, xlim = NULL, ylim = NULL,
-  xlab = NULL, ylab = "Estimated ACDE", bty = "n", col = "black",
-  lwd = 2, ci.col = "grey70", ref.lines = TRUE, ...)
+\method{plot}{cdesens}(
+  x,
+  level = 0.95,
+  xlim = NULL,
+  ylim = NULL,
+  xlab = NULL,
+  ylab = "Estimated ACDE",
+  bty = "n",
+  col = "black",
+  lwd = 2,
+  ci.col = "grey70",
+  ref.lines = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{output from \env{cdesens}}

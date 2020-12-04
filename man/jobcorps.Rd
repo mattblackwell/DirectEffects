@@ -5,7 +5,9 @@
 \alias{jobcorps}
 \title{Data on health and employment outcomes measured as part of the
 U.S. Job Corps employment training experiment.}
-\format{A data frame with 10025 observations and 62 variables.}
+\format{
+A data frame with 10025 observations and 62 variables.
+}
 \source{
 \url{https://doi.org/10.1002/jae.2341}
 }

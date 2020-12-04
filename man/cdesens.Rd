@@ -4,9 +4,15 @@
 \alias{cdesens}
 \title{Estimate sensitivity of ACDE estimates under varying levels of unobserved confounding}
 \usage{
-cdesens(seqg, var, rho = seq(-0.9, 0.9, by = 0.05),
-  bootstrap = c("none", "standard"), boots_n = 1000, verbose = FALSE,
-  ...)
+cdesens(
+  seqg,
+  var,
+  rho = seq(-0.9, 0.9, by = 0.05),
+  bootstrap = c("none", "standard"),
+  boots_n = 1000,
+  verbose = FALSE,
+  ...
+)
 }
 \arguments{
 \item{seqg}{Output from sequential_g. The function only supports specifications with one

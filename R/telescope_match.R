@@ -23,6 +23,9 @@
 #' @param data A dataframe containing columns referenced by
 #' \code{outcome}, \code{treatment} and \code{mediator} along with any variables
 #' referenced in \code{s1.formula} and \code{s2.formula}.
+#' @param caliper A scalar denoting the caliper to be used in matching in the treatment stage (calipers cannot be used for matching
+#' on the mediator). Observations outside of the caliper are dropped. Calipers are specified in standard deviations of the covariates.
+#' NULL by default (no caliper).
 #' @param L Number of matches to use for each unit. Must be a numeric vector of eitehr length 1 or 2. If length 1, L 
 #' sets the number of matches used in both the first stage (matching on mediator) and in the second stage (matching on treatment).
 #' If length 2, the first element sets the number of matches used in the first stage (matching on mediator) and the second element
@@ -82,9 +85,10 @@
 #' \item KLa: Number of times unit is used as a match in the second stage treatment matching procedure
 #' \item N: Number of observations
 #' \item N_summary: Number of observations in each treatment/mediator combination.
+#' \item caliper: Caliper (if any) used in the treatment stage matching to drop distant observations.
 #' }
 
-#' @references Blackwell, Matthew, and Strezhnev, Anton (2019)
+#' @references Blackwell, Matthew, and Strezhnev, Anton (2020)
 #' "Telescope Matching: Reducing Model Dependence 
 #' in the Estimation of Direct Effects." Working Paper.
 #' 
@@ -115,7 +119,7 @@
 #' @export
 #' @importFrom Matching Match
 #'
-telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula, data, L=5, 
+telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula, data,  caliper = NULL, L=5, 
                             boot = F, nBoot=5000, ci = 95, verbose=T){
 
   ########################
@@ -308,10 +312,10 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   data$pred.Y.1.A <- data[[treatment]] * data$pred.Y.a0 + (1 - data[[treatment]]) * data$pred.Y.a1 ## Predict counterfactual
   
   ### Match controls to treated
-  tm.second.a1 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], estimand = "ATT", M = L_a, ties=F)
+  tm.second.a1 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], estimand = "ATT", caliper = caliper, M = L_a, ties=F)
   KLa0 <- table(tm.second.a1$index.control) ## Count of matched controls - stage 2
   ### Match treateds to control
-  tm.second.a0 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], estimand = "ATC", M = L_a, ties=F)
+  tm.second.a0 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], estimand = "ATC", caliper = caliper, M = L_a, ties=F)
   KLa1 <- table(tm.second.a0$index.treated) ## Count of matched treated - stage 2
   
   ## Total match counts - stage 2
@@ -430,64 +434,28 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
 #'
 #' @param object an object of class \code{tmatch} -- results from a call to \code{telescope_match} 
 #' 
-#' @details Returns a summary data frame containing 
+#' @details Returns a summary data frame containing the estimate, standard error and confidence
+#' interval from the `telescope_match` object.
 #'
-#' @return Returns an object of \code{class} \code{tmatch}. Contains the following components
+#' @return Returns an object of \code{class} \code{summary.tmatch}. Contains the following components
 #' \itemize{
-#' \item estimate: Estimated ACDE fixing M=0
-#' \item std.err: Estimated asymptotic standard error. \code{NULL} if \code{boot} is \code{TRUE}
-#' \item boot.dist: Bootstrap distribution of \code{estimate}. \code{NULL} if \code{boot} is \code{FALSE}
-#' \item conf.low: Lower bound of \code{ci} confidence interval for the estimate
-#' \item conf.high: Upper bound of \code{ci} confidence interval for the estimate
-#' \item ci.level: Level of the confidence interval
 #' \item outcome: Name of outcome variable
 #' \item treatment: Name of treatment variable
 #' \item mediator: Name of mediator variable
 #' \item pre.treatment: Vector of names of pre-treatment confounders (appear in both stage 1 and 2)
 #' \item post.treatment: Vector of names of post-treatment confounders (appear only in stage 1)
-#' \item s1.formula: Stage 1 bias-correction regression formula (pre-/post-treatment covariates)
-#' \item s2.formula: Stage 2 bias-correction regression formula (pre-treatment covariates)
-#' \item outcome.vec: Vector of outcomes used in estimation
-#' \item treatment.vec: Vector of treatment indicators used in estimation
-#' \item mediator.vec: Vector of mediator indicators used in estimation
-#' \item L_m: Number of matches found for each unit in the first stage mediator matching procedure
-#' \item L_a: Number of matches found for each unit in the second stage mediator matching procedure
-#' \item KLm: Number of times unit is used as a match in the first stage mediator matching procedure
-#' \item KLa: Number of times unit is used as a match in the second stage treatment matching procedure
-#' \item N: Number of observations
-#' \item N_summary: Number of observations in each treatment/mediator combination.
+#' \item sizes: Number of observations in each treatment-mediator combination
+#' \item L_m: Number of units matched in the mediator (first) stage
+#' \item L_a: Number of units matched in the treatment (second) stage
+#' \item estimate: Point estimate of the ACDE
+#' \item se.type: Character indicating the type of standard error estimator used in the 
+#' telescope_matching routine, either 'Asymptotic" or 'Bootstrap'
+#' \item std.err: Estimated standard error of the ACD
+#' \item ci.level: Confidence interval level
+#' \item conf.low: Lower bound of the `ci.level` asymptotically normal confidence interval
+#' \item conf.high: Upper bound of the `ci.level` asymptotically normal confidence interval
 #' }
-
-#' @references Blackwell, Matthew, and Strezhnev, Anton (2019)
-#' "Telescope Matching: Reducing Model Dependence 
-#' in the Estimation of Direct Effects." Working Paper.
-#' 
-#' @examples
-#' data(jobcorps)
-#' 
-#' ## Split male/female
-#' jobcorps_female <- jobcorps %>% filter(female == 1)
-#' 
-#' ## Telescope matching formula - First stage (X and Z)
-#' tm_stage1 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
-#'                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh + rwhite + everarr + hhsize + hhsizemis +  hhinc12 + hhinc8 + fdstamp +
-#'                                    welf1 + welf2 + publicass + emplq4 + emplq4full + pemplq4 + pemplq4mis + vocq4 + vocq4mis + 
-#'                                    health1212 + health123 + pe_prb12 + pe_prb12mis  + 
-#'                                    narry1 + numkidhhf1zero + numkidhhf1onetwo + pubhse12 + h_ins12a + h_ins12amis)
-#' 
-#' ## Telescope matching formula - second stage (X)
-#' tm_stage2 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
-#'                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh +  rwhite + everarr + hhsize + hhsizemis + hhinc12 + hhinc8 + fdstamp +
-#'                                    welf1 + welf2 + publicass)
-#' 
-#' 
-#' ### Estimate ACDE for women holding employment at 0
-#' telescopeMatch.result.0 <-  telescope_match(outcome = "exhealth30", treatment = "treat", mediator = "work2year2q", 
-#'                                            s1.formula = tm_stage1, 
-#'                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=F, nBoot=1000, verbose=T, ci=95)
-#' 
 #' @export
-#' @importFrom Matching Match
 summary.tmatch <- function(object){
   
   summary_obj <- NULL
@@ -564,9 +532,9 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
 
 }
 
-#' Diagnostics for Telescope Match objects
+#' Balance diagnostics for Telescope Match objects
 #' 
-#' @details Provides matching diagnostics for \code{tmatch} objects returned by
+#' @details Provides matching balance diagnostics for \code{tmatch} objects returned by
 #' \code{telescope_match}
 #'
 #' @param object an object of class \code{tmatch} -- results from a call to \code{telescope_match} 
@@ -574,43 +542,33 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
 #' second-stage balance diagnostics are returned) and the covariates for which balance diagnostics are requested as the independent variables. Each covariate
 #' or function of covariates (e.g. higher-order polynomials or interactions) should be separated by a +.
 #' @param data the data frame used in the call to \code{telescope_match}
+#'
+#' @return Returns a data frame with the following columns.
+#' \itemize{
+#' \item variable: Name of covariate
+#' \item Before_M0/Before_A0: Pre-matching average of the covariate in the mediator == 0 (if first stage balance) or 
+#' treatment == 0 (if second stage balance) condition
+#' \item Before_M1/Before_A1: Pre-matching average of the covariate in the mediator == 1 (if first stage balance) or 
+#' treatment == 1 (if second stage balance) condition
+#' \item After_M0/After_A0: Post-matching average of the covariate in the mediator == 0 (if first stage balance) or 
+#' treatment == 0 (if second stage balance) condition
+#' \item After_M1/After_A1: Post-matching average of the covariate in the mediator == 1 (if first stage balance) or 
+#' treatment == 1 (if second stage balance) condition
+#' \item SD: standard deviation of the outcome (pre-Matching)
+#' \item Before_Diff: Pre-matching covariate difference between mediator arms (if first stage balance) or treatment arms
+#' (if second stage balance).
+#' \item Before_Std_Diff: Pre-matching standardized covariate difference between mediator arms (if first stage balance) or
+#' treatment arms (if second stage balance), Equal to Before_Diff/SD.
+#' \item After_Diff: Post--matching covariate difference between mediator arms (if first stage balance) or treatment arms
+#' (if second stage balance).
+#' \item After_Std_Diff: Post-matching standardized covariate difference between mediator arms (if first stage balance) or
+#' treatment arms (if second stage balance), Equal to Before_Diff/SD.
+#' }
+#' 
+#' @export
+
 
 balance.tmatch <- function(object, vars, data){
-  
-  
-  ##################
-  ### Internal helper functions
-  ##################
-  
-  ## Weighted variance, ecdf
-  ### Taken from hadley/bigvis
-  weighted.var <- function(x, w = NULL, na.rm = FALSE) {
-    if (na.rm) {
-      na <- is.na(x) | is.na(w)
-      x <- x[!na]
-      w <- w[!na]
-    }
-    
-    sum(w * (x - weighted.mean(x, w)) ^ 2) / (sum(w) - 1)
-  }
-  
-  weighted.ecdf <- function(x, w) {
-    stopifnot(length(x) == length(w))
-    stopifnot(anyDuplicated(x) == 0)
-    
-    ord <- order(x)
-    x <- x[ord]
-    w <- w[ord]
-    
-    n <- sum(w)
-    wts <- cumsum(w / n)
-    
-    f <- approxfun(x, wts, method = "constant", yleft = 0, yright = 1, f = 0)
-    class(f) <- c("wecdf", "ecdf", "stepfun", class(f))
-    attr(f, "call") <- sys.call()
-    environment(f)$nobs <- n
-    f
-  }
   
   ##################
   ### Sanity checks
@@ -739,6 +697,10 @@ balance.tmatch <- function(object, vars, data){
 #' @param stage a character vector equal to either 'mediator' or 'treatment'. If equal to 'mediator', returns a histogram
 #' of matching weights for units with mediator = 0. If equal to 'treatment', returns a histogram of matching weights for
 #' all units.
+#' 
+#' @returns Outputs a `plot()` object containing the histogram of match counts
+#' 
+#' @export 
 
 plotDiag.tmatch <- function(object, stage = "mediator"){
   
@@ -769,5 +731,7 @@ plotDiag.tmatch <- function(object, stage = "mediator"){
     hist(object$KLa/object$L_a, main=plot_title, xlab="Number of times unit is matched")
     abline(v = 1, col="red", lty=2, lwd=2)
   }
+  
+  return()
   
 }

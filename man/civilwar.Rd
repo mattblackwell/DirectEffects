@@ -4,7 +4,9 @@
 \name{civilwar}
 \alias{civilwar}
 \title{Data on civil wars and internal conflict from 1945-1999.}
-\format{A data frame with 6610 observations and 69 variables.}
+\format{
+A data frame with 6610 observations and 69 variables.
+}
 \source{
 \url{https://doi.org/10.1017/S0003055403000534}
 }

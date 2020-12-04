@@ -5,8 +5,20 @@
 \title{Perform telescope matching to estimate the controlled
 direct effect of a binary treatment net the effect of a binary mediator.}
 \usage{
-telescope_match(outcome, treatment, mediator, s1.formula, s2.formula, data,
-  L = 5, boot = F, nBoot = 5000, ci = 95, verbose = T)
+telescope_match(
+  outcome,
+  treatment,
+  mediator,
+  s1.formula,
+  s2.formula,
+  data,
+  caliper = NULL,
+  L = 5,
+  boot = F,
+  nBoot = 5000,
+  ci = 95,
+  verbose = T
+)
 }
 \arguments{
 \item{outcome}{character indicating the name of the
@@ -37,7 +49,14 @@ Treatment and pre-treatment covariates should appear on the right-hand side.}
 \code{outcome}, \code{treatment} and \code{mediator} along with any variables
 referenced in \code{s1.formula} and \code{s2.formula}.}
 
-\item{L}{Number of matches to use for each unit in first and second stages. Default is 5.}
+\item{caliper}{A scalar denoting the caliper to be used in matching in the treatment stage (calipers cannot be used for matching
+on the mediator). Observations outside of the caliper are dropped. Calipers are specified in standard deviations of the covariates.
+NULL by default (no caliper).}
+
+\item{L}{Number of matches to use for each unit. Must be a numeric vector of eitehr length 1 or 2. If length 1, L 
+sets the number of matches used in both the first stage (matching on mediator) and in the second stage (matching on treatment).
+If length 2, the first element sets the number of matches used in the first stage (matching on mediator) and the second element
+sets the number of matches used in the second stage (matching on treatment) Default is 5.}
 
 \item{boot}{logical indicating whether to conduct inference using the weighted bootstrap 
 for matching estimators extended from Otsu and Rai (2017) (\code{TRUE}) or the asymptotic variance 
@@ -70,8 +89,13 @@ Returns an object of \code{class} \code{tmatch}. Contains the following componen
 \item outcome.vec: Vector of outcomes used in estimation
 \item treatment.vec: Vector of treatment indicators used in estimation
 \item mediator.vec: Vector of mediator indicators used in estimation
+\item L_m: Number of matches found for each unit in the first stage mediator matching procedure
+\item L_a: Number of matches found for each unit in the second stage mediator matching procedure
+\item KLm: Number of times unit is used as a match in the first stage mediator matching procedure
+\item KLa: Number of times unit is used as a match in the second stage treatment matching procedure
 \item N: Number of observations
 \item N_summary: Number of observations in each treatment/mediator combination.
+\item caliper: Caliper (if any) used in the treatment stage matching to drop distant observations.
 }
 }
 \description{
@@ -127,7 +151,7 @@ telescopeMatch.result.0 <-  telescope_match(outcome = "exhealth30", treatment = 
 
 }
 \references{
-Blackwell, Matthew, and Strezhnev, Anton (2019)
+Blackwell, Matthew, and Strezhnev, Anton (2020)
 "Telescope Matching: Reducing Model Dependence 
 in the Estimation of Direct Effects." Working Paper.
 }

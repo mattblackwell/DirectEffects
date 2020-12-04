@@ -9,10 +9,33 @@
 \arguments{
 \item{object}{an object of class \code{tmatch} -- results from a call to \code{telescope_match}}
 }
+\value{
+Returns an object of \code{class} \code{summary.tmatch}. Contains the following components
+\itemize{
+\item outcome: Name of outcome variable
+\item treatment: Name of treatment variable
+\item mediator: Name of mediator variable
+\item pre.treatment: Vector of names of pre-treatment confounders (appear in both stage 1 and 2)
+\item post.treatment: Vector of names of post-treatment confounders (appear only in stage 1)
+\item sizes: Number of observations in each treatment-mediator combination
+\item L_m: Number of units matched in the mediator (first) stage
+\item L_a: Number of units matched in the treatment (second) stage
+\item estimate: Point estimate of the ACDE
+\item se.type: Character indicating the type of standard error estimator used in the 
+telescope_matching routine, either 'Asymptotic" or 'Bootstrap'
+\item std.err: Estimated standard error of the ACD
+\item ci.level: Confidence interval level
+\item conf.low: Lower bound of the `ci.level` asymptotically normal confidence interval
+\item conf.high: Upper bound of the `ci.level` asymptotically normal confidence interval
+}
+}
 \description{
 Summarize telescope match objects
 }
 \details{
 \code{summary} method for \code{tmatch} objects returned by
 \code{telescope_match}
+
+Returns a summary data frame containing the estimate, standard error and confidence
+interval from the `telescope_match` object.
 }
