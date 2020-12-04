@@ -290,14 +290,14 @@ By default, the `telescope_match()` function will estimate the effect of the tre
 ### Estimate ACDE for women holding employment at 0
 telescopeMatch.result.0 <-  telescope_match(outcome = "exhealth30", treatment = "treat", mediator = "work2year2q", 
                                             s1.formula = tm_stage1, 
-                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=FALSE, verbose=TRUE, ci=95)
+                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=FALSE, verbose=FALSE, ci=95)
 ```
 
 The `summary()` function will print the output (estimate + standard error and confidence interval) to the console. The elements of the output can be accessed directly from the returned `tmatch` object.
 
 ```{r}
-# Print the summary
-summary(telescopeMatch.result.0)
+# Prints the summary output
+print(summary(telescopeMatch.result.0))
 
 # The coefficients + SE can be accessed directly as well
 telescopeMatch.result.0$estimate # Point estimate
@@ -317,7 +317,7 @@ balance.tmatch(telescopeMatch.result.0, vars = treat ~ trainyrbef + hhsize, data
 
 Calling the `plotDiag.tmatch()` function will return a histogram of the number of times each unit is used as a match ($K/L$) in either the first (mediator) stage or the second (treatment) stage.
 
-```{r}
+```{r, fig.width=7, fig.height=5}
 
 # Number of times each unit is used as a match in the mediator (first) stage
 plotDiag.tmatch(telescopeMatch.result.0, stage="mediator")

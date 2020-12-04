@@ -726,7 +726,7 @@ plotDiag.tmatch <- function(object, stage = "mediator"){
   
   ### If it's mediator, plot the histogram of K_Lm for mediator == 0
   if (stage == "mediator"){
-    plot_title = paste("Matching weights for first stage (mediator) among M = 0")
+    plot_title = paste("Matching weights for first stage (mediator)\namong M = 0")
     hist(object$KLm[object$mediator.vec == 0]/object$L_m, main=plot_title, xlab="Number of times unit is matched")
     abline(v = 1, col="red", lty=2, lwd=2)
   }else if (stage == "treatment"){
