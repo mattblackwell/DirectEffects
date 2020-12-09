@@ -101,22 +101,25 @@
 #' jobcorps_female <- subset(jobcorps, female == 1)
 #' 
 #' ## Telescope matching formula - First stage (X and Z)
-#' tm_stage1 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
-#'                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh + rwhite + everarr + hhsize + hhsizemis +  hhinc12 + hhinc8 + fdstamp +
-#'                                    welf1 + welf2 + publicass + emplq4 + emplq4full + pemplq4 + pemplq4mis + vocq4 + vocq4mis + 
-#'                                    health1212 + health123 + pe_prb12 + pe_prb12mis  + 
-#'                                    narry1 + numkidhhf1zero + numkidhhf1onetwo + pubhse12 + h_ins12a + h_ins12amis)
-#' 
+#' tm_stage1 <- exhealth30 ~ treat + schobef + trainyrbef + jobeverbef +
+#'   emplq4 + emplq4full
+#'
 #' ## Telescope matching formula - second stage (X)
-#' tm_stage2 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
-#'                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh +  rwhite + everarr + hhsize + hhsizemis + hhinc12 + hhinc8 + fdstamp +
-#'                                    welf1 + welf2 + publicass)
-#' 
+#' tm_stage2 <- exhealth30 ~ treat + schobef + trainyrbef + jobeverbef 
+#'  
 #' 
 #' ### Estimate ACDE for women holding employment at 0
-#' telescopeMatch.result.0 <-  telescope_match(outcome = "exhealth30", treatment = "treat", mediator = "work2year2q", 
-#'                                            s1.formula = tm_stage1, 
-#'                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=FALSE, nBoot=1000, verbose=TRUE, ci=95)
+#' tm_out <-  telescope_match(
+#'   outcome = "exhealth30",
+#'   treatment = "treat",
+#'   mediator = "work2year2q", 
+#'   s1.formula = tm_stage1, 
+#'   s2.formula = tm_stage2,
+#'   data = jobcorps_female,
+#'   L = 3,
+#'   boot = FALSE,
+#'   verbose = TRUE
+#' )
 #' 
 #' @export
 #' @importFrom Matching Match
@@ -507,7 +510,9 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
 #' @details \code{summary} method for \code{tmatch} objects returned by
 #' \code{telescope_match}
 #'
-#' @param object an object of class \code{tmatch} -- results from a call to \code{telescope_match} 
+#' @param object an object of class \code{tmatch} -- results from a
+#' call to \code{telescope_match}
+#' @param ... additional arguments affecting the summary produced.
 #' 
 #' @details Returns a summary data frame containing the estimate, standard error and confidence
 #' interval from the `telescope_match` object.

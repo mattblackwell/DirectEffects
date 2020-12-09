@@ -7,7 +7,10 @@
 \method{summary}{tmatch}(object, ...)
 }
 \arguments{
-\item{object}{an object of class \code{tmatch} -- results from a call to \code{telescope_match}}
+\item{object}{an object of class \code{tmatch} -- results from a
+call to \code{telescope_match}}
+
+\item{...}{additional arguments affecting the summary produced.}
 }
 \value{
 Returns an object of \code{class} \code{summary.tmatch}. Contains the following components
