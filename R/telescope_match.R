@@ -23,6 +23,8 @@
 #' @param data A dataframe containing columns referenced by
 #' \code{outcome}, \code{treatment} and \code{mediator} along with any variables
 #' referenced in \code{s1.formula} and \code{s2.formula}.
+#' @param metric character indicating the matching distance metric used, either 'mahalanobis' for mahalanobis distance or 'pscore' for
+#' propensity score matching.
 #' @param caliper A scalar denoting the caliper to be used in matching in the treatment stage (calipers cannot be used for matching
 #' on the mediator). Observations outside of the caliper are dropped. Calipers are specified in standard deviations of the covariates.
 #' NULL by default (no caliper).
@@ -120,7 +122,7 @@
 #' @importFrom Matching Match
 #' @importFrom stats as.formula model.frame predict rbinom
 #'
-telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula, data,  caliper = NULL, L=5, 
+telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula, data, metric = "mahalanobis", caliper = NULL, L=5, 
                             boot = F, nBoot=5000, ci = 95, verbose=T){
 
   ########################
@@ -199,6 +201,13 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
     stop("Error: 'mediator' must have only two levels: 0,1")
   }
   
+  ## Check 5 - Metric is either "mahalanobis" or "pscore"
+  if (!(is.character(metric))){
+    stop("Error: 'metric' must be a character vector either 'mahalanobis' or 'pscore'")
+  }else if(metric!="mahalanobis"&metric!="pscore"){
+    stop("Error: 'metric' must be a character vector either 'mahalanobis' or 'pscore'")
+  }
+  
   ### Pre-treatment covariates are s2.terms
   pre.treatment <- s2.terms[!(s2.terms %in% c(outcome, treatment, mediator))]
   s1.covariates <- s1.terms[!(s1.terms %in% c(outcome, treatment, mediator))]
@@ -236,8 +245,24 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   ######################
   
   ### First stage matching - inexact on all pre.treatment/post.treatment covariates, exact on A"
-  tm.first <- Match(Y = data[[outcome]], Tr = data[[mediator]], X = data[,c(all.covariates, treatment)], 
-                    exact = c(rep(FALSE, length(all.covariates)), TRUE), M=L_m, BiasAdjust=FALSE, estimand = "ATT", ties=F)
+  if (metric == "mahalanobis"){
+    # Mahalanobis distance matching
+    tm.first <- Match(Y = data[[outcome]], Tr = data[[mediator]], X = data[,c(all.covariates, treatment)], 
+                      exact = c(rep(FALSE, length(all.covariates)), TRUE), M=L_m, BiasAdjust=FALSE, 
+                      estimand = "ATT", ties=F, Weight=2)
+  }else if(metric == "pscore"){
+    # Get the right formula for the pscore model
+    s1.formula.pscore <- as.formula(paste(mediator, as.character(s1.formula)[3] , sep="~")) # 3 = RHS
+    # First fit a propensity score model for probability of mediator given pre/post-treatment covariates
+    pscore.model.first <- glm(s1.formula.pscore, data=data, family=binomial(link="logit"))
+    # Predict propensity score
+    pscores.first <- predict(pscore.model.first, predict="response")
+    # Match on the propensity score
+    tm.first <- Match(Y = data[[outcome]], Tr = data[[mediator]], X = cbind(pscores.first, data[[treatment]]),
+                      exact=c(FALSE, TRUE), M=L_m, BiasAdjust=FALSE, 
+                      estimand = "ATT", ties=F, Weight=1)
+    
+  }
 
   ### Summarize input - First Stage
   if (verbose){
@@ -312,11 +337,60 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   data$pred.Y.A <- data[[treatment]] * data$pred.Y.a1 + (1 - data[[treatment]]) * data$pred.Y.a0 ### Predict factual
   data$pred.Y.1.A <- data[[treatment]] * data$pred.Y.a0 + (1 - data[[treatment]]) * data$pred.Y.a1 ## Predict counterfactual
   
+  if (metric == "pscore"){
+    # Get the right formula for the pscore model
+    
+    # Strip out "treatment" variable
+    s2.covars <- attr(terms(s2.formula.fixed), "term.labels") # All terms in the RHS
+    # Get rid of treatment
+    s2.covars <- s2.covars[s2.covars != treatment]
+    # Get rid of any interactions involving treatment
+    s2.covars <- s2.covars[!grepl(paste("^",treatment, ":", sep=""), s2.covars)&
+                             !grepl(paste(":",treatment,"$", sep=""), s2.covars)&
+                             !grepl(paste(":", treatment, ":", sep=""), s2.covars)]
+    
+    # Reassemble the formula
+    s2.formula.pscore <- as.formula(paste(treatment, "~", paste(s2.covars, collapse=" + ")))
+    
+    # Warning for if the treatment variable is still detected in the formula
+    # This is a catch in case users have variable names that are similar to the 'treatment' variable 
+    # if so, they can safely ignore these warnings.
+    #if (grepl(treatment, as.character(s2.formula.pscore)[3])){
+    #  warning("Warning: regex search suggests 'treatment' variable may still be 
+    #        in the second stage propensity score RHS - check the formula below to verify")
+    #  warning(as.character(s2.formula.pscore)[3])
+    #}
+    
+    # First fit a propensity score model for probability of treatment given pre-treatment covariates
+    pscore.model.second <- glm(s2.formula.pscore, data=data, family=binomial(link="logit"))
+    # Predict propensity score
+    pscores.second <- predict(pscore.model.second, predict="response")
+    
+  }
+  
   ### Match controls to treated
-  tm.second.a1 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], estimand = "ATT", caliper = caliper, M = L_a, ties=F)
+  if (metric == "mahalanobis"){
+    tm.second.a1 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], 
+                          estimand = "ATT", caliper = caliper, M = L_a, ties=F, Weight=2)
+  }else if(metric == "pscore"){
+    # Match on the propensity score
+    tm.second.a1 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = as.matrix(pscores.second), 
+                          estimand = "ATT", caliper = caliper, M = L_a, ties=F, Weight=2)
+    
+  }
+  
+  
   KLa0 <- table(tm.second.a1$index.control) ## Count of matched controls - stage 2
   ### Match treateds to control
-  tm.second.a0 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], estimand = "ATC", caliper = caliper, M = L_a, ties=F)
+  if (metric == "mahalanobis"){
+    tm.second.a0 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = data[,c(pre.treatment)], 
+                          estimand = "ATC", caliper = caliper, M = L_a, ties=F, Weight=2)
+  }else if(metric == "pscore"){
+    # Match on the propensity score
+    tm.second.a1 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = as.matrix(pscores.second), 
+                          estimand = "ATC", caliper = caliper, M = L_a, ties=F, Weight=2)
+  }
+  
   KLa1 <- table(tm.second.a0$index.treated) ## Count of matched treated - stage 2
   
   ## Total match counts - stage 2
