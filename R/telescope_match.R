@@ -375,7 +375,7 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
   }else if(metric == "pscore"){
     # Match on the propensity score
     tm.second.a1 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = as.matrix(pscores.second), 
-                          estimand = "ATT", caliper = caliper, M = L_a, ties=F, Weight=2)
+                          estimand = "ATT", caliper = caliper, M = L_a, ties=F, Weight=1)
     
   }
   
@@ -387,8 +387,8 @@ telescope_match <- function(outcome, treatment, mediator, s1.formula, s2.formula
                           estimand = "ATC", caliper = caliper, M = L_a, ties=F, Weight=2)
   }else if(metric == "pscore"){
     # Match on the propensity score
-    tm.second.a1 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = as.matrix(pscores.second), 
-                          estimand = "ATC", caliper = caliper, M = L_a, ties=F, Weight=2)
+    tm.second.a0 <- Match(Y = data$Ytilde, Tr = data[[treatment]], X = as.matrix(pscores.second), 
+                          estimand = "ATC", caliper = caliper, M = L_a, ties=F, Weight=1)
   }
   
   KLa1 <- table(tm.second.a0$index.treated) ## Count of matched treated - stage 2
