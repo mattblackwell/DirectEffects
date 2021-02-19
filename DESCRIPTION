@@ -10,7 +10,6 @@ Authors@R: c(
     person("Anton", "Strezhnev", email = "as6672@nyu.edu", role = c("aut")))
 Imports:
     stats,
-    sandwich,
     Formula,
     glue,
     Matching

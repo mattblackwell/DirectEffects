@@ -6,48 +6,28 @@
 direct effect of a binary treatment net the effect of a binary mediator.}
 \usage{
 telescope_match(
-  outcome,
-  treatment,
-  mediator,
-  s1.formula,
-  s2.formula,
+  formula,
   data,
   caliper = NULL,
   L = 5,
-  boot = F,
+  boot = FALSE,
   nBoot = 5000,
   ci = 95,
-  verbose = T
+  verbose = TRUE,
+  subset,
+  contrasts = NULL,
+  separate_bc = TRUE,
+  ...
 )
 }
 \arguments{
-\item{outcome}{character indicating the name of the
-variable in \code{data} being used as the outcome. This variable must appear
-on the left-hand side of both \code{s1.formula} and \code{s2.formula}.}
-
-\item{treatment}{character indicating the name of the
-variable in \code{data} being used as the treatment indicator. This variable
-must be a binary integer (either 0 or 1). This variable must appear
-on the right-hand side of  \code{s1.formula}. It should also appear in \code{s2.formula}.}
-
-\item{mediator}{character indicating the name of the
-variable in \code{data} being used as the mediator indicator. This variable
-must be a binary integer (either 0 or 1). This method returns controlled direct effects
-of setting the mediator to 0. Recode the indicator if the controlled direct effect of setting the 
-mediator to 1 is of interest. This variable cannot appear in either
-\code{s1.formula} or \code{s2.formula}.}
-
-\item{s1.formula}{A formula object denoting the stage 1 formula. The outcome should appear on the left-hand side.
-Treatment, pre- and post-treatment covariates should appear on the right-hand side. The mediator is omitted as the model
-is fit only within the subset of observations with \code{mediator} equal to 0.}
-
-\item{s2.formula}{A formula object denoting the stage 2 formula estimating the ACDE of treatment using the demediated
-matches from the first stage. The outcome should appear on the left-hand side.
-Treatment and pre-treatment covariates should appear on the right-hand side.}
+\item{formula}{A formula object that specifies the outcome,
+baseline covariates, treatment, intermediate covariate, and
+mediator to be used in the matching. Each of the last four variable
+groups should be separated by \code{|}. See below for more details.}
 
 \item{data}{A dataframe containing columns referenced by
-\code{outcome}, \code{treatment} and \code{mediator} along with any variables
-referenced in \code{s1.formula} and \code{s2.formula}.}
+\code{formula}.}
 
 \item{caliper}{A scalar denoting the caliper to be used in matching in the treatment stage (calipers cannot be used for matching
 on the mediator). Observations outside of the caliper are dropped. Calipers are specified in standard deviations of the covariates.
@@ -68,7 +48,23 @@ estimator from Blackwell and Strezhnev (2019) (\code{FALSE}). Defaults to \code{
 interval centered on the estimated treatment effect. If \code{boot} is \code{TRUE} returns the \code{(100 - ci)/2} and
 \code{100 - (100 - ci)/2} percentiles of the bootstrap distribution. Must be in the interval \code{(0, 100)}. Defaults to 95.}
 
-\item{verbose}{logical indicating whether to display progress information. Default is \code{TRUE}.}
+\item{verbose}{logical indicating whether to display progress
+information. Default is \code{TRUE}.}
+
+\item{subset}{A vector of logicals indicating which rows of
+\code{data} to keep.}
+
+\item{contrasts}{an optional list. See the \code{contrasts.arg}
+    of \code{\link[stats]{model.matrix.default}}.}
+
+\item{separate_bc}{logical indicating whether or not bias
+correction regressions should be run separately within levels of
+the treatment and mediator. Defaults to \code{TRUE}. If
+\code{TRUE}, any interactions between treatment/mediator and
+covariates in the specification should be omitted.}
+
+\item{...}{additional arguments to be passed to the low level
+    regression fitting functions (see below).}
 }
 \value{
 Returns an object of \code{class} \code{tmatch}. Contains the following components
@@ -108,19 +104,34 @@ The \code{telescope_match} function implements the two-stage
 (2019).
 
  The procedure first estimates a demediated outcome using a combination
- of matching and a regression bias-correction. The first stage formula 
- \code{s1.formula} specifies the pre- and post-treatment covariates to be used
- in matching along with the specification for the bias-correction regression. In this stage,
- all units with M = 1 to units with M = 0 with identical treatment values and 
- similar pre- and post-treatment covariates. The potential outcomes under M = 0
- are imputed using the average of the matches + the bias correction from the regression
- model. The second stage estimates the controlled direct effect of treatment
- on this demediated outcome using a similar matching/bias-correction procedure with
- the formula specified in \code{s2.formula} indicating the pre-treatment covariates used
- along with the treatment.
+ of matching and a regression bias-correction based on the
+specification in \code{formula}, which should be specified as
+\code{Y ~ X | A | Z | M}, where \code{Y} is the outcome, \code{X}
+is a formula of baseline covariates, \code{A} is a single variable
+name indicating the binary treatment, \code{Z} is a formula of
+intermediate covariates, and \code{M} is a single variable name
+indicating the mediator.
+
+Under the default \code{separate_bc == TRUE}, the  first stage will
+match for \code{M} on \code{X} and \code{Z} within levels of
+\code{A}. The bias correction regressions will be linear with a
+specification of \code{Y ~ X + Z} within levels of \code{A} and
+\code{M}. In the second stage, we match for \code{A} within levels
+of \code{X} and run bias correction regressions of \code{Ytilde ~ X}
+within levels of \code{A}, where \code{Ytilde} is the imputed value
+of \code{Y(A, 0)} from the first stage. This second step estimates
+the controlled direct effect of treatment when the mediator is 0.
+
+When \code{separate_bc} is \code{FALSE}, the bias correction
+regressions are not broken out by the treatment/mediator and
+\code{A} and \code{M} are simply included as separate terms in the
+linear regression. In this setting, interactions between the
+treatment/mediator and covariates can be added on a selective basis
+to the \code{X} and \code{Z} specifications. 
  
- Matching is performed using the \code{Match()} routine from the \code{Matching} package.
- By default, matching is L-to-1 nearest neighbor with replacement using Mahalanobis distance.
+ Matching is performed using the \code{Match()} routine from the
+\code{Matching} package. By default, matching is L-to-1 nearest
+neighbor with replacement using Mahalanobis distance. 
  
 
 See the references below for more details.
@@ -132,20 +143,13 @@ data(jobcorps)
 jobcorps_female <- subset(jobcorps, female == 1)
 
 ## Telescope matching formula - First stage (X and Z)
-tm_stage1 <- exhealth30 ~ treat + schobef + trainyrbef + jobeverbef +
-  emplq4 + emplq4full
-
-## Telescope matching formula - second stage (X)
-tm_stage2 <- exhealth30 ~ treat + schobef + trainyrbef + jobeverbef 
+tm_form <- exhealth30 ~  schobef + trainyrbef + jobeverbef  |
+treat | emplq4 + emplq4full | work2year2q
  
 
 ### Estimate ACDE for women holding employment at 0
 tm_out <-  telescope_match(
-  outcome = "exhealth30",
-  treatment = "treat",
-  mediator = "work2year2q", 
-  s1.formula = tm_stage1, 
-  s2.formula = tm_stage2,
+  tm_form,
   data = jobcorps_female,
   L = 3,
   boot = FALSE,

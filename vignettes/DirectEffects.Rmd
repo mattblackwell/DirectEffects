@@ -271,16 +271,14 @@ We define the two formula objects used for matching, the first including all pre
 
 ```{r}
 ## Telescope matching formula - First stage (X and Z)
-tm_stage1 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
-                                    everalc + alc12 + everilldrugs + age_cat +  eduhigh + rwhite + everarr + hhsize + hhsizemis +  hhinc12 + hhinc8 + fdstamp +
-                                    welf1 + welf2 + publicass + emplq4 + emplq4full + pemplq4 + pemplq4mis + vocq4 + vocq4mis + 
-                                    health1212 + health123 + pe_prb12 + pe_prb12mis  + 
-                                    narry1 + numkidhhf1zero + numkidhhf1onetwo + pubhse12 + h_ins12a + h_ins12amis)
-
-## Telescope matching formula - second stage (X)
-tm_stage2 <- exhealth30 ~ treat*(schobef + trainyrbef + jobeverbef + jobyrbef + health012 + health0mis +  pe_prb0 + 
-                                  everalc + alc12 + everilldrugs + age_cat +  eduhigh +  rwhite + everarr + hhsize + hhsizemis + hhinc12 + hhinc8 + fdstamp +
-                                  welf1 + welf2 + publicass)
+tm_form <-  exhealth30 ~ schobef + trainyrbef + jobeverbef +
+  jobyrbef + health012 + health0mis +  pe_prb0 +  everalc + alc12 +
+  everilldrugs + age_cat +  eduhigh +  rwhite + everarr + hhsize +
+  hhsizemis + hhinc12 + hhinc8 + fdstamp + welf1 + welf2 +
+  publicass | treat | emplq4 + emplq4full + pemplq4 + pemplq4mis +
+  vocq4 + vocq4mis + health1212 + health123 + pe_prb12 +
+  pe_prb12mis  + narry1 + numkidhhf1zero + numkidhhf1onetwo +
+  pubhse12 + h_ins12a + h_ins12amis | work2year2q
 
 ```
 
@@ -288,9 +286,10 @@ By default, the `telescope_match()` function will estimate the effect of the tre
 
 ```{r}
 ### Estimate ACDE for women holding employment at 0
-telescopeMatch.result.0 <-  telescope_match(outcome = "exhealth30", treatment = "treat", mediator = "work2year2q", 
-                                            s1.formula = tm_stage1, 
-                                            s2.formula = tm_stage2, data=jobcorps_female, L=3, boot=FALSE, verbose=FALSE, ci=95)
+telescopeMatch.result.0 <-  telescope_match(
+  tm_form,
+  data = jobcorps_female, L = 3,
+  boot = FALSE, verbose = TRUE, ci = 95)
 ```
 
 The `summary()` function will print the output (estimate + standard error and confidence interval) to the console. The elements of the output can be accessed directly from the returned `tmatch` object.
