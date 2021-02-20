@@ -19,22 +19,22 @@ or function of covariates (e.g. higher-order polynomials or interactions) should
 Returns a data frame with the following columns.
 \itemize{
 \item variable: Name of covariate
-\item Before_M0/Before_A0: Pre-matching average of the covariate in the mediator == 0 (if first stage balance) or 
+\item before_0: Pre-matching average of the covariate in the mediator == 0 (if first stage balance) or 
 treatment == 0 (if second stage balance) condition
-\item Before_M1/Before_A1: Pre-matching average of the covariate in the mediator == 1 (if first stage balance) or 
+\item before_1: Pre-matching average of the covariate in the mediator == 1 (if first stage balance) or 
 treatment == 1 (if second stage balance) condition
-\item After_M0/After_A0: Post-matching average of the covariate in the mediator == 0 (if first stage balance) or 
+\item after_0: Post-matching average of the covariate in the mediator == 0 (if first stage balance) or 
 treatment == 0 (if second stage balance) condition
-\item After_M1/After_A1: Post-matching average of the covariate in the mediator == 1 (if first stage balance) or 
+\item after_1: Post-matching average of the covariate in the mediator == 1 (if first stage balance) or 
 treatment == 1 (if second stage balance) condition
-\item SD: standard deviation of the outcome (pre-Matching)
-\item Before_Diff: Pre-matching covariate difference between mediator arms (if first stage balance) or treatment arms
+\item before_sd: standard deviation of the outcome (pre-Matching)
+\item before_diff: Pre-matching covariate difference between mediator arms (if first stage balance) or treatment arms
 (if second stage balance).
-\item Before_Std_Diff: Pre-matching standardized covariate difference between mediator arms (if first stage balance) or
+\item before_std_diff: Pre-matching standardized covariate difference between mediator arms (if first stage balance) or
 treatment arms (if second stage balance), Equal to Before_Diff/SD.
-\item After_Diff: Post--matching covariate difference between mediator arms (if first stage balance) or treatment arms
+\item after_diff: Post--matching covariate difference between mediator arms (if first stage balance) or treatment arms
 (if second stage balance).
-\item After_Std_Diff: Post-matching standardized covariate difference between mediator arms (if first stage balance) or
+\item after_std_diff: Post-matching standardized covariate difference between mediator arms (if first stage balance) or
 treatment arms (if second stage balance), Equal to Before_Diff/SD.
 }
 }

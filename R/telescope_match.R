@@ -631,27 +631,27 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
 #' @return Returns a data frame with the following columns.
 #' \itemize{
 #' \item variable: Name of covariate
-#' \item Before_M0/Before_A0: Pre-matching average of the covariate in the mediator == 0 (if first stage balance) or 
+#' \item before_0: Pre-matching average of the covariate in the mediator == 0 (if first stage balance) or 
 #' treatment == 0 (if second stage balance) condition
-#' \item Before_M1/Before_A1: Pre-matching average of the covariate in the mediator == 1 (if first stage balance) or 
+#' \item before_1: Pre-matching average of the covariate in the mediator == 1 (if first stage balance) or 
 #' treatment == 1 (if second stage balance) condition
-#' \item After_M0/After_A0: Post-matching average of the covariate in the mediator == 0 (if first stage balance) or 
+#' \item after_0: Post-matching average of the covariate in the mediator == 0 (if first stage balance) or 
 #' treatment == 0 (if second stage balance) condition
-#' \item After_M1/After_A1: Post-matching average of the covariate in the mediator == 1 (if first stage balance) or 
+#' \item after_1: Post-matching average of the covariate in the mediator == 1 (if first stage balance) or 
 #' treatment == 1 (if second stage balance) condition
-#' \item SD: standard deviation of the outcome (pre-Matching)
-#' \item Before_Diff: Pre-matching covariate difference between mediator arms (if first stage balance) or treatment arms
+#' \item before_sd: standard deviation of the outcome (pre-Matching)
+#' \item before_diff: Pre-matching covariate difference between mediator arms (if first stage balance) or treatment arms
 #' (if second stage balance).
-#' \item Before_Std_Diff: Pre-matching standardized covariate difference between mediator arms (if first stage balance) or
+#' \item before_std_diff: Pre-matching standardized covariate difference between mediator arms (if first stage balance) or
 #' treatment arms (if second stage balance), Equal to Before_Diff/SD.
-#' \item After_Diff: Post--matching covariate difference between mediator arms (if first stage balance) or treatment arms
+#' \item after_diff: Post--matching covariate difference between mediator arms (if first stage balance) or treatment arms
 #' (if second stage balance).
-#' \item After_Std_Diff: Post-matching standardized covariate difference between mediator arms (if first stage balance) or
+#' \item after_std_diff: Post-matching standardized covariate difference between mediator arms (if first stage balance) or
 #' treatment arms (if second stage balance), Equal to Before_Diff/SD.
 #' }
 #' 
 #' @export
-#' @importFrom stats as.formula model.frame
+#' @importFrom stats as.formula model.frame weighted.mean
 
 
 balance.tmatch <- function(object, vars, data){
@@ -695,91 +695,53 @@ balance.tmatch <- function(object, vars, data){
   data <- data[object$included,]
   
   ## Do model.frame first to parse any functions
-  covariate.frame = tryCatch({model.frame(vars, data)},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
-  #print(head(covariate.frame))
-  ## Do model.matrix to get interactions
-  covariate.frame = tryCatch({model.matrix(vars, covariate.frame)},error = function(e) { stop("Could not extract all variables in 'formula' from data")})
+  mf <- tryCatch({model.frame(vars, data)},
+                 error = function(e) { stop("Could not extract all variables in 'formula' from data")})
+
+  ## Do model.matrix to get functions/interactions/expansions
+  X = tryCatch({model.matrix(vars, mf)},
+               error = function(e) { stop("Could not extract all variables in 'formula' from data")})
 
   ## Strip out the "(Intercept) column
-  covariate.frame <- covariate.frame[,!(colnames(covariate.frame) %in% c("(Intercept)"))]
+  X <- X[, colnames(X) != "(Intercept)"]
+
+  ## 
+  A <- model.response(mf)
+
+  before_0 <- colMeans(X[A == 0,])
+  before_1 <- colMeans(X[A == 1,])
+  before_sd <- apply(X, 2, sd)
+  before_diff <- before_1 - before_0
+  before_std_diff <- before_diff / before_sd
 
   ### Generate weights on each observation
   if (get.balance == "mediator"){
     ### If it's the mediator, all M=1 units get KLm+1, all M=0 get KLm
-    obs.weights <- (object$KLm/object$L_m + 1)*(data[[object$mediator]] == 1) + (object$KLm/object$L_m)*(data[[object$mediator]] == 0)
-    augmented.frame <- data.frame(cbind(data[[object$mediator]], obs.weights, covariate.frame))
-    colnames(augmented.frame)[1] <- "mediator"
-    ## Fix column names
-    colnames(augmented.frame)[-c(1,2)] <- colnames(covariate.frame)
-
-  }else if (get.balance == "treatment"){
+    obs.weights <- (object$KLm/object$L_m + 1) * A +
+      (object$KLm/object$L_m) * (1 - A)
+  } else if (get.balance == "treatment"){
     ### If it's the treatment, all A=1 units get KLa+1, all A=0 get KLa+1
-    obs.weights <- (object$KLa/object$L_a + 1)
-    augmented.frame <- data.frame(cbind(data[[object$treatment]], obs.weights, covariate.frame))
-    colnames(augmented.frame)[1] <- "treatment"
-    ## Fix column names
-    colnames(augmented.frame)[-c(1,2)] <- colnames(covariate.frame)
-    
+    obs.weights <- (object$KLa/object$L_a + 1)    
   }
 
-  ## Make a data-frame containing balance results
-  if (get.balance == "mediator"){
-    balance.frame <- data.frame(variable = colnames(augmented.frame)[-c(1,2)], Before_M0 = NA, Before_M1 = NA, After_M0 = NA, After_M1= NA, SD= NA)
-  }else if (get.balance == "treatment"){
-    balance.frame <- data.frame(variable = colnames(augmented.frame)[-c(1,2)], Before_A0 = NA, Before_A1 = NA, After_A0 = NA, After_A1= NA, SD = NA)
-  }
+  ## get weighted means of each variable
+  after_0 <- apply(X[A == 0, ], 2, weighted.mean, obs.weights[A == 0])
+  after_1 <- apply(X[A == 1, ], 2, weighted.mean, obs.weights[A == 1])
+  after_diff <- after_1 - after_0
+  after_std_diff <- after_diff / before_sd
 
-  
-  ### For each term in vars (aside from the treatment and the weights)
-  for (variable in colnames(augmented.frame)[-c(1,2)]){
+  bal_tab <- data.frame(
+    variable = colnames(X),
+    before_0 = before_0, before_1 = before_1,
+    after_0 = after_0, after_1 = after_1,
+    before_sd = before_sd,
+    before_diff = before_diff, before_std_diff,
+    after_diff = after_diff, after_std_diff    
+  )
 
-    ## Run the regression to get difference-in-means
-    if (get.balance == "mediator"){
-      ## Unweighted difference
-      un.weight.reg <- lm(as.formula(paste(variable, "~", "mediator")), data=augmented.frame)
-      balance.frame[balance.frame$variable == variable,]$Before_M0 = coef(un.weight.reg)[1] ## Intercept is M = 0
-      balance.frame[balance.frame$variable == variable,]$Before_M1 = coef(un.weight.reg)[1] + coef(un.weight.reg)[2] ## Intercept + Beta1 is M = 1
-      balance.frame[balance.frame$variable == variable,]$SD <- sd(augmented.frame[[variable]]) ## Get the marginal SD of the variable in the unweighted data.
-        
-      ## Weighted difference
-      balance.reg <- lm(as.formula(paste(variable, "~", "mediator")), data=augmented.frame, weights=obs.weights)
-      balance.frame[balance.frame$variable == variable,]$After_M0 = coef(balance.reg)[1] ## Intercept is M = 0
-      balance.frame[balance.frame$variable == variable,]$After_M1 = coef(balance.reg)[1] + coef(balance.reg)[2] ## Intercept + Beta1 is M = 1
-      
-    }else if (get.balance == "treatment"){
-      ## Unweighted difference
-      un.weight.reg <- lm(as.formula(paste(variable, "~", "treatment")), data=augmented.frame)
-      balance.frame[balance.frame$variable == variable,]$Before_A0 = coef(un.weight.reg)[1] ## Intercept is A = 0
-      balance.frame[balance.frame$variable == variable,]$Before_A1 = coef(un.weight.reg)[1] + coef(un.weight.reg)[2] ## Intercept + Beta1 is A = 1
-      balance.frame[balance.frame$variable == variable,]$SD <- sd(augmented.frame[[variable]])  ## Get the marginal SD of the variable in the unweighted data.
-        
-      ## Weighted difference
-      balance.reg <- lm(as.formula(paste(variable, "~", "treatment")), data=augmented.frame, weights=obs.weights)
-      balance.frame[balance.frame$variable == variable,]$After_A0 = coef(balance.reg)[1] ## Intercept is M = 0
-      balance.frame[balance.frame$variable == variable,]$After_A1 = coef(balance.reg)[1] + coef(balance.reg)[2] ## Intercept + Beta1 is M = 1
-      
-    }
-    
-  }
-  
-  ## Save the standardized differences in means
-  if (get.balance == "mediator"){
-    balance.frame$Before_Diff <- balance.frame$Before_M1 - balance.frame$Before_M0
-    balance.frame$Before_Std_Diff <- balance.frame$Before_Diff/balance.frame$SD
-    
-    balance.frame$After_Diff <- balance.frame$After_M1 - balance.frame$After_M0
-    balance.frame$After_Std_Diff <- balance.frame$After_Diff/balance.frame$SD    
-  }else if (get.balance == "treatment"){
-    balance.frame$Before_Diff <- balance.frame$Before_A1 - balance.frame$Before_A0
-    balance.frame$Before_Std_Diff <- balance.frame$Before_Diff/balance.frame$SD
-    
-    balance.frame$After_Diff <- balance.frame$After_A1 - balance.frame$After_A0
-    balance.frame$After_Std_Diff <- balance.frame$After_Diff/balance.frame$SD    
-  }
-  
   
   ## Output
-  return(balance.frame)
+  return(bal_tab)
   
 }
 
