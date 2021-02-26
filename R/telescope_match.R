@@ -332,7 +332,9 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   ### Impute the outcome under M=0 for units with M=1
   Ytilde <- Y ## Bias-corrected matching imputation for the M=1 units
   ### Average of imputations +
-  ### (Regression prediction for X_i - regression prediction for all imputed units)
+  ### (Regression prediction for X_i - regression prediction for all
+  ### imputed units)
+  
   Ytilde[M == 1] <- y.m0.m.imp[M == 1] + pred.Y.m0[M == 1] - y.m0.r.imp[M == 1]
   
   ################################################
@@ -420,7 +422,8 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   
   ## Point estimate
   tau <- mean(tau.i)
-
+  tau_raw <- mean((2 * A - 1) * sm.part)
+  
   ########################################
   ## Variance estimation
   ########################################
@@ -447,13 +450,13 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
     }
     
     ### Variance component 1
-    em.var <- (N0/(N0 - P1)) * (Y - pred.Y.m0)^2
+    em.var <- (N0 / (N0 - P1)) * (Y - pred.Y.m0)^2
     
     ### Variance component 2
-    ea.var <- (N/(N-P2)) * (pred.Y.m0 - pred.Y.A)^2
+    ea.var <- (N / (N - (P1 + P2))) * (pred.Y.m0 - pred.Y.A)^2
     
     ### Variance component 3
-    tau.var <- mean((pred.Y.a1 - pred.Y.a0 - tau)^2)
+    tau.var <- (N / (N - (P1 + P2 + 1))) * mean((pred.Y.a1 - pred.Y.a0 - tau)^2)
     
     ### combine all three components
     se.est2 <- sqrt(tau.var/N +
@@ -498,7 +501,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   output <- list(formula = formula, outcome = yname, treatment = aname,
                  mediator = mname, included = included,
                  N = N, L_m = L_m, L_a = L_a, N_summary = n_summary, 
-                 estimate=tau, std.err = se.est2, boot.dist=as.vector(Tstar), KLm = KLm,
+                 estimate=tau, nobc_estimate = tau_raw, std.err = se.est2, boot.dist=as.vector(Tstar), KLm = KLm,
                  KLa = KLa, outcome.vec = Y, treatment.vec = A, mediator.vec = M,
                  pre.treatment = pre.treatment, post.treatment = post.treatment,
                  conf.low = ci.low, conf.high = ci.high, ci.level = ci)
@@ -792,4 +795,32 @@ plotDiag.tmatch <- function(object, stage = "mediator"){
   
   return()
   
+}
+
+#' @export
+tmatch_weights <- function(object, data) {
+  ### Is the class a 'tmatch'
+  if (class(object) != "tmatch"){
+    stop("Error: 'object' not of class 'tmatch'")
+  }
+  
+  ### Does N of data match number of obs 
+  if (nrow(data) != length(object$included)){
+    stop("Error: number of rows in data not consistent with object")
+  }
+
+  data_tr <- data[[object$treatment]][object$included]
+  if (!all.equal(as.numeric(data_tr),
+                 as.numeric(object$treatment.vec))) {
+    stop("Error: treatment vector in data and object don't match")
+  }
+  a_w <- rep(NA, nrow(data))
+  m_w <- rep(NA, nrow(data))
+
+  M <- object$mediator.vec
+  a_w[object$included] <- (object$KLa/object$L_a + 1)
+  m_w[object$included] <- (object$KLm/object$L_m + 1) * M +
+    (object$KLm/object$L_m) * (1 - M)
+
+  return(list(treat_w = a_w, med_w = m_w))
 }
