@@ -17,6 +17,7 @@ Depends:
     R (>= 3.5.0)
 Suggests:
     knitr,
+    rmarkdown,
     dplyr,
     ggplot2,
     reshape2,
@@ -28,4 +29,5 @@ URL: http://www.mattblackwell.org/software/direct-effects/
 BugReports: https://github.com/mattblackwell/DirectEffects/issues
 VignetteBuilder: knitr
 LazyData: true
+Encoding: UTF-8
 RoxygenNote: 7.1.1
