@@ -39,6 +39,8 @@
 #'   information. Default is \code{TRUE}.
 #' @param subset A vector of logicals indicating which rows of
 #'   \code{data} to keep.
+#' @param contrasts a list to be passed to the \code{contrasts.arg} 
+#' argument of \code{model.matrix()} when generating the data matrix.
 #' @param separate_bc logical indicating whether or not bias
 #'   correction regressions should be run separately within levels of
 #'   the treatment and mediator. Defaults to \code{TRUE}. If
@@ -48,7 +50,7 @@
 #'
 #' @details The \code{telescope_match} function implements the
 #'   two-stage "telescope matching" procedure developed by Blackwell
-#'   and Strezhnev (2019).
+#'   and Strezhnev (2020).
 #'
 #'  The procedure first estimates a demediated outcome using a
 #'  combination of matching and a regression bias-correction based on
