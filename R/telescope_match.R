@@ -435,7 +435,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   tm.second.a1 <- Match(Y = Ytilde, Tr = A, X = X[, -x_drop],
                         estimand = "ATT", caliper = caliper,
                         M = L_a, ties = FALSE,
-                    Weight = 2)
+                    Weight = 2, version = "fast")
 
   ## Count of matched controls - stage 2
   KLa0 <- table(tm.second.a1$index.control)
@@ -443,7 +443,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   tm.second.a0 <- Match(Y = Ytilde, Tr = A, X = X[, -x_drop],
                         estimand = "ATC", caliper = caliper,
                         M = L_a, ties = FALSE,
-                        Weight = 2)
+                        Weight = 2, version = "fast")
 
   ## Count of matched treated - stage 2
   KLa1 <- table(tm.second.a0$index.treated)

@@ -137,7 +137,7 @@ summary(direct)
 The standard errors here are based on the asymptotic variance derived in @AchBlaSen16, but it is also possible to use the `boots_g` function to compute standard errors by a simple bootstrap:
 
 ```{r}
-out.boots <- boots_g(direct)
+out.boots <- boots_g(direct, boots = 250)
 summary(out.boots)
 ```
 
@@ -273,13 +273,8 @@ We define the two formula objects used for matching, the first including all pre
 ## Telescope matching formula - First stage (X and Z)
 tm_form <-  exhealth30 ~ schobef + trainyrbef + jobeverbef +
   jobyrbef + health012 + health0mis +  pe_prb0 +  everalc + alc12 +
-  everilldrugs + age_cat +  eduhigh +  rwhite + everarr + hhsize +
-  hhsizemis + hhinc12 + hhinc8 + fdstamp + welf1 + welf2 +
-  publicass | treat | emplq4 + emplq4full + pemplq4 + pemplq4mis +
-  vocq4 + vocq4mis + health1212 + health123 + pe_prb12 +
-  pe_prb12mis  + narry1 + numkidhhf1zero + numkidhhf1onetwo +
-  pubhse12 + h_ins12a + h_ins12amis | work2year2q
-
+  everilldrugs + age_cat +  eduhigh +  rwhite + everarr  | treat |
+  emplq4 + emplq4full  | work2year2q
 ```
 
 By default, the `telescope_match()` function will estimate the effect of the treatment holding the mediator value at $0$. Here, this corresponds to estimating the effect of assignment to the jobs program (among women) on self-assessed health holding intermediate employment status at "unemployed." 
