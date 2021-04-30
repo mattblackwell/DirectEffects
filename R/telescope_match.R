@@ -39,7 +39,7 @@
 #'   information. Default is \code{TRUE}.
 #' @param subset A vector of logicals indicating which rows of
 #'   \code{data} to keep.
-#' @param contrasts a list to be passed to the \code{contrasts.arg} 
+#' @param contrasts a list to be passed to the \code{contrasts.arg}
 #' argument of \code{model.matrix()} when generating the data matrix.
 #' @param separate_bc logical indicating whether or not bias
 #'   correction regressions should be run separately within levels of
@@ -168,14 +168,14 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   ########################
 
   ### If length of L is 1, L_a and L_m are the same
-  if (!is.numeric(L) | !is.vector(L)) {
-    stop("Error: L must be a numeric vector of length 1 or 2")
-  } else if (length(L) > 2 | length(L) < 1) {
-    stop("Error: L must be a numeric vector of length 1 or 2")
-  } else if (length(L) == 2) {
+  if (!is.numeric(L) | !is.vector(L) | length(L) > 2 | length(L) < 1) {
+    stop("Error: `L` must be a numeric vector of length 1 or 2", call. = FALSE)
+  }
+
+  if (length(L) == 2) {
     L_m <- L[1]
     L_a <- L[2]
-  } else if (length(L) == 1) {
+  } else {
     L_m <- L
     L_a <- L
   }
@@ -206,8 +206,12 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   mname <- attr(mt_m, "term.labels")
   yname <- rownames(mt_x$factors)[1]
 
-  if (length(mname) > 1) stop("only a single mediator allowed.")
-  if (length(aname) > 1) stop("only a single treatment allowed.")
+  if (length(mname) > 1) {
+    stop("Error: there must only be single mediator.", call. = FALSE)
+  }
+  if (length(aname) > 1)  {
+    stop("Error: there must only be single mediator.", call. = FALSE)
+  }
 
   ## add to mf call
   mf$formula <- formula
@@ -232,8 +236,8 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
 
   if (separate_bc & length(c(a_in_x, a_in_xz, m_in_xz))) {
     stop(
-      "Treatment and/or mediator terms in covariate ",
-      "specifications are not permitted with separate_bc = TRUE.",
+      "Error: Treatment and mediator terms in not permitted  ",
+      "specifications are not permitted with `separate_bc = TRUE`.",
       call. = FALSE
     )
   }
@@ -268,16 +272,12 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
 
 
   ## Check 3 - Treatment is binary 0-1
-  if (!(is.numeric(A))) {
-    stop("Error: 'treatment' variable not numeric.")
-  } else if (!isTRUE(all.equal(unique(A)[order(unique(A))], c(0, 1)))) {
+  if (!isTRUE(all.equal(unique(A)[order(unique(A))], c(0, 1)))) {
     stop("Error: 'treatment' must have only two levels: 0,1")
   }
 
   ## Check 4 - Mediator is binary 0-1
-  if (!(is.numeric(M))) {
-    stop("Error: 'mediator' variable not numeric.")
-  } else if (!isTRUE(all.equal(unique(M)[order(unique(M))], c(0, 1)))) {
+  if (!isTRUE(all.equal(unique(M)[order(unique(M))], c(0, 1)))) {
     stop("Error: 'mediator' must have only two levels: 0,1")
   }
 
@@ -316,7 +316,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   tm.first <- Match(Y = Y, Tr = M, X = cbind(XZ[, -xz_drop], A), M = L_m,
                     exact = c(rep(FALSE, ncol(XZ[, -xz_drop])), TRUE),
                     BiasAdjust = FALSE, estimand = "ATT", ties = FALSE,
-                    Weight = 2)
+                    Weight = 2, version = "fast")
 
   ### Summarize input - First Stage
   if (verbose) {
@@ -511,7 +511,6 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
     } else {
       P1 <- length(coef(s1.reg))
       P2 <- length(coef(s2.reg))
-
     }
 
     ### Variance component 1
@@ -535,7 +534,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
     ci.low <- tau - abs(qnorm(ci.alpha / 2)) * se.est2
     ci.high <- tau + abs(qnorm(ci.alpha / 2)) * se.est2
 
-  }else{
+  } else {
 
     ################
     ### Wild Bootstrap
@@ -581,7 +580,6 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   return(output)
 
 }
-
 
 
 #' Summarize telescope match objects
