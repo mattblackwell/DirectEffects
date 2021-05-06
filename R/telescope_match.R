@@ -367,7 +367,7 @@ find_indirect_matches <- function(m_out, path, N) {
   d <- m_out[[path[1]]]$donors
   path <- path[-1]
   for (j in path) {
-    d <- lapply(d, function(x) unlist(m_out[[j]]$donors[x]))
+    d <- lapply(d, function(x) unlist(m_out[[j]]$donors[as.character(x)]))
   }
   n_ind_matches <- lapply(d, length)
 
