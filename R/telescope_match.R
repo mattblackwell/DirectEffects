@@ -308,46 +308,45 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   tau_raw <- rep(0, times = nrow(A_levs))
   tau_se <- rep(0, times = nrow(A_levs))
   mu_hat <- eta <- matrix(NA, nrow = N, ncol = T)
-  
+  Yt <- matrix(NA, nrow = N, ncol = T * nrow(A_levs))
   for (j in seq_len(nrow(A_levs))) {
     A_j <- A_levs[j, ]
     Ytilde <- Y
     for (s in T:1) {
       A_hist <- A[, 1:s, drop = FALSE]
       r_out[[s]] <- regress_at_time(Ytilde, A_hist, X[[s]], separate_bc)
-      yhat_r <- A_j[s - 1] * r_out[[s]]$yhat_r_0 +
-        (1 - A_j[s - 1]) * r_out[[s]]$yhat_r_1
+      yhat_r <- A_j[s - 1] * r_out[[s]]$yhat_r_1 +
+        (1 - A_j[s - 1]) * r_out[[s]]$yhat_r_0
       
       yhat_mr_0 <- lapply(m_out[[s]]$matches, function(x) mean(r_out[[s]]$yhat_r_0[x]))
       yhat_mr_1 <- lapply(m_out[[s]]$matches, function(x) mean(r_out[[s]]$yhat_r_1[x]))
-      yhat_mr <- A_j[s - 1] * unlist(yhat_mr_0) + (1 - A_j[s - 1]) * unlist(yhat_mr_1)
+      yhat_mr <- A_j[s - 1] * unlist(yhat_mr_1) + (1 - A_j[s - 1]) * unlist(yhat_mr_0)
 
       yhat_m <- unlist(lapply(m_out[[s]]$matches, function(x) mean(Ytilde[x])))
 
       not_a_j <- A[, s] != A_j[s - 1]
 
       Ytilde[not_a_j] <- yhat_m[not_a_j] + (yhat_r[not_a_j] - yhat_mr[not_a_j])
+      Yt[, j + (T-s)] <- Ytilde
 
-      mu_hat[, s] <- A[, s] * r_out[[s]]$yhat_r_1 +
-        (1 - A[, s]) * r_out[[s]]$yhat_r_0
-
-      if (s == T) {
-        eta[, s] <- Y - mu_hat[, s]
-      } else {
-        eta[, s] <- mu_hat[, s + 1] - mu_hat[, s]
-      }
+      if (s > 1) {
+        mu_hat[, s] <- A_j[s - 1] * r_out[[s]]$yhat_r_1 +
+          (1 - A_j[s - 1]) * r_out[[s]]$yhat_r_0
+      }      
     }
-    cdes <- calculcate_cdes(Y, A, K, eta, r_out, A_j)
+    mu_hat[, 1] <- A[, 1] * r_out[[1]]$yhat_r_1 +
+      (1 - A[, 1]) * r_out[[1]]$yhat_r_0
+    cdes <- calculcate_cdes(Y, A, K, mu_hat, r_out, A_j)
     tau_i[, j] <- cdes$tau_i
     tau_raw[j] <- cdes$tau_raw
     tau_se[j] <- cdes$tau_se
   }
-  tau <- colMeans(tau_i)
+  tau <- colMeans((2 * A[, 1] - 1) * tau_i)
 
 
   ### Return output
   out <- list(formula = formula, m_out = m_out, K = K, r_out = r_out, tau = tau,
-                 tau_raw = tau_raw, tau_se = tau_se)
+                 tau_raw = tau_raw, tau_se = tau_se, Ytilde = Yt)
 
   class(out) <- "tmatch"
   return(out)
@@ -444,7 +443,6 @@ regress_at_time <- function(y, A, X, separate_bc) {
   if (separate_bc) {
     A_fact <- do.call(interaction, list(as.data.frame(A_past), sep = "_"))
     A_split <- split(1:N, A_fact)
-
     preds_0 <- lapply(
       X = A_split,
       FUN = strata_reg_predict,
@@ -488,34 +486,47 @@ strata_reg_predict <- function(rows, y, x, Ak, Ak_lev) {
   return(as.vector(pred))
 }
 
-calculcate_cdes <- function(Y, A, K, eta, r_out, A_j) {
+calculcate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
   N <- length(Y)
-
+  T <- ncol(A)
 
   ## calculate simple matching parts
   sm_part <- (1 + rowSums(K)) * Y
   A_fut <- A[, -1, drop = FALSE]
   A_fut_str <-  apply(A_fut, 1, paste0, collapse = "")
-  i_j <- A_fut_str == paste0(A_j, collapse = "")
+  i_j <- as.numeric(A_fut_str == paste0(A_j, collapse = ""))
+  
+  tau_i <- i_j * sm_part
+  tau_raw <- mean((2 * A[, 1] - 1) * tau_i)
 
-  tau_i <- as.numeric(i_j) * sm_part
-  tau_raw <- mean((2 * A[, 1]) * tau_i)
-  for (s in 1:T) {
+  mu_hat_A <- A[, 1] * r_out[[1]]$yhat_r_1 +
+    (1 - A[, 1]) * r_out[[1]]$yhat_r_0
+
+  mu_hat_1_A <- A[, 1] * r_out[[1]]$yhat_r_0 +
+      (1 - A[, 1]) * r_out[[1]]$yhat_r_1
+
+  K_term <- i_j * rowSums(K) - (1 - i_j)
+  tau_i <- tau_i - K_term * mu_hat_A - mu_hat_1_A
+ 
+  for (s in 2:T) {
     ## get indices for A_{s+1}:T == A_j
-    A_fut <- A[, (s + 1):T, drop = FALSE]
-    A_fut_str <-  apply(A_fut, 1, paste0, collapse = "")
-    i_j <- A_fut_str == paste0(A_j[s:(T - 1)], collapse = "") 
-    A_jt <- as.numeric(A[, s] == A_j[s])
+    if (s < T) {
+      A_fut <- A[, (s + 1):T, drop = FALSE]
+      A_fut_str <-  apply(A_fut, 1, paste0, collapse = "")
+      i_j <- as.numeric(A_fut_str == paste0(A_j[(s - 1):(T - 1)], collapse = ""))
+    } else {
+      i_j <- 1
+    }
+    A_jt <- as.numeric(A[, s] == A_j[s - 1])
     
     ## calculate K weight for this period
-    fut_patt <- paste0("[", paste0((s + 1):T, collapse = ""), "]")
+    fut_patt <- paste0("[", paste0(s:T, collapse = ""), "]")
     past_K <- grep(fut_patt, names(K), invert = TRUE)
     fut_K <- grep(fut_patt, names(K))
-    K_term <- (A_jt * rowSums(K[fut_K]) - (1 - A_jt) * rowSums(K[past_K]))
+    K_term <- (A_jt * rowSums(K[fut_K]) - (1 - A_jt) * (1 + rowSums(K[past_K])))
 
-    if (s < T) {
-      tau_i <- tau_i - as.numeric(i_j) * K_term * eta[, s]
-    }    
+    eta <- mu_hat[, s] - mu_hat[, s - 1]
+    tau_i <- tau_i - as.numeric(i_j) * K_term * eta
   }
   return(list(tau_i = tau_i, tau_raw = tau_raw, tau_se = NA))
 }
