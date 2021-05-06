@@ -318,6 +318,11 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
                     BiasAdjust = FALSE, estimand = "ATT", ties = FALSE,
                     Weight = 2, version = "fast")
 
+  tm.first.atc <- Match(Y = Y, Tr = M, X = cbind(XZ[, -xz_drop], A), M = L_m,
+                    exact = c(rep(FALSE, ncol(XZ[, -xz_drop])), TRUE),
+                    BiasAdjust = FALSE, estimand = "ATC", ties = FALSE,
+                    Weight = 2, version = "fast")
+
   ### Summarize input - First Stage
   if (verbose) {
     cat("First-stage matching: Mediator on pre-treatment, post-treatment\n")
@@ -574,7 +579,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
                  KLa = KLa, outcome.vec = Y, treatment.vec = A,
                  mediator.vec = M, pre.treatment = pre.treatment,
                  post.treatment = post.treatment, conf.low = ci.low,
-                 conf.high = ci.high, ci.level = ci)
+                 conf.high = ci.high, ci.level = ci, SLm = SLm)
 
   class(output) <- "tmatch"
   return(output)
