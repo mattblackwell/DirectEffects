@@ -579,7 +579,8 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
                  KLa = KLa, outcome.vec = Y, treatment.vec = A,
                  mediator.vec = M, pre.treatment = pre.treatment,
                  post.treatment = post.treatment, conf.low = ci.low,
-                 conf.high = ci.high, ci.level = ci, SLm = SLm)
+                 conf.high = ci.high, ci.level = ci, SLm = SLm, pred.Y.m0 = pred.Y.m0,
+                 pred.Y.a1 = pred.Y.a1, pred.Y.a0 = pred.Y.a0, Ytilde = Ytilde)
 
   class(output) <- "tmatch"
   return(output)
