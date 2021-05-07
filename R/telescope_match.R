@@ -196,7 +196,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
 
   if (length(L) == 1) {
     L <- rep(L, times = T)
-  } 
+  }
 
   stopifnot(length(formula)[1] == 1L)
   if (inherits(try(terms(formula), silent = TRUE), "try-error")) {
@@ -208,11 +208,9 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   #  finally evaluate model.frame, create data matrix
   mf <- eval(mf, parent.frame())
   mt <- attr(mf, "terms") # terms object
-  included <- rownames(data) %in% rownames(mf)
 
   all_data <- model.matrix(mt, mf, contrasts)
   Y <- model.response(mf, "numeric")
-  yname <- rownames(mt$factors)[1]
 
   N <- length(Y)
 
@@ -220,7 +218,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   drops <- list()
   A <- matrix(NA, nrow = N, ncol = T)
   anames <- rep("", times = T)
-  
+
   x_spots <- seq(1, T * 2, by = 2)
   a_spots <- seq(2, T * 2, by = 2)
   for (s in seq_len(T)) {
@@ -236,14 +234,14 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
     X[[s]] <- model.matrix(mt_x, mf, contrasts)
 
     ## treatnent in covariate specifications. need to dropped for
-    ## matching 
+    ## matching
     a_in_x <- which(rownames(attributes(mt_x)$factors) %in% anames[1:s])
     drops[[s]] <- which(attributes(mt_x)$factors[a_in_x, ] == 1)
     if (colnames(X[[s]])[1] == "(Intercept)") drops[[s]] <- c(1, drops[[s]] + 1)
-    
+
     if (separate_bc & length(a_in_x)) {
       stop(
-        "Error: covariate specification can't contain treatment terms" ,
+        "Error: covariate specification can't contain treatment terms",
         "when `separate_bc = TRUE`.",
         call. = FALSE
       )
@@ -255,17 +253,6 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   #### Sanity checks
   ####################
 
-  ### Check -2 - Is the ci within (0, 100).
-  if (ci <= 0 | ci >= 100) {
-    warning(paste(
-      "Warning: 'ci' must be within the interval (0, 100).",
-      "Defaulting to 95% confidence intervals."
-    ))
-    ci <- 95
-  }
-  ci.alpha <- 1 - ci / 100
-
-  Ytilde_0 <- Y
   m_out <- list()
   r_out <- list()
   K <- list()
@@ -282,7 +269,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
     ## `find_indirect_matches` "crawls" the path get the indirect
     ## matches for each unit.
 
-    ## NB: Ks are divided by L values. 
+    ## NB: Ks are divided by L values.
     path_lengths <- 1:(T - s + 1)
     paths <- lapply(
       path_lengths,
@@ -298,16 +285,15 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
     names(K[[s]]) <- unlist(lapply(paths, paste0, collapse = "_"))
     names(K[[s]]) <- paste0("K_", names(K[[s]]))
   }
-  
+
   K <- as.data.frame(unlist(K, recursive = FALSE))
 
   ## bias correction
-  A_fut <- A[, -1]
   A_levs <- expand.grid(rep(list(c(0, 1)), times = T - 1))
   tau_i <- matrix(NA, nrow = N, ncol = nrow(A_levs))
   tau_raw <- rep(0, times = nrow(A_levs))
   tau_se <- rep(0, times = nrow(A_levs))
-  mu_hat <- eta <- matrix(NA, nrow = N, ncol = T)
+  mu_hat <- matrix(NA, nrow = N, ncol = T)
   Yt <- matrix(NA, nrow = N, ncol = T * nrow(A_levs))
   for (j in seq_len(nrow(A_levs))) {
     A_j <- A_levs[j, ]
@@ -317,25 +303,32 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
       r_out[[s]] <- regress_at_time(Ytilde, A_hist, X[[s]], separate_bc)
       yhat_r <- A_j[s - 1] * r_out[[s]]$yhat_r_1 +
         (1 - A_j[s - 1]) * r_out[[s]]$yhat_r_0
-      
-      yhat_mr_0 <- lapply(m_out[[s]]$matches, function(x) mean(r_out[[s]]$yhat_r_0[x]))
-      yhat_mr_1 <- lapply(m_out[[s]]$matches, function(x) mean(r_out[[s]]$yhat_r_1[x]))
-      yhat_mr <- A_j[s - 1] * unlist(yhat_mr_1) + (1 - A_j[s - 1]) * unlist(yhat_mr_0)
+
+      yhat_mr_0 <- lapply(
+        m_out[[s]]$matches,
+        function(x) mean(r_out[[s]]$yhat_r_0[x])
+      )
+      yhat_mr_1 <- lapply(
+        m_out[[s]]$matches,
+        function(x) mean(r_out[[s]]$yhat_r_1[x])
+      )
+      yhat_mr <- A_j[s - 1] * unlist(yhat_mr_1) +
+        (1 - A_j[s - 1]) * unlist(yhat_mr_0)
 
       yhat_m <- unlist(lapply(m_out[[s]]$matches, function(x) mean(Ytilde[x])))
 
       not_a_j <- A[, s] != A_j[s - 1]
 
       Ytilde[not_a_j] <- yhat_m[not_a_j] + (yhat_r[not_a_j] - yhat_mr[not_a_j])
-      Yt[, j + (T-s)] <- Ytilde
+      Yt[, j + (T - s)] <- Ytilde
 
       if (s > 1) {
-        mu_hat[, s] <- A_j[s - 1] * r_out[[s]]$yhat_r_1 +
-          (1 - A_j[s - 1]) * r_out[[s]]$yhat_r_0
-      }      
+        mu_hat[, s] <- yhat_r
+      }
     }
     mu_hat[, 1] <- A[, 1] * r_out[[1]]$yhat_r_1 +
       (1 - A[, 1]) * r_out[[1]]$yhat_r_0
+
     cdes <- calculcate_cdes(Y, A, K, mu_hat, r_out, A_j)
     tau_i[, j] <- cdes$tau_i
     tau_raw[j] <- cdes$tau_raw
@@ -359,7 +352,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
 ## period `k` through the given path. E.g., if `path = c(1, 2 ,3)`,
 ## then this returns the number of times each unit is matched to a
 ## unit j in period 3, j is matched to h in period 2, and h is matched
-## to g in period 1, where j, h, and g are all different. 
+## to g in period 1, where j, h, and g are all different.
 find_indirect_matches <- function(m_out, path, N) {
   K <- rep(0, times = N)
   path <- sort(path, decreasing = TRUE)
@@ -378,8 +371,6 @@ find_indirect_matches <- function(m_out, path, N) {
 ## working assumption: the A matrix is n \times k where the first
 ## column is t=1 and the last column is t=T-k+1.
 match_at_time <- function(A, X, L, drops, caliper) {
-
-  N <- nrow(A)
   k <- ncol(A)
   Ak <- A[, k]
   if (!isTRUE(all.equal(unique(Ak)[order(unique(Ak))], c(0, 1)))) {
@@ -389,7 +380,7 @@ match_at_time <- function(A, X, L, drops, caliper) {
     )
   }
   X_m <- cbind(X[, -drops], A[, -k])
-  
+
   exacts <- c(
     rep(FALSE, times = ncol(X[, -drops])),
     rep(TRUE, times = k - 1)
@@ -454,7 +445,7 @@ regress_at_time <- function(y, A, X, separate_bc) {
       y = y, x = X, Ak = Ak, Ak_lev = 1
     )
 
-    n_coefs <- length(A_split) * ncol(X)
+    n_coefs <- length(A_split) * ncol(X) * 2
     yhat_r_0 <- unsplit(preds_0, A_fact)
     yhat_r_1 <- unsplit(preds_1, A_fact)
   } else {
@@ -495,7 +486,7 @@ calculcate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
   A_fut <- A[, -1, drop = FALSE]
   A_fut_str <-  apply(A_fut, 1, paste0, collapse = "")
   i_j <- as.numeric(A_fut_str == paste0(A_j, collapse = ""))
-  
+
   tau_i <- i_j * sm_part
   tau_raw <- mean((2 * A[, 1] - 1) * tau_i)
 
@@ -507,18 +498,24 @@ calculcate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
 
   K_term <- i_j * rowSums(K) - (1 - i_j)
   tau_i <- tau_i - K_term * mu_hat_A - mu_hat_1_A
- 
+
+  p <- sapply(r_out, function(x) x$n_coefs)
+  dfc_1 <- sum(i_j) / (sum(i_j) - p[T])
+  epsilon <- Y - mu_hat[, T]
+  tau_var <- dfc_1 * mean(i_j * (1 + rowSums(K))^2 * epsilon ^ 2)
+
   for (s in 2:T) {
     ## get indices for A_{s+1}:T == A_j
     if (s < T) {
       A_fut <- A[, (s + 1):T, drop = FALSE]
       A_fut_str <-  apply(A_fut, 1, paste0, collapse = "")
-      i_j <- as.numeric(A_fut_str == paste0(A_j[(s - 1):(T - 1)], collapse = ""))
+      i_j <- A_fut_str == paste0(A_j[(s - 1):(T - 1)], collapse = "")
+      i_j <- as.numeric(i_j)
     } else {
       i_j <- 1
     }
     A_jt <- as.numeric(A[, s] == A_j[s - 1])
-    
+
     ## calculate K weight for this period
     fut_patt <- paste0("[", paste0(s:T, collapse = ""), "]")
     past_K <- grep(fut_patt, names(K), invert = TRUE)
@@ -527,8 +524,23 @@ calculcate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
 
     eta <- mu_hat[, s] - mu_hat[, s - 1]
     tau_i <- tau_i - as.numeric(i_j) * K_term * eta
+
+    mu_lag_A <- A[, s - 1] * r_out[[s - 1]]$yhat_r_1 +
+      (1 - A[, s - 1]) * r_out[[s - 1]]$yhat_r_0
+    eta_v <- mu_hat[, s] - mu_lag_A
+    dfc_s <- sum(i_j) / (sum(i_j) - sum(p[1:s]))
+    tau_var <- tau_var +
+      dfc_s * mean(i_j * (1 + rowSums(K[past_K])) ^ 2 * eta_v ^ 2)
   }
-  return(list(tau_i = tau_i, tau_raw = tau_raw, tau_se = NA))
+
+  tau <- mean((2 * A[, 1] - 1) * tau_i)
+
+  tau_x <- r_out[[1]]$yhat_r_1 - r_out[[1]]$yhat_r_0
+  dfc_t <- N / (N - sum(p) - 1)
+  tau_var <- tau_var + dfc_t * mean((tau_x - tau) ^ 2)
+  tau_se <- sqrt(tau_var / N)
+
+  return(list(tau = tau, tau_i = tau_i, tau_raw = tau_raw, tau_se = tau_se))
 }
 
 
@@ -552,8 +564,8 @@ boot_tm <- function(obj, R = 100, ci_alpha = 0.05) {
     Tstar <- Tstar + obj$tau
 
     ### Get quantiles for the CI
-    ci.low <- quantile(Tstar, ci.alpha / 2)
-    ci.high <- quantile(Tstar, 1 - ci.alpha / 2)
+    ci.low <- quantile(Tstar, ci_alpha / 2)
+    ci.high <- quantile(Tstar, 1 - ci_alpha / 2)
 
   return(list(ci.low = ci.low, ci.high = ci.high))
 
