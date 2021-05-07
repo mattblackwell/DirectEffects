@@ -339,7 +339,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
 
   ### Return output
   out <- list(formula = formula, m_out = m_out, K = K, r_out = r_out, tau = tau,
-                 tau_raw = tau_raw, tau_se = tau_se, Ytilde = Yt)
+                 tau_raw = tau_raw, tau_se = tau_se, tau_i = tau_i)
 
   class(out) <- "tmatch"
   return(out)
@@ -543,13 +543,12 @@ calculcate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
   return(list(tau = tau, tau_i = tau_i, tau_raw = tau_raw, tau_se = tau_se))
 }
 
+##' @export 
+boots_tm <- function(obj, R = 100, ci_alpha = 0.05) {
 
-boot_tm <- function(obj, R = 100, ci_alpha = 0.05) {
-
-    ## De-mean
-    tau.norm <- obj$tau.i - obj$tau
-
-    ## Bootstrap iterations
+  N <- nrow(obj$tau_i)
+  J <- length(obj$tau)
+  ## Bootstrap iterations
     W.bern <- sapply(
       1:R,
       function(x) rbinom(N, 1, prob = (sqrt(5) - 1) / (2 * sqrt(5)))
@@ -557,18 +556,16 @@ boot_tm <- function(obj, R = 100, ci_alpha = 0.05) {
     Wstar <- (((sqrt(5) + 1) / 2) * W.bern +
                 ((-sqrt(5) + 1) / 2) * (1 - W.bern)) / N
 
-    ## Apply bootstrap weights to each "observation"
-    Tstar <- (t(Wstar) %*% tau.norm)
+  ci_high <- ci_low <- rep(NA, times = J)
+  for (j in seq_len(J)) {
+    tau_norm <- obj$tau_i[, j]  - obj$tau[j]
+    Tstar <- (t(Wstar) %*% tau_norm)
+    Tstar <- Tstar + obj$tau[j]
+    ci_low[j] <- quantile(Tstar, ci_alpha / 2)
+    ci_high[j] <- quantile(Tstar, 1 - ci_alpha / 2)
+  }
 
-    ## Add in tau
-    Tstar <- Tstar + obj$tau
-
-    ### Get quantiles for the CI
-    ci.low <- quantile(Tstar, ci_alpha / 2)
-    ci.high <- quantile(Tstar, 1 - ci_alpha / 2)
-
-  return(list(ci.low = ci.low, ci.high = ci.high))
-
+  return(data.frame(ci_low = ci_low, ci_high = ci_high))
 }
 
 #' Summarize telescope match objects

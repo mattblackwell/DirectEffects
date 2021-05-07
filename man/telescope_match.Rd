@@ -68,8 +68,8 @@ information. Default is \code{TRUE}.}
 \item{subset}{A vector of logicals indicating which rows of
 \code{data} to keep.}
 
-\item{contrasts}{an optional list. See the \code{contrasts.arg}
-    of \code{\link[stats]{model.matrix.default}}.}
+\item{contrasts}{a list to be passed to the \code{contrasts.arg}
+argument of \code{model.matrix()} when generating the data matrix.}
 
 \item{separate_bc}{logical indicating whether or not bias
 correction regressions should be run separately within levels of
@@ -132,7 +132,7 @@ direct effect of a binary treatment net the effect of a binary mediator.
 \details{
 The \code{telescope_match} function implements the
   two-stage "telescope matching" procedure developed by Blackwell
-  and Strezhnev (2019).
+  and Strezhnev (2020).
 
  The procedure first estimates a demediated outcome using a
  combination of matching and a regression bias-correction based on
