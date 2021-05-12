@@ -9,7 +9,7 @@ women.}
 A data frame with 234 observations and 57 variables.
 }
 \source{
-\url{http://qje.oxfordjournals.org/content/128/2/469}
+\doi{10.1093/qje/qjt005}
 }
 \usage{
 data(ploughs)

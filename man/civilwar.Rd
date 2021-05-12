@@ -8,7 +8,7 @@
 A data frame with 6610 observations and 69 variables.
 }
 \source{
-\url{https://doi.org/10.1017/S0003055403000534}
+\doi{10.1017/S0003055403000534}
 }
 \usage{
 data(civilwar)
