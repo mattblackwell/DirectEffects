@@ -5,8 +5,17 @@
 \title{Perform linear sequential g-estimation to estimate the controlled
 direct effect of a treatment net the effect of a mediator.}
 \usage{
-sequential_g(formula, data, subset, weights, na.action, offset,
-  contrasts = NULL, verbose = TRUE, ...)
+sequential_g(
+  formula,
+  data,
+  subset,
+  weights,
+  na.action,
+  offset,
+  contrasts = NULL,
+  verbose = TRUE,
+  ...
+)
 }
 \arguments{
 \item{formula}{formula specification of the first-stage,
@@ -31,19 +40,19 @@ below for more information.}
 \item{na.action}{a function which indicates what should happen
     when the data contain \code{NA}s.  The default is set by
     the \code{na.action} setting of \code{\link{options}}, and is
-    \code{\link{na.fail}} if that is unset.  The \sQuote{factory-fresh}
-    default is \code{\link{na.omit}}.  Another possible value is
-    \code{NULL}, no action.  Value \code{\link{na.exclude}} can be useful.}
+    \code{\link[stats]{na.fail}} if that is unset.  The \sQuote{factory-fresh}
+    default is \code{\link[stats]{na.omit}}.  Another possible value is
+    \code{NULL}, no action.  Value \code{\link[stats]{na.exclude}} can be useful.}
 
 \item{offset}{this can be used to specify an \emph{a priori} known
     component to be included in the linear predictor during fitting.
     This should be \code{NULL} or a numeric vector or matrix of extents
-    matching those of the response.  One or more \code{\link{offset}} terms can be
+    matching those of the response.  One or more \code{\link[stats]{offset}} terms can be
     included in the formula instead or as well, and if more than one are
-    specified their sum is used.  See \code{\link{model.offset}}.}
+    specified their sum is used.  See \code{\link[stats]{model.offset}}.}
 
 \item{contrasts}{an optional list. See the \code{contrasts.arg}
-    of \code{\link{model.matrix.default}}.}
+    of \code{\link[stats]{model.matrix.default}}.}
 
 \item{verbose}{logical indicating whether to suppress progress bar. Default is FALSE.}
 
