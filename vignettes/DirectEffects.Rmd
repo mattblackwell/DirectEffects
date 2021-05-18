@@ -296,11 +296,11 @@ The `summary()` function will print the output (estimate + standard error and co
 
 ```{r}
 # Prints the summary output
-print(summary(tm_out))
+summary(tm_out)
 
 # The coefficients + SE can be accessed directly as well
-tm_out$estimate # Point estimate
-tm_out$std.err #Standard error
+tm_out$tau # Point estimate
+tm_out$tau_se #Standard error
 ```
 
 Additional diagnostics can be conducted by calling the `balance.tmatch()` function on the returned `tmatch` object to assess the change in pre-/post-matching covariate balance in both the first and second stages.
