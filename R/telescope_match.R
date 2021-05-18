@@ -168,6 +168,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   ########################
 
 
+  cl <- match.call(expand.dots = TRUE)
   mf <- match.call(expand.dots = FALSE)
 
   m <- match(
@@ -218,7 +219,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   X <- list()
   drops <- list()
   A <- matrix(NA, nrow = N, ncol = T)
-  anames <- rep("", times = T)
+  a_names <- rep("", times = T)
 
   x_spots <- seq(1, T * 2, by = 2)
   a_spots <- seq(2, T * 2, by = 2)
@@ -229,14 +230,14 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
       stop("Error: there must only be single treatment in each period.",
            call. = FALSE)
     }
-    anames[s] <- attr(mt_a, "term.labels")
-    A[, s] <- all_data[, anames[s]]
+    a_names[s] <- attr(mt_a, "term.labels")
+    A[, s] <- all_data[, a_names[s]]
     mt_x <- terms(formula, data = data, rhs = x_spots[1:s])
     X[[s]] <- model.matrix(mt_x, mf, contrasts)
 
     ## treatnent in covariate specifications. need to dropped for
     ## matching
-    a_in_x <- which(rownames(attributes(mt_x)$factors) %in% anames[1:s])
+    a_in_x <- which(rownames(attributes(mt_x)$factors) %in% a_names[1:s])
     drops[[s]] <- which(attributes(mt_x)$factors[a_in_x, ] == 1)
     if (colnames(X[[s]])[1] == "(Intercept)") drops[[s]] <- c(1, drops[[s]] + 1)
 
@@ -285,7 +286,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
     K_paths[[s]] <- unlist(
       lapply(
         paths,
-        function(x) paste0(anames[x], collapse = ":")
+        function(x) paste0(a_names[x], collapse = ":")
       )
     )
     
@@ -342,13 +343,17 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
     tau_se[j] <- cdes$tau_se
   }
   tau <- colMeans((2 * A[, 1] - 1) * tau_i)
-
-
+  
   names(K) <- unlist(K_paths)
+
+  effects <- data.frame(active = a_names[1], A_levs)
+  names(effects)[-1] <- a_names[-1]
+  
   ### Return output
-  out <- list(formula = formula, m_out = m_out, K = K, r_out = r_out, tau = tau,
-              tau_raw = tau_raw, tau_se = tau_se, tau_i = tau_i,
-              included = included)
+  out <- list(call = cl, formula = formula, m_out = m_out, K = K, L = L, 
+              r_out = r_out, tau = tau, tau_raw = tau_raw, tau_se = tau_se,
+              tau_i = tau_i, included = included, effects = effects,
+              a_names = a_names)
 
   class(out) <- "tmatch"
   return(out)
@@ -425,7 +430,7 @@ match_at_time <- function(A, X, L, drops, caliper) {
   matches <- matches[as.character(sort(as.numeric(names(matches))))]
 
 
-  out <- list(matches = matches, donors = donors)
+  out <- list(matches = matches, donors = donors, tr = Ak)
 
   return(out)
 
@@ -577,6 +582,28 @@ boots_tm <- function(obj, R = 100, ci_alpha = 0.05) {
   return(data.frame(ci_low = ci_low, ci_high = ci_high))
 }
 
+
+#' @export 
+print.tmatch <- function(x, ...) {
+  cat("\nTelescope matching output\n\n")
+  cat("Call:\n")
+  print(x$call)
+
+  cat("\nActive treatment: ", x$effects$active[1], "\n")
+  cat("Controlled treatment(s):", names(x$effects)[-1])
+
+  cat(
+    "\n\nEstimated controlled direct effects of ",
+    x$effects$active[1],
+    ":\n", sep = ""
+  )
+  df <- data.frame(
+    x$effects[, -1, drop = FALSE],
+    estimate = x$tau)
+  print(df)
+}
+
+
 #' Summarize telescope match objects
 #'
 #' @details \code{summary} method for \code{tmatch} objects returned by
@@ -617,138 +644,84 @@ boots_tm <- function(obj, R = 100, ci_alpha = 0.05) {
 #' @export
 summary.tmatch <- function(object, ...) {
 
-  summary_obj <- NULL
-
-  ### Names of treatments/outcome
-  summary_obj$outcome <- object$outcome
-  summary_obj$treatment <- object$treatment
-  summary_obj$mediator <- object$mediator
-
-  ### Covariates
-  summary_obj$pre.treatment <- object$pre.treatment
-  summary_obj$post.treatment <- object$post.treatment
-
-  ### Sample size
-  summary_obj$sizes <- object$N_summary
-
-  ### Number of units matched in each stage
-  summary_obj$L_m <- object$L_m
-  summary_obj$L_a <- object$L_a
-
-  ### Estimates
-  if (!is.null(object$std.err)) {
-    summary_obj$se.type <- "Asymptotic"
-    summary_obj$std.err <- object$std.err
-  } else {
-    summary_obj$se.type <- "Bootstrap"
-    summary_obj$std.err <- sd(object$boot.dist)
+  
+  an <- object$a_names
+  J <- length(an)
+  sum_mat <- matrix(NA, nrow = J, ncol = 4)
+  for (j in 1:J) {
+    tr <- object$m_out[[j]]$tr
+    sum_mat[j, ] <- c(
+      sum(tr), sum(1 - tr),
+      sum(object$K[[an[j]]] * tr > 0),
+      sum(object$K[[an[j]]] * (1 - tr) > 0)
+    )
   }
+  colnames(sum_mat) <- c(
+    "n_1", "n_0", "matched_1", "matched_0"
+  )
 
-  summary_obj$estimate <- object$estimate
-  summary_obj$ci.level <- object$ci.level
-  summary_obj$conf.low <- object$conf.low
-  summary_obj$conf.high <- object$conf.high
+  
+  out <- list()
+  out$call <- object$call
+  out$m_summary <- data.frame(term = an, ratio = object$L, sum_mat)
 
-  class(summary_obj) <- "summary.tmatch"
+  out$K <- object$K
+  out$L <- object$L
+  out$a_names <- an
 
-  return(summary_obj)
+  cf <- cbind(
+    object$effects[, -1, drop  = FALSE],
+    "Estimate" = object$tau,
+    "Estimate (no BC)" = object$tau_raw,
+    "Std. Err." = object$tau_se
+  )
 
+  out$estimates <- as.matrix(cf)
+
+  A_levs <- expand.grid(rep(list(c(0, 1)), times = J - 1))
+  lab_1 <- paste0("(1, ", apply(A_levs, 1, paste0, collapse = ", "), ")")
+  lab_0 <- paste0("(0, ", apply(A_levs, 1, paste0, collapse = ", "), ")")
+  labs <- paste0(lab_1, " vs. ", lab_0)
+  rownames(out$estimates) <- labs
+  
+  class(out) <- "summary.tmatch"
+
+  return(out)
 }
 
+#' @export
 print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3)) {
   cat("Telescope matching results\n")
-  cat("----------------------------\n")
-  cat("Variables:\n")
-  cat(paste("Outcome: ", object$outcome, "\n", sep = ""))
-  cat(paste("Treatment: ", object$treatment, "\n", sep = ""))
-  cat(paste("Mediator: ", object$mediator, "\n", sep = ""))
-  cat("----------------------------\n")
-  cat(paste(
-    "Pre-treatment Covariates: ",
-    paste(object$pre.treatment, collapse = ", "),
-    "\n", sep = ""))
-  cat(paste(
-    "Post-treatment Covariates: ",
-    paste(object$post.treatment, collapse = ", "),
-    "\n", sep = ""))
-  cat("----------------------------\n")
-  cat(
-    paste(
-      "Number of units matched to each observation in first stage (mediator): ",
-      object$L_m, "\n", sep = ""
-    )
-  )
-  cat(paste(
-    "Number of units matched to each observation in second stage (treatment): ",
-    object$L_a, "\n", sep = ""
-  ))
-  cat("----------------------------\n")
-  cat("Results:\n")
-  if (object$se.type == "Asymptotic") {
-    cat(paste(
-      "Estimated ACDE: ",
-      format(object$estimate, digits = digits), "\n", sep = ""
-    ))
-    cat(paste(
-      "Asymptotic Standard Error: ",
-      format(object$std.err, digits = digits), "\n", sep = ""
-    ))
-    cat(paste(
-      "Asymptotic ", format(object$ci.level, digits = digits),
-      "% confidence interval: [",
-      format(object$conf.low, digits = digits), ", ",
-      format(object$conf.high, digits = digits), "]\n", sep = ""
-    ))
-  } else if (object$se.type == "Bootstrap") {
-    cat(paste(
-      "Estimated ACDE: ",
-      format(object$estimate, digits = digits), "\n", sep = ""
-    ))
-    cat(paste(
-      "Bootstrap Standard Error: ",
-      format(object$std.err, digits = digits), "\n", sep = ""
-    ))
-    cat(paste(
-      "Bootstrap ", format(object$ci.level, digits = digits),
-      "% confidence interval (percentile): [",
-      format(object$conf.low, digits = digits), ", ",
-      format(object$conf.low, digits = digits), "]\n", sep = ""
-    ))
-  } else {
-    cat("Something went wrong with the summary - SEs not Asymptotic or Bootstrap\n")
-  }
-  cat("----------------------------\n")
-  cat("Sample sizes (N):\n")
-  cat(paste(
-    "Treatment = 0, Mediator = 0: ",
-    object$sizes$N[
-      object$sizes[[object$treatment]] == 0 &
-        object$sizes[[object$mediator]] == 0],
-    "\n", sep = ""
-  ))
-  cat(paste(
-    "Treatment = 0, Mediator = 1: ",
-    object$sizes$N[
-      object$sizes[[object$treatment]] == 0 &
-        object$sizes[[object$mediator]] == 1],
-    "\n", sep = ""
-  ))
-  cat(paste(
-    "Treatment = 1, Mediator = 0: ",
-    object$sizes$N[
-      object$sizes[[object$treatment]] == 1 &
-        object$sizes[[object$mediator]] == 0],
-    "\n", sep = ""
-  ))
-  cat(paste(
-    "Treatment = 1, Mediator = 1: ",
-    object$sizes$N[
-      object$sizes[[object$treatment]] == 1 &
-        object$sizes[[object$mediator]] == 1],
-    "\n", sep = ""
-  ))
-  cat("----------------------------\n")
+  cat("----------------------------\n\n")
 
+  cat("Call:\n")
+  print(object$call)
+
+  cat("\nActive treatment: ", object$a_names[1], "\n")
+  cat("Controlled treatment(s):", object$a_names[-1], "\n\n")
+
+  cat("Matching summary:\n")
+  m_sum <- object$m_summary
+  names(m_sum) <- c(
+    "Term", "Matching Ratio L:1", "N == 1", "N == 0",
+    "Matched == 1", "Matched == 0"
+  )
+  print(m_sum)
+
+  cat("\n\nSummary of units matching contributions:\n")
+  print(t(sapply(object$K, summary)))
+  
+  cat(
+    "\n\nEstimated controlled direct effects of ",
+    object$a_names[1],
+    ":\n", sep = ""
+  )
+
+  print(
+    object$estimates,
+    digits = digits, quote = FALSE, right = TRUE, rowlab = c("hey", "there")
+  )
+  cat("\n")
 }
 
 #' Balance diagnostics for Telescope Match objects
@@ -836,16 +809,16 @@ balance.tmatch <- function(object, vars, data, comparison = NULL) {
 
   ##########################
   ### Validating the formula
-  anames <- names(object$K)
+  a_names <- names(object$K)
 
-  if (!(as.character(vars[2]) %in% anames)) {
+  if (!(as.character(vars[2]) %in% a_names)) {
     stop(
       "Left-hand side of `vars` must be a treatment variable from `object`.",
       call. = FALSE
     )
   }
 
-  this_K <- object$K[, anames == as.character(vars[2])]
+  this_K <- object$K[, a_names == as.character(vars[2])]
 
   
   ###########################
@@ -934,10 +907,10 @@ plotDiag.tmatch <- function(object, stage) {
   }
 
 
-  anames <- names(object$K)
-  if (missing(stage)) stage <- anames[1]
+  a_names <- names(object$K)
+  if (missing(stage)) stage <- a_names[1]
   
-  if (!(stage %in% anames)) {
+  if (!(stage %in% a_names)) {
     stop("`stage` must be a treatment in `object`.", call. = FALSE)
   }
 
@@ -945,7 +918,7 @@ plotDiag.tmatch <- function(object, stage) {
   ### Main output
   #######################
 
-  this_K <- object$K[, anames == stage]
+  this_K <- object$K[, a_names == stage]
   
   plot_title <- paste0("Matching weights for ", stage)
   hist(

@@ -286,7 +286,7 @@ By default, the `telescope_match()` function will estimate the effect of the tre
 
 ```{r}
 ### Estimate ACDE for women holding employment at 0
-telescopeMatch.result.0 <-  telescope_match(
+tm_out <-  telescope_match(
   tm_form,
   data = jobcorps_female, L = 3,
   boot = FALSE, verbose = TRUE, ci = 95)
@@ -296,11 +296,11 @@ The `summary()` function will print the output (estimate + standard error and co
 
 ```{r}
 # Prints the summary output
-print(summary(telescopeMatch.result.0))
+print(summary(tm_out))
 
 # The coefficients + SE can be accessed directly as well
-telescopeMatch.result.0$estimate # Point estimate
-telescopeMatch.result.0$std.err #Standard error
+tm_out$estimate # Point estimate
+tm_out$std.err #Standard error
 ```
 
 Additional diagnostics can be conducted by calling the `balance.tmatch()` function on the returned `tmatch` object to assess the change in pre-/post-matching covariate balance in both the first and second stages.
@@ -308,10 +308,12 @@ Additional diagnostics can be conducted by calling the `balance.tmatch()` functi
 ```{r}
 
 ## Assess mediator balance on selected pre- and post- treatment covariates
-balance.tmatch(telescopeMatch.result.0, vars = work2year2q ~ schobef + emplq4, data=jobcorps_female)
+balance.tmatch(tm_out, vars = work2year2q ~ schobef + emplq4,
+               data = jobcorps_female)
 
 ## Assess treatment balance on selected pre-treatment covariates
-balance.tmatch(telescopeMatch.result.0, vars = treat ~ trainyrbef + hhsize, data=jobcorps_female)
+balance.tmatch(tm_out, vars = treat ~ trainyrbef + hhsize,
+               data = jobcorps_female)
 ```
 
 Calling the `plotDiag.tmatch()` function will return a histogram of the number of times each unit is used as a match ($K/L$) in either the first (mediator) stage or the second (treatment) stage.
@@ -319,10 +321,10 @@ Calling the `plotDiag.tmatch()` function will return a histogram of the number o
 ```{r, fig.width=7, fig.height=5}
 
 # Number of times each unit is used as a match in the mediator (first) stage
-plotDiag.tmatch(telescopeMatch.result.0, stage = "work2year2q")
+plotDiag.tmatch(tm_out, stage = "work2year2q")
 
 # Number of times each unit is used as a match in the treatment (second) stage
-plotDiag.tmatch(telescopeMatch.result.0, stage = "treat")
+plotDiag.tmatch(tm_out, stage = "treat")
 ```
 
 ## References 
