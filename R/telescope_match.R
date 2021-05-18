@@ -208,7 +208,8 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   #  finally evaluate model.frame, create data matrix
   mf <- eval(mf, parent.frame())
   mt <- attr(mf, "terms") # terms object
-
+  included <- rownames(data) %in% rownames(mf)
+  
   all_data <- model.matrix(mt, mf, contrasts)
   Y <- model.response(mf, "numeric")
 
@@ -281,13 +282,19 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
       paths,
       function(x) find_indirect_matches(m_out, path = x, N) / prod(L[x])
     )
-    K_paths[[s]] <- paths
-    names(K[[s]]) <- unlist(lapply(paths, paste0, collapse = "_"))
+    K_paths[[s]] <- unlist(
+      lapply(
+        paths,
+        function(x) paste0(anames[x], collapse = ":")
+      )
+    )
+    
+    names(K[[s]]) <- unlist(lapply(paths, paste0, collapse = ":"))
     names(K[[s]]) <- paste0("K_", names(K[[s]]))
   }
 
   K <- as.data.frame(unlist(K, recursive = FALSE))
-
+  
   ## bias correction
   A_levs <- expand.grid(rep(list(c(0, 1)), times = T - 1))
   tau_i <- matrix(NA, nrow = N, ncol = nrow(A_levs))
@@ -329,7 +336,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
     mu_hat[, 1] <- A[, 1] * r_out[[1]]$yhat_r_1 +
       (1 - A[, 1]) * r_out[[1]]$yhat_r_0
 
-    cdes <- calculcate_cdes(Y, A, K, mu_hat, r_out, A_j)
+    cdes <- calculate_cdes(Y, A, K, mu_hat, r_out, A_j)
     tau_i[, j] <- cdes$tau_i
     tau_raw[j] <- cdes$tau_raw
     tau_se[j] <- cdes$tau_se
@@ -337,9 +344,11 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   tau <- colMeans((2 * A[, 1] - 1) * tau_i)
 
 
+  names(K) <- unlist(K_paths)
   ### Return output
   out <- list(formula = formula, m_out = m_out, K = K, r_out = r_out, tau = tau,
-                 tau_raw = tau_raw, tau_se = tau_se, tau_i = tau_i)
+              tau_raw = tau_raw, tau_se = tau_se, tau_i = tau_i,
+              included = included)
 
   class(out) <- "tmatch"
   return(out)
@@ -477,7 +486,7 @@ strata_reg_predict <- function(rows, y, x, Ak, Ak_lev) {
   return(as.vector(pred))
 }
 
-calculcate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
+calculate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
   N <- length(Y)
   T <- ncol(A)
 
@@ -758,6 +767,10 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
 #'   separated by a +.
 #' @param data the data frame used in the call to
 #'   \code{telescope_match}
+#' @param comparison a binary indicator for if the function should
+#' return the balance for the treated group (`1`), for the control
+#' group (`0`), or for overall combined balanced (`NULL`, the
+#' default). 
 #'
 #' @return Returns a data frame with the following columns.
 #' \itemize{
@@ -802,7 +815,7 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
 #' @export
 #' @importFrom stats as.formula model.frame weighted.mean
 
-balance.tmatch <- function(object, vars, data) {
+balance.tmatch <- function(object, vars, data, comparison = NULL) {
 
   ##################
   ### Sanity checks
@@ -810,32 +823,31 @@ balance.tmatch <- function(object, vars, data) {
 
   ### Is the class a 'tmatch'
   if (class(object) != "tmatch") {
-    stop("Error: 'object' not of class 'tmatch'")
+    stop("`object` not of class 'tmatch'", call. = FALSE)
   }
 
   ### Does N of data match number of obs
   if (nrow(data) != length(object$included)) {
-    stop("Error: number of rows in data not consistent with object")
-  }
-
-  data_tr <- data[[object$treatment]][object$included]
-  if (!all.equal(as.numeric(data_tr),
-                 as.numeric(object$treatment.vec))) {
-    stop("Error: treatment vector in data and object don't match")
+    stop(
+      "number of rows in data not consistent with object",
+      .call = FALSE
+    )
   }
 
   ##########################
   ### Validating the formula
-  if (object$treatment == as.character(vars[2])) {
-    ### Balance diagnostics for treatment
-    get.balance <- "treatment"
-  } else if (object$mediator == as.character(vars[2])) {
-    ### Balance diagnostics for mediator
-    get.balance <- "mediator"
-  } else {
-    stop("Error: Left-hand side of 'vars' must be either the 'treatment' or the 'mediator' from 'object'")
+  anames <- names(object$K)
+
+  if (!(as.character(vars[2]) %in% anames)) {
+    stop(
+      "Left-hand side of `vars` must be a treatment variable from `object`.",
+      call. = FALSE
+    )
   }
 
+  this_K <- object$K[, anames == as.character(vars[2])]
+
+  
   ###########################
   ### Validating the data frame
 
@@ -868,14 +880,10 @@ balance.tmatch <- function(object, vars, data) {
   before_diff <- before_1 - before_0
   before_std_diff <- before_diff / before_sd
 
-  ### Generate weights on each observation
-  if (get.balance == "mediator") {
-    ### If it's the mediator, all M=1 units get KLm+1, all M=0 get KLm
-    obs.weights <- (object$KLm / object$L_m + 1) * A +
-      (object$KLm / object$L_m) * (1 - A)
-  } else if (get.balance == "treatment") {
-    ### If it's the treatment, all A=1 units get KLa+1, all A=0 get KLa+1
-    obs.weights <- (object$KLa / object$L_a + 1)
+  if (!is.null(comparison)) {
+    obs.weights <- this_K + A * comparison + (1 - A) * (1 - comparison)
+  } else {
+    obs.weights <- this_K + 1
   }
 
   ## get weighted means of each variable
@@ -906,18 +914,15 @@ balance.tmatch <- function(object, vars, data) {
 #'
 #' @param object an object of class \code{tmatch} -- results from a
 #' call  to \code{telescope_match}
-#' @param stage a character vector equal to either 'mediator' or
-#' 'treatment'. If equal to 'mediator', returns a histogram
-#' of matching weights for units with mediator = 0. If equal to
-#' 'treatment', returns a histogram of matching weights for
-#' all units.
+#' @param stage a character vector equal to the name of one treatment
+#' from the `object`. 
 #'
 #' @returns Outputs a `plot()` object containing the histogram of match counts
 #'
 #' @export
 #' @importFrom graphics hist
 
-plotDiag.tmatch <- function(object, stage = "mediator") {
+plotDiag.tmatch <- function(object, stage) {
 
   ##################
   ### Sanity checks
@@ -925,79 +930,31 @@ plotDiag.tmatch <- function(object, stage = "mediator") {
 
   ### Is the class a 'tmatch'
   if (class(object) != "tmatch") {
-    stop("Error: 'object' not of class 'tmatch'")
+    stop("`object` not of class 'tmatch'", call. = FALSE)
   }
 
-  if (stage != "mediator" & stage != "treatment") {
-    stop("Error: 'stage' must be either 'mediator' or 'treatment'.")
+
+  anames <- names(object$K)
+  if (missing(stage)) stage <- anames[1]
+  
+  if (!(stage %in% anames)) {
+    stop("`stage` must be a treatment in `object`.", call. = FALSE)
   }
 
   #######################
   ### Main output
   #######################
 
-  ### If it's mediator, plot the histogram of K_Lm for mediator == 0
-  if (stage == "mediator") {
-    plot_title <- paste("Matching weights for first stage (mediator)\namong M = 0")
-    hist(
-      object$KLm[object$mediator.vec == 0] / object$L_m,
-      main = plot_title,
-      xlab = "Number of times unit is matched"
-    )
-    abline(v = 1, col = "red", lty = 2, lwd = 2)
-  } else if (stage == "treatment") {
-    plot_title <- paste("Matching weights for second stage (treatment)")
-    hist(
-      object$KLa / object$L_a,
-      main = plot_title,
-      xlab = "Number of times unit is matched"
-    )
-    abline(v = 1, col = "red", lty = 2, lwd = 2)
-  }
+  this_K <- object$K[, anames == stage]
+  
+  plot_title <- paste0("Matching weights for ", stage)
+  hist(
+    this_K,
+    main = plot_title,
+    xlab = "Number of times unit is matched"
+  )
+  abline(v = 1, col = "red", lty = 2, lwd = 2)
 
-  return()
+  invisible()
 
-}
-
-##' Calculate telescope matching weights
-##'
-##' Calculates the weight given to each unit in the telescope matching
-##' estimation procedure.
-##'
-##' @param object an object of class `tmatch` from [telescope_match]
-##' output.
-##' @param data a data.frame that was passed to [telescope_match] to
-##' produce `object`.
-##' @return A list containing two vectors:
-##' \item{treat_w}{A n-length vector containing the matching weights
-##' for the treatment or first period matching.}
-##' \item{med_w}{A n-length vector containing the matching weights
-##' for the mediator or second period matching.}
-##' @author Matthew Blackwell
-##' @export
-tmatch_weights <- function(object, data) {
-  ### Is the class a 'tmatch'
-  if (class(object) != "tmatch") {
-    stop("Error: 'object' not of class 'tmatch'")
-  }
-
-  ### Does N of data match number of obs
-  if (nrow(data) != length(object$included)) {
-    stop("Error: number of rows in data not consistent with object")
-  }
-
-  data_tr <- data[[object$treatment]][object$included]
-  if (!all.equal(as.numeric(data_tr),
-                 as.numeric(object$treatment.vec))) {
-    stop("Error: treatment vector in data and object don't match")
-  }
-  a_w <- rep(NA, nrow(data))
-  m_w <- rep(NA, nrow(data))
-
-  M <- object$mediator.vec
-  a_w[object$included] <- (object$KLa / object$L_a + 1)
-  m_w[object$included] <- (object$KLm / object$L_m + 1) * M +
-    (object$KLm / object$L_m) * (1 - M)
-
-  return(list(treat_w = a_w, med_w = m_w))
 }

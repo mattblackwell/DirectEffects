@@ -319,11 +319,10 @@ Calling the `plotDiag.tmatch()` function will return a histogram of the number o
 ```{r, fig.width=7, fig.height=5}
 
 # Number of times each unit is used as a match in the mediator (first) stage
-plotDiag.tmatch(telescopeMatch.result.0, stage="mediator")
+plotDiag.tmatch(telescopeMatch.result.0, stage = "work2year2q")
 
 # Number of times each unit is used as a match in the treatment (second) stage
-plotDiag.tmatch(telescopeMatch.result.0, stage="treatment")
-
+plotDiag.tmatch(telescopeMatch.result.0, stage = "treat")
 ```
 
 ## References 
