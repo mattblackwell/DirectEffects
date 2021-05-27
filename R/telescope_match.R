@@ -396,7 +396,7 @@ match_at_time <- function(A, X, L, drops, caliper) {
   X_m <- cbind(X[, -drops], A[, -k])
 
   exacts <- c(
-    rep(FALSE, times = ncol(X[, -drops])),
+    rep(FALSE, times = ncol(X[, -drops, drop = FALSE])),
     rep(TRUE, times = k - 1)
   )
 
@@ -854,7 +854,8 @@ balance.tmatch <- function(object, vars, data, comparison = NULL) {
   before_std_diff <- before_diff / before_sd
 
   if (!is.null(comparison)) {
-    obs.weights <- this_K + A * comparison + (1 - A) * (1 - comparison)
+    obs.weights <- comparison * (this_K * (1 - A) + A) +
+      (1 - comparison) * (this_K * A + (1 - A))
   } else {
     obs.weights <- this_K + 1
   }
