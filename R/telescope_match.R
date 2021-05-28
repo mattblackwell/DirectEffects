@@ -256,7 +256,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   ####################
 
   m_out <- list()
-  r_out <- list()
+  r_out_big <- list()
   K <- list()
   K_paths <- list()
 
@@ -306,6 +306,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   for (j in seq_len(nrow(A_levs))) {
     A_j <- A_levs[j, ]
     Ytilde <- Y
+    r_out <- list()
     for (s in T:1) {
       A_hist <- A[, 1:s, drop = FALSE]
       r_out[[s]] <- regress_at_time(Ytilde, A_hist, X[[s]], separate_bc)
@@ -341,6 +342,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
     tau_i[, j] <- cdes$tau_i
     tau_raw[j] <- cdes$tau_raw
     tau_se[j] <- cdes$tau_se
+    r_out_big[[j]] <- r_out
   }
   tau <- colMeans((2 * A[, 1] - 1) * tau_i)
   
@@ -351,7 +353,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   
   ### Return output
   out <- list(call = cl, formula = formula, m_out = m_out, K = K, L = L, 
-              r_out = r_out, tau = tau, tau_raw = tau_raw, tau_se = tau_se,
+              r_out = r_out_big, tau = tau, tau_raw = tau_raw, tau_se = tau_se,
               tau_i = tau_i, included = included, effects = effects,
               a_names = a_names)
 
@@ -513,7 +515,10 @@ calculate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
   K_term <- i_j * rowSums(K) - (1 - i_j)
   tau_i <- tau_i - K_term * mu_hat_A - mu_hat_1_A
 
+  ## we have to adjust for the fact that the 
   p <- sapply(r_out, function(x) x$n_coefs)
+  p <- p / 2 ^ (0:(T - 1))
+  
   dfc_1 <- sum(i_j) / (sum(i_j) - p[T])
   epsilon <- Y - mu_hat[, T]
   tau_var <- dfc_1 * mean(i_j * (1 + rowSums(K))^2 * epsilon ^ 2)
@@ -526,7 +531,7 @@ calculate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
       i_j <- A_fut_str == paste0(A_j[(s - 1):(T - 1)], collapse = "")
       i_j <- as.numeric(i_j)
     } else {
-      i_j <- 1
+      i_j <- rep(1, N)
     }
     A_jt <- as.numeric(A[, s] == A_j[s - 1])
 
