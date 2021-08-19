@@ -515,9 +515,11 @@ calculate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
   K_term <- i_j * rowSums(K) - (1 - i_j)
   tau_i <- tau_i - K_term * mu_hat_A - mu_hat_1_A
 
-  ## we have to adjust for the fact that the 
+  ## we have to adjust for the fact that we run regressions for all
+  ## treatment combinations, but the CDE is only for one sequence
+  ## (for t>1)
   p <- sapply(r_out, function(x) x$n_coefs)
-  p <- p / 2 ^ (0:(T - 1))
+  p <- p / (2 ^ (0:(T - 1)))
   
   dfc_1 <- sum(i_j) / (sum(i_j) - p[T])
   epsilon <- Y - mu_hat[, T]
@@ -547,7 +549,7 @@ calculate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
     mu_lag_A <- A[, s - 1] * r_out[[s - 1]]$yhat_r_1 +
       (1 - A[, s - 1]) * r_out[[s - 1]]$yhat_r_0
     eta_v <- mu_hat[, s] - mu_lag_A
-    dfc_s <- sum(i_j) / (sum(i_j) - sum(p[1:s]))
+    dfc_s <- sum(i_j) / (sum(i_j) - sum(p[(s - 1) : T]))
     tau_var <- tau_var +
       dfc_s * mean(i_j * (1 + rowSums(K[past_K])) ^ 2 * eta_v ^ 2)
   }
