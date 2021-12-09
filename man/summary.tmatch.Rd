@@ -16,26 +16,19 @@ call to \code{telescope_match}}
 Returns an object of \code{class} \code{summary.tmatch}.
 Contains the following components
 \itemize{
-\item outcome: Name of outcome variable
-\item treatment: Name of treatment variable
-\item mediator: Name of mediator variable
-\item pre.treatment: Vector of names of pre-treatment confounders
-(appear in both stage 1 and 2)
-\item post.treatment: Vector of names of post-treatment confounders
-(appear only in stage 1)
-\item sizes: Number of observations in each treatment-mediator combination
-\item L_m: Number of units matched in the mediator (first) stage
-\item L_a: Number of units matched in the treatment (second) stage
-\item estimate: Point estimate of the ACDE
-\item se.type: Character indicating the type of standard error
-estimator used in the
-telescope_matching routine, either 'Asymptotic" or 'Bootstrap'
-\item std.err: Estimated standard error of the ACD
-\item ci.level: Confidence interval level
-\item conf.low: Lower bound of the `ci.level` asymptotically normal
-confidence interval
-\item conf.high: Upper bound of the `ci.level` asymptotically
-normal confidence interval
+  \item \code{call}: matched call.
+  \item \code{m_summary}: data.frame summarizes the matching
+    ratios (\code{{ratio}}), number of units \code{n_1, n_0},
+    and number of matched units (\code{matched_1, matched_0}) for
+    each treatment/mediator (\code{term}).
+  \item \code{K}: \code{K} data frame from the \code{object}
+    telescope matching output.
+  \item \code{L}: \code{L} vector from the \code{object}
+    telescope matching output.
+  \item \code{a_names}: character vector of the names of the
+    treatment/mediator variables used in matching. 
+  \item \code{estimates}: matrix of estimated ACDEs with and
+    without bias correction and the estimated standard errors.
 }
 }
 \description{
@@ -45,7 +38,6 @@ Summarize telescope match objects
 \code{summary} method for \code{tmatch} objects returned by
 \code{telescope_match}
 
-Returns a summary data frame containing the estimate,
-standard error and confidence  interval from the `telescope_match`
-object.
+Returns a summary data frame containing the estimate and
+standard errors from the `telescope_match` object.
 }

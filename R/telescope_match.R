@@ -1,12 +1,12 @@
 #' Perform telescope matching to estimate the controlled
-#' direct effect of a binary treatment net the effect of a binary mediator.
+#' direct effect of a binary treatment net the effect of binary
+#' mediators
 #'
-#' @param formula A formula object that specifies the outcome,
-#'   baseline covariates, treatment, intermediate covariate, and
-#'   mediator to be used in the matching. Each of the last four
-#'   variable groups should be separated by \code{|}. See below for
+#' @param formula A formula object that specifies the covariates and
+#' treatment variables (or mediators) in causal ordering from oldest
+#' to newest with each group separated by \code{|}. See below for
 #'   more details.
-#' @param data A dataframe containing columns referenced by
+#' @param data A dataframe containing variables referenced by
 #'   \code{formula}.
 #' @param caliper A scalar denoting the caliper to be used in matching
 #'   in the treatment stage (calipers cannot be used for matching on
@@ -21,20 +21,6 @@
 #'   (matching on mediator) and the second element sets the number of
 #'   matches used in the second stage (matching on treatment) Default
 #'   is 5.
-#' @param boot logical indicating whether to conduct inference using
-#'   the weighted bootstrap for matching estimators extended from Otsu
-#'   and Rai (2017) (\code{TRUE}) or the asymptotic variance estimator
-#'   from Blackwell and Strezhnev (2019) (\code{FALSE}). Defaults to
-#'   \code{FALSE}.
-#' @param nBoot If \code{boot} is \code{TRUE}, number of bootstrap
-#'   iterations to use. Default is \code{5000}.
-#' @param ci percent level of confidence interval to return. If
-#'   \code{boot} is \code{FALSE}, returns symmetric asymptotic
-#'   interval centered on the estimated treatment effect. If
-#'   \code{boot} is \code{TRUE} returns the \code{(100 - ci)/2} and
-#'   \code{100 - (100 - ci)/2} percentiles of the bootstrap
-#'   distribution. Must be in the interval \code{(0, 100)}. Defaults
-#'   to 95.
 #' @param verbose logical indicating whether to display progress
 #'   information. Default is \code{TRUE}.
 #' @param subset A vector of logicals indicating which rows of
@@ -50,34 +36,44 @@
 #'
 #' @details The \code{telescope_match} function implements the
 #'   two-stage "telescope matching" procedure developed by Blackwell
-#'   and Strezhnev (2020).
+#'   and Strezhnev (2021).
 #'
 #'  The procedure first estimates a demediated outcome using a
-#'  combination of matching and a regression bias-correction based on
-#'  the specification in \code{formula}, which should be specified as
-#'  \code{Y ~ X | A | Z | M}, where \code{Y} is the outcome, \code{X}
-#'  is a formula of baseline covariates, \code{A} is a single variable
-#'  name indicating the binary treatment, \code{Z} is a formula of
-#'  intermediate covariates, and \code{M} is a single variable name
-#'  indicating the mediator.
+#'  combination of matching and a regression bias-correction. The
+#'  \code{data.frame} passed to \code{data} should be in the wide
+#'  format so that each row corresponds to a single unit and
+#'  treatments and covariates from different time periods appear as
+#'  different columns. The \code{formula} arugment specifies both the
+#'  causal ordering of the variables and the regression specifications
+#'  for the bias correction. It should be of the form \code{Y ~ X1 |
+#'  A1 | X2 | A2}, where \code{Y} is the outcome, \code{X1} is a
+#'  formula of baseline covariates, \code{A1} is a single variable
+#'  name indicating the binary treatment in the first period,
+#'  \code{X2} is a formula of covariates in period 2, and \code{A2} is
+#'  a single variable name indicating treatment in period 2 (which is
+#'  also sometimes called the mediator). Note that it is possible to
+#'  add more covariate/treatment pairs for additional time periods.
 #'
-#' Under the default \code{separate_bc == TRUE}, the first stage will
-#' match for \code{M} on \code{X} and \code{Z} within levels of
-#' \code{A}. The bias correction regressions will be linear with a
-#' specification of \code{Y ~ X + Z} within levels of \code{A} and
-#' \code{M}. In the second stage, we match for \code{A} within levels
-#' of \code{X} and run bias correction regressions of \code{Ytilde ~
-#' X} within levels of \code{A}, where \code{Ytilde} is the imputed
-#' value of \code{Y(A, 0)} from the first stage. This second step
-#' estimates the controlled direct effect of treatment when the
-#' mediator is 0.
+#' Under the default \code{separate_bc == TRUE}, the function will
+#' match for each treatment/mediator based on the the covariates up to
+#' that point within levels of past treatments (so for \code{A2} this
+#' matching finds units with similar values of \code{X1} and \code{X2}
+#' and the same value of \code{A1}). Once this matching is complete,
+#' the function moves backward through treatments and imputes
+#' potential outcomes using matches and bias-correction regressions,
+#' which regress the current imputed potential outcome on the past
+#' covariates, within levels of the treatment history up to the
+#' current period. The functional form comes from the specification in
+#' \code{formula}. Controlled direct effects of \code{A1} are
+#' estimated for every possible combination of future treatments.
 #'
 #' When \code{separate_bc} is \code{FALSE}, the bias correction
-#' regressions are not broken out by the treatment/mediator and
-#' \code{A} and \code{M} are simply included as separate terms in the
-#' linear regression. In this setting, interactions between the
-#' treatment/mediator and covariates can be added on a selective basis
-#' to the \code{X} and \code{Z} specifications.
+#' regressions are not broken out by the treatments/mediators and
+#' those variables are simply included as separate regressors as
+#' specified in \code{formula}. In this setting, interactions between
+#' the treatment/mediator and covariates can be added on a selective
+#' basis to the covariate block (\code{X1} or \code{X2} and so on)
+#' specifications.
 #'
 #'  Matching is performed using the \code{Match()} routine from the
 #' \code{Matching} package. By default, matching is L-to-1 nearest
@@ -89,50 +85,55 @@
 #' @return Returns an object of \code{class} \code{tmatch}. Contains
 #' the following components
 #' \itemize{
-#' \item estimate: Estimated ACDE fixing M=0
-#' \item std.err: Estimated asymptotic standard error. \code{NULL} if
-#' \code{boot} is \code{TRUE}
-#' \item boot.dist: Bootstrap distribution of \code{estimate}.
-#' \code{NULL} if  \code{boot} is \code{FALSE}
-#' \item conf.low: Lower bound of \code{ci} confidence interval for
-#' the estimate
-#' \item conf.high: Upper bound of \code{ci} confidence interval for
-#' the estimate
-#' \item ci.level: Level of the confidence interval
-#' \item outcome: Name of outcome variable
-#' \item treatment: Name of treatment variable
-#' \item mediator: Name of mediator variable
-#' \item pre.treatment: Vector of names of pre-treatment confounders
-#' (appear in both stage 1  and 2)
-#' \item post.treatment: Vector of names of post-treatment confounders
-#' (appear only in stage 1)
-#' \item s1.formula: Stage 1 bias-correction regression formula
-#' (pre-/post-treatment covariates)
-#' \item s2.formula: Stage 2 bias-correction regression formula
-#' (pre-treatment covariates)
-#' \item outcome.vec: Vector of outcomes used in estimation
-#' \item treatment.vec: Vector of treatment indicators used in
-#' estimation
-#' \item mediator.vec: Vector of mediator indicators used in
-#' estimation
-#' \item L_m: Number of matches found for each unit in the first stage
-#' mediator matching  procedure
-#' \item L_a: Number of matches found for each unit in the second
-#' stage mediator matching  procedure
-#' \item KLm: Number of times unit is used as a match in the first
-#' stage mediator matching  procedure
-#' \item KLa: Number of times unit is used as a match in the second
-#' stage treatment matching  procedure
-#' \item N: Number of observations
-#' \item N_summary: Number of observations in each treatment/mediator
-#' combination.
-#' \item caliper: Caliper (if any) used in the treatment stage
-#' matching to drop distant  observations.
+#'   \item \code{call}: the matched call.
+#'   \item \code{formula}: formula used to fit the model.
+#'   \item \code{m_out}: list of matching soluations at each time
+#'     point. Each member of the list has a `matches` list giving the
+#'     units matched to that unit, a `donors` list with the units to
+#'     which the unit is matched, and a `tr` vector which is just the
+#'     treatment vector being matched.
+#'   \item \code{K}: data.frame of indicating how many times a unit
+#'     has been used as a match, directly in each period and indirectly
+#'     across periods.
+#'   \item \code{L}: vector of matching ratios used in each period.
+#'   \item \code{r_out}: nested list of regression imputations used in the
+#'     bias correction. The first level of the list varies across
+#'     different controlled direct effects (different sequences of future
+#'     treatments/mediators). Each of these is a list of time periods and
+#'     each of these time periods is a list of `yhat_r_0` and `yhat_r_1`
+#'     that give the regression predictions for the potential outcomes at
+#'     that time point when the treatment at that time point is 0 or 1,
+#'     respectively, along with `n_coefs` giving the number of
+#'     coefficients estimated in those models.
+#'   \item \code{tau}: vector of bias-corrected estimates of average
+#'     controlled direct effects for different vectors of future
+#'     treatments/mediators.
+#'   \item \code{tau_raw}: vector of standard matching estimates of average
+#'     controlled direct effects for different vectors of future
+#'     treatments/mediators without using bias correction.
+#'   \item \code{tau_se}: vector of estimated standard errors for the average
+#'     controlled direct effects estimates for different vectors of future
+#'     treatments/mediators. 
+#'   \item \code{tau_i}: matrix of individuals contributions to the ACDE
+#'     estimates (units on rows, different ACDEs on columns). Used for
+#'     weighted bootstrap.
+#'   \item \code{included}: logical vector indicating if each row of
+#'     \code{data} was included in estimating \code{tau}.
+#'   \item \code{effects}: data frame where each row describes the
+#'     different ACDEs in \code{tau}. The \code{active} column describes
+#'     the which variable's direct effect is being assessed and the rest
+#'     of the columns describe the fixed values of the future
+#'     treatments/mediators for that ACDE.
+#'   \item \code{a_names}: character vector with the names of the
+#'     treatment/mediator variables used in estimation.
+#'   \item \code{caliper}: caliper (if any) used in matching to drop
+#'     distant observations.
 #' }
 
 #' @references Blackwell, Matthew, and Strezhnev, Anton (2020)
 #' "Telescope Matching: Reducing Model Dependence
-#' in the Estimation of Direct Effects." Working Paper.
+#' in the Estimation of Direct Effects." Journal of the Royal
+#' Statistical Society (Series A). \doi{10.1111/rssa.12759}
 #'
 #' @examples
 #' data(jobcorps)
@@ -157,9 +158,9 @@
 #' @export
 #' @importFrom Matching Match
 #' @importFrom stats as.formula model.frame predict rbinom var
+#' @importFrom utils combn
 #'
 telescope_match <- function(formula, data, caliper = NULL, L = 5,
-                            boot = FALSE, nBoot = 5000, ci = 95,
                             verbose = TRUE, subset, contrasts = NULL,
                             separate_bc = TRUE, ...) {
 
@@ -186,7 +187,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   if (T < 2 | (T %% 1) != 0) {
     stop(
       "Right-hand side of `formula` must have an even number of groups.",
-      "\nℹ Groups should be divded by `|`", call. = FALSE
+      "\n Groups should be divded by `|`", call. = FALSE
     )
   }
 
@@ -261,7 +262,9 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   K_paths <- list()
 
   ## matching
+  if (verbose) message("Beginning matching...")
   for (s in T:1) {
+    if (verbose) message("Matching ", a_names[s], "...")
     A_hist <- A[, 1:s, drop = FALSE]
     m_out[[s]] <- match_at_time(A_hist, X[[s]], L[s], drops[[s]], caliper)
 
@@ -297,6 +300,7 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   K <- as.data.frame(unlist(K, recursive = FALSE))
   
   ## bias correction
+  if (verbose) message("Beginning bias correction...")
   A_levs <- expand.grid(rep(list(c(0, 1)), times = T - 1))
   tau_i <- matrix(NA, nrow = N, ncol = nrow(A_levs))
   tau_raw <- rep(0, times = nrow(A_levs))
@@ -392,7 +396,7 @@ match_at_time <- function(A, X, L, drops, caliper) {
   if (!isTRUE(all.equal(unique(Ak)[order(unique(Ak))], c(0, 1)))) {
     stop(
       "Error: treatments must only take on values 0 or 1",
-      "\n ✖ treatment ", k, " non-binary values."
+      "\n treatment ", k, " non-binary values."
     )
   }
   X_m <- cbind(X[, -drops], A[, -k])
@@ -564,14 +568,56 @@ calculate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
   return(list(tau = tau, tau_i = tau_i, tau_raw = tau_raw, tau_se = tau_se))
 }
 
-##' @export 
-boots_tm <- function(obj, R = 100, ci_alpha = 0.05) {
+
+#' Bootstrap Uncertainty Estimats for Telescope Matching
+#' 
+#' Performs a weighted bootstrap procedure for the output of
+#' \code{\link{telescope_match}}. 
+#'
+#' @param obj A \code{tmatch} object, computed by \code{\link{telescope_match}}.
+#' @param boots The number of bootstrap replicates. Defaults to 1000.
+#' @param ci_alpha alpha value for the bootstrapped confidence
+#' intervals. Corresponds to a 100 * (1-alpha) confidence interval. 
+#'
+#' @return An data.frame with columns `ci_low` and `ci_high` which
+#' contain the bootstrapped confidence intervals for the estimated
+#' ACDEs in \code{obj$tau}.
+#'
+#' @examples
+#' \donttest{
+#' data(jobcorps)
+#'
+#' ## Split male/female
+#' jobcorps_female <- subset(jobcorps, female == 1)
+#'
+#' ## Telescope matching formula - First stage (X and Z)
+#' tm_form <- exhealth30 ~  schobef + trainyrbef + jobeverbef  |
+#' treat | emplq4 + emplq4full | work2year2q
+#'
+#'
+#' ### Estimate ACDE for women holding employment at 0
+#' tm_out <-  telescope_match(
+#'   tm_form,
+#'   data = jobcorps_female,
+#'   L = 3,
+#'   boot = FALSE,
+#'   verbose = TRUE
+#' )
+#'
+#' out.boots <- boots_tm(tm_out)
+#'
+#' out.boots
+#' }
+#' @export
+#' @importFrom stats rbinom quantile
+#'
+boots_tm <- function(obj, boots = 1000, ci_alpha = 0.05) {
 
   N <- nrow(obj$tau_i)
   J <- length(obj$tau)
   ## Bootstrap iterations
     W.bern <- sapply(
-      1:R,
+      1:boots,
       function(x) rbinom(N, 1, prob = (sqrt(5) - 1) / (2 * sqrt(5)))
     )
     Wstar <- (((sqrt(5) + 1) / 2) * W.bern +
@@ -620,33 +666,25 @@ print.tmatch <- function(x, ...) {
 #' call to \code{telescope_match}
 #' @param ... additional arguments affecting the summary produced.
 #'
-#' @details Returns a summary data frame containing the estimate,
-#' standard error and confidence  interval from the `telescope_match`
-#' object.
+#' @details Returns a summary data frame containing the estimate and
+#' standard errors from the `telescope_match` object.
 #'
 #' @return Returns an object of \code{class} \code{summary.tmatch}.
 #' Contains the following components
 #' \itemize{
-#' \item outcome: Name of outcome variable
-#' \item treatment: Name of treatment variable
-#' \item mediator: Name of mediator variable
-#' \item pre.treatment: Vector of names of pre-treatment confounders
-#' (appear in both stage 1 and 2)
-#' \item post.treatment: Vector of names of post-treatment confounders
-#' (appear only in stage 1)
-#' \item sizes: Number of observations in each treatment-mediator combination
-#' \item L_m: Number of units matched in the mediator (first) stage
-#' \item L_a: Number of units matched in the treatment (second) stage
-#' \item estimate: Point estimate of the ACDE
-#' \item se.type: Character indicating the type of standard error
-#' estimator used in the
-#' telescope_matching routine, either 'Asymptotic" or 'Bootstrap'
-#' \item std.err: Estimated standard error of the ACD
-#' \item ci.level: Confidence interval level
-#' \item conf.low: Lower bound of the `ci.level` asymptotically normal
-#' confidence interval
-#' \item conf.high: Upper bound of the `ci.level` asymptotically
-#' normal confidence interval
+#'   \item \code{call}: matched call.
+#'   \item \code{m_summary}: data.frame summarizes the matching
+#'     ratios (\code{{ratio}}), number of units \code{n_1, n_0},
+#'     and number of matched units (\code{matched_1, matched_0}) for
+#'     each treatment/mediator (\code{term}).
+#'   \item \code{K}: \code{K} data frame from the \code{object}
+#'     telescope matching output.
+#'   \item \code{L}: \code{L} vector from the \code{object}
+#'     telescope matching output.
+#'   \item \code{a_names}: character vector of the names of the
+#'     treatment/mediator variables used in matching. 
+#'   \item \code{estimates}: matrix of estimated ACDEs with and
+#'     without bias correction and the estimated standard errors.
 #' }
 #' @export
 summary.tmatch <- function(object, ...) {
@@ -697,18 +735,19 @@ summary.tmatch <- function(object, ...) {
 }
 
 #' @export
-print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3)) {
+print.summary.tmatch <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
+
   cat("Telescope matching results\n")
   cat("----------------------------\n\n")
 
   cat("Call:\n")
-  print(object$call)
+  print(x$call)
 
-  cat("\nActive treatment: ", object$a_names[1], "\n")
-  cat("Controlled treatment(s):", object$a_names[-1], "\n\n")
+  cat("\nActive treatment: ", x$a_names[1], "\n")
+  cat("Controlled treatment(s):", x$a_names[-1], "\n\n")
 
   cat("Matching summary:\n")
-  m_sum <- object$m_summary
+  m_sum <- x$m_summary
   names(m_sum) <- c(
     "Term", "Matching Ratio L:1", "N == 1", "N == 0",
     "Matched == 1", "Matched == 0"
@@ -716,17 +755,17 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
   print(m_sum)
 
   cat("\n\nSummary of units matching contributions:\n")
-  print(t(sapply(object$K, summary)))
+  print(t(sapply(x$K, summary)))
   
   cat(
     "\n\nEstimated controlled direct effects of ",
-    object$a_names[1],
+    x$a_names[1],
     ":\n", sep = ""
   )
 
   print(
-    object$estimates,
-    digits = digits, quote = FALSE, right = TRUE, rowlab = c("hey", "there")
+    x$estimates,
+    digits = digits, quote = FALSE, right = TRUE
   )
   cat("\n")
 }
