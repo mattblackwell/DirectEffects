@@ -1,0 +1,155 @@
+---
+title: "Telescope matching"
+date: "`r Sys.Date()`"
+link-citations: yes
+bibliography: ../DirectEffects.bib
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Telescope matching}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r loadpkg, echo = FALSE, include = FALSE}
+knitr::opts_chunk$set(fig.width = 5, fig.height = 4, fig.align = "center")
+library(dplyr)
+library(scales)
+library(reshape2)
+library(ggplot2)
+library(DirectEffects) 
+```
+
+
+
+
+This vignette illustrates the telescope matching method developed in @BlaStr21 as implemented in the `telescope_matching` routine. One drawback of sequential g-estimation or other model-based estimators is that they depend on correctly specifying two regression models: one for the effect of the mediator given treatment and pre-/post-treatment covariates and another for the effect of treatment given pre-treatment covariates. Telescope matching provides a more flexible and less model-dependent estimation strategy for controlled direct effects when the treatment and mediator are binary. It combines a two-stage matching procedure to impute the unobserved counterfactuals with a bias-correction to account for biases induced by imperfect matches.
+
+## Estimation by telescope matching
+
+Telescope matching provides an alternative, less model-dependent approach to estimating the average controlled direct effect when both treatment and mediator are binary. The average controlled direct effect of interest is the effect of treatment versus control ($A_i = 1$ vs. $A_i = 0$) holding constant the mediator at $0$ ($M_i = 0$).
+\[
+ACDE = E[Y_i(1, 0) - Y_i(0,0)]
+\]
+
+Identification still depends crucially on the sequential unconfoundedness assumption **Assumption 1**, which states that there are no unobserved confounders of $A_i$ and $Y_i$ given pre-treatment covariates $X_i$ and that there are no unobserved confounders of $M_i$ and $Y_i$ given treatment $A_i$, pre-treatment covariates $X_i$ and post-treatment covariates $Z_i$. We can understand the process of estimating the ACDE as an imputation problem. Our estimator of the ACDE, $\hat{\tau}$ is simply the average of imputed potential outcomes for each unit in the sample.
+\[
+\hat{\tau} = \frac{1}{N}\sum_{i=1}^N \left(\widehat{Y}_i(1,0) - \widehat{Y}_i(0,0)\right)
+\]
+
+To obtain the imputations $\widehat{Y}_i(1,0)$ and $\widehat{Y}_i(0,0)$ for each unit, the telescope matching approach proceeds in two stages. The first step matches each unit with $M_i = 1$ to some user-specified number of units with $M_i = 0$ that share treatment status $A_i$ and are similar in both pre-treatment covariates $X_i$ and post-treatment covariates $Z_i$ as measured by some distance metric (in `telescope_match` we implement the Mahalanobis distance). Let $\mathcal{J}_L^m(i)$ denote the set of units matched to unit $i$. We define the following imputation for each unit's potential outcome fixing $M_i$ to 0.
+
+\[
+\widehat{Y}_i(A_i, 0) =\begin{cases} Y_i & \text{ if } M_i = 0 \\ \frac{1}{L} \sum_{\ell\in \mathcal{J}^m_L(i)} Y_{\ell} & \text{ if } M_i = 1\end{cases}
+\]
+
+In the second step, we match each unit to some number of units of the opposite treatment status with similar values of pre-treatment covariates $X_i$  Let $\mathcal{J}_L^a(i)$ denote the set of units matched to unit $i$ such that $A_j = 1 - A_i$ for all $j \in \mathcal{J}_L^a(i)$. We then use the first-stage imputations for either unit $i$ or its second-stage matches to impute the potential outcomes for each unit under treatment and control fixing the mediator to $0$.
+
+\[
+  \widehat{Y}_{i}(a,0) = \begin{cases}
+    \widehat{Y}_{i}(A_i,0) & \text{if}\ A_i = a\\
+    \frac{1}{L} \sum_{j\in \mathcal{J}^a_L(i)} \widehat{Y}_{j}(A_j,0) & \text{if}\  A_i = 1-a
+\end{cases}
+\]
+
+Since matching is done with replacement, units may be used multiple times.  We define $K^m_L(i) = \sum_{k=1}^N \mathbb{I}\{i \in \mathcal{J}^m_L(k)\}$ as the number of times that unit $i$ is used as a match in stage and $K^a_L(i) = \sum_{j=1}^N \mathbb{I}\{i \in \mathcal{J}^a_L(j)\}$. Moreover, since units with $M_i = 0$ contribute indirectly to second stage matches we define $K^{am}_L(i) = \sum_{j=1}^N \mathbb{I}\{i \in \mathcal{J}^m_L(j)\}K^a_L(j)$ to denote the number of times a unit with $M_i = 0$ matched to a unit with $M_i = 1$ is implicitly used as a match in the second stage. This allows us to re-write the simple matching estimator as a weighted average $\widehat{\tau} = N^{-1} \sum_{i=1}^N (2A_i - 1)(1 - M_i)W_iY_i$ where the weight is defined as
+
+\[
+  W_i =  1 + \frac{K^a_L(i)}{L} + \frac{K^m_L(i)}{L} + \frac{K^{am}_L(i)}{L^2}
+\]
+
+These weights can be used as a diagnostic for assessing the variance of the estimator and whether particular observations have an extreme influence on the estimate through large weights, resulting in large variances. The `telescope_match` function returns each of the constituent matching counts along with the combined matching "weight" on each observation for use in diagnostic plots.
+
+### Bias correction for matching
+
+Matching estimators with a fixed number of matches exhibit bias even in large samples due to differences in the regression function between units and their matches evaluated at their respective covariate values @AbaImb11. While this bias converges in probability to $0$ as the sample size grows, the rate of convergence is slow enough that the bias terms dominate the distribution To address this, matching estimators for treatment effects typically incorporate a bias correction which adjusts the matched values by the estimated difference in regression functions. We incorporate a similar approach for correcting matching bias in our two-stage procedure. 
+
+The bias of the simple matching estimator for $\hat{\tau}$ consists of two terms, a bias due to matching on the mediator ($B_L^m$) and a bias due to matching on treatment ($B_L^a$)
+
+\[
+ B^m_L = \frac{1}{N} \sum_{i=1}^N (2A_i - 1)M_i \left(1 + \frac{K^a_L(i)}{L}\right)  \left( \frac{1}{L} \sum_{{\ell} \in J^m_L(i)} \mu_{A_i0}(X_{\ell}, Z_{\ell}, A_i) - \mu_{A_i0}(X_i, Z_i, A_i) \right) 
+\]
+
+\[
+  B^a_L = \frac{1}{N} \sum_{i=1}^N (2A_i - 1) \Bigg[\frac{1}{L} \sum_{j \in J^a_L(i)} \mu_{1-A_i,0}(X_i,1-A_i) - \mu_{1-A_i,0}(X_j,1-A_i)   \Bigg]
+\]
+
+Where $\mu_{am}(x,z,a) = E[Y(a,m) \mid X_i = x, Z_i = z, A_i = a]$ and $\mu_{am}(x,a) = E[Y_i(a,m) \mid X_i= x, A_i = a]$ denote the conditional expectations of the potential outcomes given two different conditioning sets (with and without $Z$). Under sequential ignorability, $\mu_{am}(x,z,a) = \mu(x,z,a,m) = E[Y_i \mid X_i= x, Z_i = z, A_i = a, M_i = m]$. The method implemented in `telescope_match` extends the bias correction strategy of @AbaImb11 to the two-stage setting. It estimates the two conditional expectation functions using regression estimators $\widehat{\mu}(x, z, a, m)$ and $\widehat{\mu}_{a0}(x, a)$. As shown in @BlaStr21, if the regression estimators are consistent for the true regression functions, then the estimated bias correction converges to the true bias. The rate of convergence is fast enough such that the bias can be ignored asymptotically.
+
+### Inference
+
+Obtaining valid standard errors in the matching context is difficult as matching with replacement induces dependencies between imputed potential outcomes. We provide two approaches for estimating standard errors. The first implements a version of the @OtsRai17 wild bootstrap for matching estimators, extended to the two-stage setting. The second (default) approach estimates the components of the asymptotic variance derived in @BlaStr21.
+
+## Empirical illustration of telescope matching
+
+In this section, we illustrate the implementation of the telescope matching estimator as applied to the Job Corps experiment data used in @Hub14 to estimate the effect of a randomized job training program on self-assessed health holding constant the intermediate outcome of employment. 
+
+The data is supplied along with the package.
+```{r}
+data(jobcorps)
+```
+
+* $Y_i$ is an indicator for whether participants reported "very good" health after 2.5 years out after randomization (`exhealth30`)
+* $A_i$ is an indicator for assignment to the job training program (`treat`)
+* $M_i$ is an indicator for employment 1 to 1.5 years after assignment (`work2year2q`)
+* $Z_i$ are the post-treatment, pre-mediator intermediate confounders (`emplq4`, `emplq4full`)
+* $X_i$ are the pre-treatment characteristics (`chobef`, `trainyrbef`, `jobeverbef`)
+
+The original @Hub14 paper looks at separate controlled effects for female and male participants. We start by subsetting the dataset down to the female participants
+
+```{r}
+jobcorps_female <- subset(jobcorps, female == 1)
+```
+
+We define the two formula objects used for matching, the first including all pre- and post-treatment covariates $X_i$ and $Z_i$ along with all treatment-covariate interactions. The second includes only the pre-treatment covariates and treatment-covariate interactions. Here, we include only a subset of the covariates used by @Hub14 in their analysis. 
+
+```{r}
+## Telescope matching formula - First stage (X and Z)
+tm_form <- exhealth30 ~ schobef + trainyrbef + jobeverbef  | treat |
+  emplq4 + emplq4full | work2year2q
+```
+
+The `telescope_match()` function can handle additional mediators and intermediate covariates by simply adding them to the end of the formula in the same manner as these two groups. We then pass this formula to the function itself:
+
+```{r}
+### Estimate ACDE for women holding employment at 0
+tm_out <-  telescope_match(tm_form, data = jobcorps_female, L = 3)
+```
+
+The `summary()` function will print the output (estimate and standard errors) to the console for each of the possible controlled direct effects. This function also provides some summaries of the matching output. The elements of the output can be accessed directly from the returned `tmatch` object.
+
+```{r}
+# Prints the summary output
+summary(tm_out)
+
+# The coefficients + SE can be accessed directly as well
+tm_out$tau # Point estimate
+tm_out$tau_se #Standard error
+```
+
+Additional diagnostics can be conducted by calling the `balance.tmatch()` function on the returned `tmatch` object to assess the change in pre-/post-matching covariate balance in both the first and second stages.
+
+```{r}
+## Assess mediator balance on selected pre- and post- treatment covariates
+balance.tmatch(tm_out, vars = work2year2q ~ schobef + emplq4,
+               data = jobcorps_female)
+
+## Assess treatment balance on selected pre-treatment covariates
+balance.tmatch(tm_out, vars = treat ~ trainyrbef + hhsize,
+               data = jobcorps_female)
+```
+
+Calling the `plotDiag.tmatch()` function will return a histogram of the number of times each unit is used as a match ($K/L$) in either the first (mediator) stage or the second (treatment) stage.
+
+```{r, fig.width=7, fig.height=5}
+
+# Number of times each unit is used as a match in the mediator (first) stage
+plotDiag.tmatch(tm_out, stage = "work2year2q")
+
+# Number of times each unit is used as a match in the treatment (second) stage
+plotDiag.tmatch(tm_out, stage = "treat")
+```
+
+## References 
+
+

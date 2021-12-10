@@ -1,3 +1,6 @@
 vignettes/.auto
 .Rproj.user
 .Rhistory
+vignettes/*_files/
+vignettes/*_cache/
+docs

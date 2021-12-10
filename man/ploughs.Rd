@@ -52,5 +52,5 @@ A dataset to replicate the analysis in Alesina, Giuliano, and Nunn
 \references{
 Alesina, A., Giuliano, P., & Nunn, N. (2013). On the
 Origins of Gender Roles: Women and the Plough. The Quarterly
-Journal of Economics, 128(2), 469-530.
+Journal of Economics, 128(2), 469-530. \doi{10.1093/qje/qjt005}
 }

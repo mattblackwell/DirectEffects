@@ -1,5 +1,5 @@
 ---
-title: "Estimating controlled direct effects with sequential g-estimation"
+title: "Estimating controlled direct effects"
 date: "`r Sys.Date()`"
 link-citations: yes
 bibliography: DirectEffects.bib
@@ -9,6 +9,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+
 
 ```{r loadpkg, echo = FALSE, include = FALSE}
 knitr::opts_chunk$set(fig.width = 5, fig.height = 4, fig.align = "center")
@@ -21,11 +22,11 @@ library(DirectEffects)
 
 
 
-This vignette demonstrates how to estimate the controlled direct effect of some treatment, net the effect of some mediator using the sequential g-estimation approach in `DirectEffects`, as described by  @AchBlaSen16. With standard regression and matching approaches, estimating the controlled direct effect is difficult because it often requires adjusting for covariates that causally affect the mediator and are causally affected by the treatment. Including such variables in a regression model can lead to post-treatment bias when estimating the direct effect of treatment. A large class of models and estimation approaches have been developed to avoid this problem, but here we focus on one called sequential g-estimation. This approach uses a standard linear model to  estimate the effect of the mediator, and then removes that effect from effect from the dependent variable to estimate the direct effect of treatment without post-treatment bias. 
+This vignette demonstrates how to estimate the controlled direct effect of some treatment, net the effect of some mediator using sequential g-estimation approach as described by  @AchBlaSen16. With standard regression and matching approaches, estimating the controlled direct effect is difficult because it often requires adjusting for covariates that causally affect the mediator and are causally affected by the treatment. Including such variables in a regression model can lead to post-treatment bias when estimating the direct effect of treatment. A large class of models and estimation approaches have been developed to avoid this problem, but here we focus on one called sequential g-estimation. This approach uses a standard linear model to  estimate the effect of the mediator, and then removes that effect from effect from the dependent variable to estimate the direct effect of treatment without post-treatment bias. 
 
 ## Quantity of interest 
 
-Here we briefly introduce some of the statistical theory behind sequential g-estimation. The main quantity of interest of sequential g-estimation the average controlled direct effect or ACDE. This can be illustrated from the following causal structure [@AchBlaSen16, Figure 3]:
+Here we briefly introduce some of the statistical theory behind estimating direct effects. The main quantity of interest is the average controlled direct effect or ACDE. This can be illustrated from the following causal structure [@AchBlaSen16, Figure 3]:
 
 ```{r, echo = FALSE, out.width = "600px", fig.align='center'}
 knitr::include_graphics("figures/ABS_fig3.png")
@@ -77,7 +78,7 @@ Under the above assumptions and assuming this regression is correctly specified,
 
 
 
-## Illustrative example
+## Illustrative example of sequential g-estimation
 
 We now work through one example of using `sequential_g` to estimate the ACDE. The data comes from @AleGiuNun13. The dataset comes with the package:
 ```{r}
@@ -106,7 +107,7 @@ summary(ate.mod)
 ```
 
 
-### Implementation
+#### Implementation
 
 In this example, we would like to estimate the controlled direct effect of plows fixing the value of the mediator, current national income. To do so, we must choose a value at which to fix this mediator. The standard sequential g-estimation approach will fix the value to 0, which is often not a substantively interesting value---it certainly is not for income or logged income. To avoid this problem, we use the mean-centered version of our logged income, `centered_ln_inc`, so that when we demediate with $m = 0$, it will be equivalent to demediation with $m$ set to the mean of logged national income. Furthermore, we also use a squared term of this centered mediator, `centered_ln_incsq`, so that we can include it in the demediation function to account for nonlinear effects of logged income. 
 
@@ -137,11 +138,9 @@ summary(direct)
 The standard errors here are based on the asymptotic variance derived in @AchBlaSen16, but it is also possible to use the `boots_g` function to compute standard errors by a simple bootstrap:
 
 ```{r}
-out.boots <- boots_g(direct)
+out.boots <- boots_g(direct, boots = 250)
 summary(out.boots)
 ```
-
-
 
 
 The coefficient on the treatment variable (here, `plow`), is the estimate of the ACDE. The results show a negative ACDE of plows---in other words, the effect of the plough is negative for fixed income levels. This controlled direct effect is larger in magnitude than the estimated the total effect:
@@ -202,3 +201,5 @@ The black line shows how the estimated ACDE would be at various levels of correl
 
 
 ## References 
+
+
