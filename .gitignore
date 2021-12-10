@@ -3,3 +3,4 @@ vignettes/.auto
 .Rhistory
 vignettes/*_files/
 vignettes/*_cache/
+docs
