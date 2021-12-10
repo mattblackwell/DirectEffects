@@ -3,16 +3,14 @@
 \name{telescope_match}
 \alias{telescope_match}
 \title{Perform telescope matching to estimate the controlled
-direct effect of a binary treatment net the effect of a binary mediator.}
+direct effect of a binary treatment net the effect of binary
+mediators}
 \usage{
 telescope_match(
   formula,
   data,
   caliper = NULL,
   L = 5,
-  boot = FALSE,
-  nBoot = 5000,
-  ci = 95,
   verbose = TRUE,
   subset,
   contrasts = NULL,
@@ -21,13 +19,12 @@ telescope_match(
 )
 }
 \arguments{
-\item{formula}{A formula object that specifies the outcome,
-baseline covariates, treatment, intermediate covariate, and
-mediator to be used in the matching. Each of the last four
-variable groups should be separated by \code{|}. See below for
-more details.}
+\item{formula}{A formula object that specifies the covariates and
+treatment variables (or mediators) in causal ordering from oldest
+to newest with each group separated by \code{|}. See below for
+  more details.}
 
-\item{data}{A dataframe containing columns referenced by
+\item{data}{A dataframe containing variables referenced by
 \code{formula}.}
 
 \item{caliper}{A scalar denoting the caliper to be used in matching
@@ -45,31 +42,14 @@ first element sets the number of matches used in the first stage
 matches used in the second stage (matching on treatment) Default
 is 5.}
 
-\item{boot}{logical indicating whether to conduct inference using
-the weighted bootstrap for matching estimators extended from Otsu
-and Rai (2017) (\code{TRUE}) or the asymptotic variance estimator
-from Blackwell and Strezhnev (2019) (\code{FALSE}). Defaults to
-\code{FALSE}.}
-
-\item{nBoot}{If \code{boot} is \code{TRUE}, number of bootstrap
-iterations to use. Default is \code{5000}.}
-
-\item{ci}{percent level of confidence interval to return. If
-\code{boot} is \code{FALSE}, returns symmetric asymptotic
-interval centered on the estimated treatment effect. If
-\code{boot} is \code{TRUE} returns the \code{(100 - ci)/2} and
-\code{100 - (100 - ci)/2} percentiles of the bootstrap
-distribution. Must be in the interval \code{(0, 100)}. Defaults
-to 95.}
-
 \item{verbose}{logical indicating whether to display progress
 information. Default is \code{TRUE}.}
 
 \item{subset}{A vector of logicals indicating which rows of
 \code{data} to keep.}
 
-\item{contrasts}{an optional list. See the \code{contrasts.arg}
-    of \code{\link[stats]{model.matrix.default}}.}
+\item{contrasts}{a list to be passed to the \code{contrasts.arg}
+argument of \code{model.matrix()} when generating the data matrix.}
 
 \item{separate_bc}{logical indicating whether or not bias
 correction regressions should be run separately within levels of
@@ -84,82 +64,97 @@ covariates in the specification should be omitted.}
 Returns an object of \code{class} \code{tmatch}. Contains
 the following components
 \itemize{
-\item estimate: Estimated ACDE fixing M=0
-\item std.err: Estimated asymptotic standard error. \code{NULL} if
-\code{boot} is \code{TRUE}
-\item boot.dist: Bootstrap distribution of \code{estimate}.
-\code{NULL} if  \code{boot} is \code{FALSE}
-\item conf.low: Lower bound of \code{ci} confidence interval for
-the estimate
-\item conf.high: Upper bound of \code{ci} confidence interval for
-the estimate
-\item ci.level: Level of the confidence interval
-\item outcome: Name of outcome variable
-\item treatment: Name of treatment variable
-\item mediator: Name of mediator variable
-\item pre.treatment: Vector of names of pre-treatment confounders
-(appear in both stage 1  and 2)
-\item post.treatment: Vector of names of post-treatment confounders
-(appear only in stage 1)
-\item s1.formula: Stage 1 bias-correction regression formula
-(pre-/post-treatment covariates)
-\item s2.formula: Stage 2 bias-correction regression formula
-(pre-treatment covariates)
-\item outcome.vec: Vector of outcomes used in estimation
-\item treatment.vec: Vector of treatment indicators used in
-estimation
-\item mediator.vec: Vector of mediator indicators used in
-estimation
-\item L_m: Number of matches found for each unit in the first stage
-mediator matching  procedure
-\item L_a: Number of matches found for each unit in the second
-stage mediator matching  procedure
-\item KLm: Number of times unit is used as a match in the first
-stage mediator matching  procedure
-\item KLa: Number of times unit is used as a match in the second
-stage treatment matching  procedure
-\item N: Number of observations
-\item N_summary: Number of observations in each treatment/mediator
-combination.
-\item caliper: Caliper (if any) used in the treatment stage
-matching to drop distant  observations.
+  \item \code{call}: the matched call.
+  \item \code{formula}: formula used to fit the model.
+  \item \code{m_out}: list of matching soluations at each time
+    point. Each member of the list has a `matches` list giving the
+    units matched to that unit, a `donors` list with the units to
+    which the unit is matched, and a `tr` vector which is just the
+    treatment vector being matched.
+  \item \code{K}: data.frame of indicating how many times a unit
+    has been used as a match, directly in each period and indirectly
+    across periods.
+  \item \code{L}: vector of matching ratios used in each period.
+  \item \code{r_out}: nested list of regression imputations used in the
+    bias correction. The first level of the list varies across
+    different controlled direct effects (different sequences of future
+    treatments/mediators). Each of these is a list of time periods and
+    each of these time periods is a list of `yhat_r_0` and `yhat_r_1`
+    that give the regression predictions for the potential outcomes at
+    that time point when the treatment at that time point is 0 or 1,
+    respectively, along with `n_coefs` giving the number of
+    coefficients estimated in those models.
+  \item \code{tau}: vector of bias-corrected estimates of average
+    controlled direct effects for different vectors of future
+    treatments/mediators.
+  \item \code{tau_raw}: vector of standard matching estimates of average
+    controlled direct effects for different vectors of future
+    treatments/mediators without using bias correction.
+  \item \code{tau_se}: vector of estimated standard errors for the average
+    controlled direct effects estimates for different vectors of future
+    treatments/mediators. 
+  \item \code{tau_i}: matrix of individuals contributions to the ACDE
+    estimates (units on rows, different ACDEs on columns). Used for
+    weighted bootstrap.
+  \item \code{included}: logical vector indicating if each row of
+    \code{data} was included in estimating \code{tau}.
+  \item \code{effects}: data frame where each row describes the
+    different ACDEs in \code{tau}. The \code{active} column describes
+    the which variable's direct effect is being assessed and the rest
+    of the columns describe the fixed values of the future
+    treatments/mediators for that ACDE.
+  \item \code{a_names}: character vector with the names of the
+    treatment/mediator variables used in estimation.
+  \item \code{caliper}: caliper (if any) used in matching to drop
+    distant observations.
 }
 }
 \description{
 Perform telescope matching to estimate the controlled
-direct effect of a binary treatment net the effect of a binary mediator.
+direct effect of a binary treatment net the effect of binary
+mediators
 }
 \details{
 The \code{telescope_match} function implements the
   two-stage "telescope matching" procedure developed by Blackwell
-  and Strezhnev (2019).
+  and Strezhnev (2021).
 
  The procedure first estimates a demediated outcome using a
- combination of matching and a regression bias-correction based on
- the specification in \code{formula}, which should be specified as
- \code{Y ~ X | A | Z | M}, where \code{Y} is the outcome, \code{X}
- is a formula of baseline covariates, \code{A} is a single variable
- name indicating the binary treatment, \code{Z} is a formula of
- intermediate covariates, and \code{M} is a single variable name
- indicating the mediator.
+ combination of matching and a regression bias-correction. The
+ \code{data.frame} passed to \code{data} should be in the wide
+ format so that each row corresponds to a single unit and
+ treatments and covariates from different time periods appear as
+ different columns. The \code{formula} arugment specifies both the
+ causal ordering of the variables and the regression specifications
+ for the bias correction. It should be of the form \code{Y ~ X1 |
+ A1 | X2 | A2}, where \code{Y} is the outcome, \code{X1} is a
+ formula of baseline covariates, \code{A1} is a single variable
+ name indicating the binary treatment in the first period,
+ \code{X2} is a formula of covariates in period 2, and \code{A2} is
+ a single variable name indicating treatment in period 2 (which is
+ also sometimes called the mediator). Note that it is possible to
+ add more covariate/treatment pairs for additional time periods.
 
-Under the default \code{separate_bc == TRUE}, the first stage will
-match for \code{M} on \code{X} and \code{Z} within levels of
-\code{A}. The bias correction regressions will be linear with a
-specification of \code{Y ~ X + Z} within levels of \code{A} and
-\code{M}. In the second stage, we match for \code{A} within levels
-of \code{X} and run bias correction regressions of \code{Ytilde ~
-X} within levels of \code{A}, where \code{Ytilde} is the imputed
-value of \code{Y(A, 0)} from the first stage. This second step
-estimates the controlled direct effect of treatment when the
-mediator is 0.
+Under the default \code{separate_bc == TRUE}, the function will
+match for each treatment/mediator based on the the covariates up to
+that point within levels of past treatments (so for \code{A2} this
+matching finds units with similar values of \code{X1} and \code{X2}
+and the same value of \code{A1}). Once this matching is complete,
+the function moves backward through treatments and imputes
+potential outcomes using matches and bias-correction regressions,
+which regress the current imputed potential outcome on the past
+covariates, within levels of the treatment history up to the
+current period. The functional form comes from the specification in
+\code{formula}. Controlled direct effects of \code{A1} are
+estimated for every possible combination of future treatments.
 
 When \code{separate_bc} is \code{FALSE}, the bias correction
-regressions are not broken out by the treatment/mediator and
-\code{A} and \code{M} are simply included as separate terms in the
-linear regression. In this setting, interactions between the
-treatment/mediator and covariates can be added on a selective basis
-to the \code{X} and \code{Z} specifications.
+regressions are not broken out by the treatments/mediators and
+those variables are simply included as separate regressors as
+specified in \code{formula}. In this setting, interactions between
+the treatment/mediator and covariates can be added on a selective
+basis to the covariate block (\code{X1} or \code{X2} and so on)
+specifications.
 
  Matching is performed using the \code{Match()} routine from the
 \code{Matching} package. By default, matching is L-to-1 nearest
@@ -192,5 +187,6 @@ tm_out <-  telescope_match(
 \references{
 Blackwell, Matthew, and Strezhnev, Anton (2020)
 "Telescope Matching: Reducing Model Dependence
-in the Estimation of Direct Effects." Working Paper.
+in the Estimation of Direct Effects." Journal of the Royal
+Statistical Society (Series A). \doi{10.1111/rssa.12759}
 }

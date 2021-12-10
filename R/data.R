@@ -41,7 +41,7 @@
 #' @source \url{http://qje.oxfordjournals.org/content/128/2/469}
 #' @references Alesina, A., Giuliano, P., & Nunn, N. (2013). On the
 #' Origins of Gender Roles: Women and the Plough. The Quarterly
-#' Journal of Economics, 128(2), 469-530.
+#' Journal of Economics, 128(2), 469-530. \doi{10.1093/qje/qjt005}
 NULL
 
 
@@ -126,9 +126,9 @@ NULL
 #' @name civilwar
 #' @usage data(civilwar)
 #' @format A data frame with 6610 observations and 69 variables.
-#' @source \url{https://doi.org/10.1017/S0003055403000534}
+#' @source \doi{10.1017/S0003055403000534}
 #' @references Fearon, James D., and David A. Laitin (2003). Ethnicity, Insurgency, and Civil War.
-#' American Political Science Review, 97(1), 75-90. doi:10.1017/S0003055403000534
+#' American Political Science Review, 97(1), 75-90. \doi{10.1017/S0003055403000534}
 NULL
 
 #' Data on health and employment outcomes measured as part of the
@@ -185,8 +185,8 @@ NULL
 #' @name jobcorps
 #' @usage data(jobcorps)
 #' @format A data frame with 10025 observations and 62 variables.
-#' @source \url{https://doi.org/10.1002/jae.2341}
+#' @source \doi{10.1002/jae.2341}
 #' @references  Huber, M. (2014). Identifying causal mechanisms 
 #' (primarily) based on inverse probability weighting. Journal of 
-#' Applied Econometrics, 29(6), 920-943.
+#' Applied Econometrics, 29(6), 920-943. \doi{10.1002/jae.2341}
 NULL

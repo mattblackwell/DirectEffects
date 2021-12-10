@@ -4,17 +4,14 @@
 \alias{plotDiag.tmatch}
 \title{Histograms of matching weights}
 \usage{
-plotDiag.tmatch(object, stage = "mediator")
+plotDiag.tmatch(object, stage)
 }
 \arguments{
 \item{object}{an object of class \code{tmatch} -- results from a
 call  to \code{telescope_match}}
 
-\item{stage}{a character vector equal to either 'mediator' or
-'treatment'. If equal to 'mediator', returns a histogram
-of matching weights for units with mediator = 0. If equal to
-'treatment', returns a histogram of matching weights for
-all units.}
+\item{stage}{a character vector equal to the name of one treatment
+from the `object`.}
 }
 \value{
 Outputs a `plot()` object containing the histogram of match counts

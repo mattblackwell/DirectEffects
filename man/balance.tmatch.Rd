@@ -4,7 +4,7 @@
 \alias{balance.tmatch}
 \title{Balance diagnostics for Telescope Match objects}
 \usage{
-balance.tmatch(object, vars, data)
+balance.tmatch(object, vars, data, comparison = NULL)
 }
 \arguments{
 \item{object}{an object of class \code{tmatch} -- results from a
@@ -20,6 +20,11 @@ separated by a +.}
 
 \item{data}{the data frame used in the call to
 \code{telescope_match}}
+
+\item{comparison}{a binary indicator for if the function should
+return the balance for the treated group (`1`), for the control
+group (`0`), or for overall combined balanced (`NULL`, the
+default).}
 }
 \value{
 Returns a data frame with the following columns.

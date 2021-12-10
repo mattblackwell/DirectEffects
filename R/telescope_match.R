@@ -1,12 +1,12 @@
 #' Perform telescope matching to estimate the controlled
-#' direct effect of a binary treatment net the effect of a binary mediator.
+#' direct effect of a binary treatment net the effect of binary
+#' mediators
 #'
-#' @param formula A formula object that specifies the outcome,
-#'   baseline covariates, treatment, intermediate covariate, and
-#'   mediator to be used in the matching. Each of the last four
-#'   variable groups should be separated by \code{|}. See below for
+#' @param formula A formula object that specifies the covariates and
+#' treatment variables (or mediators) in causal ordering from oldest
+#' to newest with each group separated by \code{|}. See below for
 #'   more details.
-#' @param data A dataframe containing columns referenced by
+#' @param data A dataframe containing variables referenced by
 #'   \code{formula}.
 #' @param caliper A scalar denoting the caliper to be used in matching
 #'   in the treatment stage (calipers cannot be used for matching on
@@ -21,20 +21,6 @@
 #'   (matching on mediator) and the second element sets the number of
 #'   matches used in the second stage (matching on treatment) Default
 #'   is 5.
-#' @param boot logical indicating whether to conduct inference using
-#'   the weighted bootstrap for matching estimators extended from Otsu
-#'   and Rai (2017) (\code{TRUE}) or the asymptotic variance estimator
-#'   from Blackwell and Strezhnev (2019) (\code{FALSE}). Defaults to
-#'   \code{FALSE}.
-#' @param nBoot If \code{boot} is \code{TRUE}, number of bootstrap
-#'   iterations to use. Default is \code{5000}.
-#' @param ci percent level of confidence interval to return. If
-#'   \code{boot} is \code{FALSE}, returns symmetric asymptotic
-#'   interval centered on the estimated treatment effect. If
-#'   \code{boot} is \code{TRUE} returns the \code{(100 - ci)/2} and
-#'   \code{100 - (100 - ci)/2} percentiles of the bootstrap
-#'   distribution. Must be in the interval \code{(0, 100)}. Defaults
-#'   to 95.
 #' @param verbose logical indicating whether to display progress
 #'   information. Default is \code{TRUE}.
 #' @param subset A vector of logicals indicating which rows of
@@ -50,34 +36,44 @@
 #'
 #' @details The \code{telescope_match} function implements the
 #'   two-stage "telescope matching" procedure developed by Blackwell
-#'   and Strezhnev (2020).
+#'   and Strezhnev (2021).
 #'
 #'  The procedure first estimates a demediated outcome using a
-#'  combination of matching and a regression bias-correction based on
-#'  the specification in \code{formula}, which should be specified as
-#'  \code{Y ~ X | A | Z | M}, where \code{Y} is the outcome, \code{X}
-#'  is a formula of baseline covariates, \code{A} is a single variable
-#'  name indicating the binary treatment, \code{Z} is a formula of
-#'  intermediate covariates, and \code{M} is a single variable name
-#'  indicating the mediator.
+#'  combination of matching and a regression bias-correction. The
+#'  \code{data.frame} passed to \code{data} should be in the wide
+#'  format so that each row corresponds to a single unit and
+#'  treatments and covariates from different time periods appear as
+#'  different columns. The \code{formula} arugment specifies both the
+#'  causal ordering of the variables and the regression specifications
+#'  for the bias correction. It should be of the form \code{Y ~ X1 |
+#'  A1 | X2 | A2}, where \code{Y} is the outcome, \code{X1} is a
+#'  formula of baseline covariates, \code{A1} is a single variable
+#'  name indicating the binary treatment in the first period,
+#'  \code{X2} is a formula of covariates in period 2, and \code{A2} is
+#'  a single variable name indicating treatment in period 2 (which is
+#'  also sometimes called the mediator). Note that it is possible to
+#'  add more covariate/treatment pairs for additional time periods.
 #'
-#' Under the default \code{separate_bc == TRUE}, the first stage will
-#' match for \code{M} on \code{X} and \code{Z} within levels of
-#' \code{A}. The bias correction regressions will be linear with a
-#' specification of \code{Y ~ X + Z} within levels of \code{A} and
-#' \code{M}. In the second stage, we match for \code{A} within levels
-#' of \code{X} and run bias correction regressions of \code{Ytilde ~
-#' X} within levels of \code{A}, where \code{Ytilde} is the imputed
-#' value of \code{Y(A, 0)} from the first stage. This second step
-#' estimates the controlled direct effect of treatment when the
-#' mediator is 0.
+#' Under the default \code{separate_bc == TRUE}, the function will
+#' match for each treatment/mediator based on the the covariates up to
+#' that point within levels of past treatments (so for \code{A2} this
+#' matching finds units with similar values of \code{X1} and \code{X2}
+#' and the same value of \code{A1}). Once this matching is complete,
+#' the function moves backward through treatments and imputes
+#' potential outcomes using matches and bias-correction regressions,
+#' which regress the current imputed potential outcome on the past
+#' covariates, within levels of the treatment history up to the
+#' current period. The functional form comes from the specification in
+#' \code{formula}. Controlled direct effects of \code{A1} are
+#' estimated for every possible combination of future treatments.
 #'
 #' When \code{separate_bc} is \code{FALSE}, the bias correction
-#' regressions are not broken out by the treatment/mediator and
-#' \code{A} and \code{M} are simply included as separate terms in the
-#' linear regression. In this setting, interactions between the
-#' treatment/mediator and covariates can be added on a selective basis
-#' to the \code{X} and \code{Z} specifications.
+#' regressions are not broken out by the treatments/mediators and
+#' those variables are simply included as separate regressors as
+#' specified in \code{formula}. In this setting, interactions between
+#' the treatment/mediator and covariates can be added on a selective
+#' basis to the covariate block (\code{X1} or \code{X2} and so on)
+#' specifications.
 #'
 #'  Matching is performed using the \code{Match()} routine from the
 #' \code{Matching} package. By default, matching is L-to-1 nearest
@@ -89,50 +85,55 @@
 #' @return Returns an object of \code{class} \code{tmatch}. Contains
 #' the following components
 #' \itemize{
-#' \item estimate: Estimated ACDE fixing M=0
-#' \item std.err: Estimated asymptotic standard error. \code{NULL} if
-#' \code{boot} is \code{TRUE}
-#' \item boot.dist: Bootstrap distribution of \code{estimate}.
-#' \code{NULL} if  \code{boot} is \code{FALSE}
-#' \item conf.low: Lower bound of \code{ci} confidence interval for
-#' the estimate
-#' \item conf.high: Upper bound of \code{ci} confidence interval for
-#' the estimate
-#' \item ci.level: Level of the confidence interval
-#' \item outcome: Name of outcome variable
-#' \item treatment: Name of treatment variable
-#' \item mediator: Name of mediator variable
-#' \item pre.treatment: Vector of names of pre-treatment confounders
-#' (appear in both stage 1  and 2)
-#' \item post.treatment: Vector of names of post-treatment confounders
-#' (appear only in stage 1)
-#' \item s1.formula: Stage 1 bias-correction regression formula
-#' (pre-/post-treatment covariates)
-#' \item s2.formula: Stage 2 bias-correction regression formula
-#' (pre-treatment covariates)
-#' \item outcome.vec: Vector of outcomes used in estimation
-#' \item treatment.vec: Vector of treatment indicators used in
-#' estimation
-#' \item mediator.vec: Vector of mediator indicators used in
-#' estimation
-#' \item L_m: Number of matches found for each unit in the first stage
-#' mediator matching  procedure
-#' \item L_a: Number of matches found for each unit in the second
-#' stage mediator matching  procedure
-#' \item KLm: Number of times unit is used as a match in the first
-#' stage mediator matching  procedure
-#' \item KLa: Number of times unit is used as a match in the second
-#' stage treatment matching  procedure
-#' \item N: Number of observations
-#' \item N_summary: Number of observations in each treatment/mediator
-#' combination.
-#' \item caliper: Caliper (if any) used in the treatment stage
-#' matching to drop distant  observations.
+#'   \item \code{call}: the matched call.
+#'   \item \code{formula}: formula used to fit the model.
+#'   \item \code{m_out}: list of matching soluations at each time
+#'     point. Each member of the list has a `matches` list giving the
+#'     units matched to that unit, a `donors` list with the units to
+#'     which the unit is matched, and a `tr` vector which is just the
+#'     treatment vector being matched.
+#'   \item \code{K}: data.frame of indicating how many times a unit
+#'     has been used as a match, directly in each period and indirectly
+#'     across periods.
+#'   \item \code{L}: vector of matching ratios used in each period.
+#'   \item \code{r_out}: nested list of regression imputations used in the
+#'     bias correction. The first level of the list varies across
+#'     different controlled direct effects (different sequences of future
+#'     treatments/mediators). Each of these is a list of time periods and
+#'     each of these time periods is a list of `yhat_r_0` and `yhat_r_1`
+#'     that give the regression predictions for the potential outcomes at
+#'     that time point when the treatment at that time point is 0 or 1,
+#'     respectively, along with `n_coefs` giving the number of
+#'     coefficients estimated in those models.
+#'   \item \code{tau}: vector of bias-corrected estimates of average
+#'     controlled direct effects for different vectors of future
+#'     treatments/mediators.
+#'   \item \code{tau_raw}: vector of standard matching estimates of average
+#'     controlled direct effects for different vectors of future
+#'     treatments/mediators without using bias correction.
+#'   \item \code{tau_se}: vector of estimated standard errors for the average
+#'     controlled direct effects estimates for different vectors of future
+#'     treatments/mediators. 
+#'   \item \code{tau_i}: matrix of individuals contributions to the ACDE
+#'     estimates (units on rows, different ACDEs on columns). Used for
+#'     weighted bootstrap.
+#'   \item \code{included}: logical vector indicating if each row of
+#'     \code{data} was included in estimating \code{tau}.
+#'   \item \code{effects}: data frame where each row describes the
+#'     different ACDEs in \code{tau}. The \code{active} column describes
+#'     the which variable's direct effect is being assessed and the rest
+#'     of the columns describe the fixed values of the future
+#'     treatments/mediators for that ACDE.
+#'   \item \code{a_names}: character vector with the names of the
+#'     treatment/mediator variables used in estimation.
+#'   \item \code{caliper}: caliper (if any) used in matching to drop
+#'     distant observations.
 #' }
 
 #' @references Blackwell, Matthew, and Strezhnev, Anton (2020)
 #' "Telescope Matching: Reducing Model Dependence
-#' in the Estimation of Direct Effects." Working Paper.
+#' in the Estimation of Direct Effects." Journal of the Royal
+#' Statistical Society (Series A). \doi{10.1111/rssa.12759}
 #'
 #' @examples
 #' data(jobcorps)
@@ -157,9 +158,9 @@
 #' @export
 #' @importFrom Matching Match
 #' @importFrom stats as.formula model.frame predict rbinom var
+#' @importFrom utils combn
 #'
 telescope_match <- function(formula, data, caliper = NULL, L = 5,
-                            boot = FALSE, nBoot = 5000, ci = 95,
                             verbose = TRUE, subset, contrasts = NULL,
                             separate_bc = TRUE, ...) {
 
@@ -167,19 +168,8 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   ### Quick pre-processing
   ########################
 
-  ### If length of L is 1, L_a and L_m are the same
-  if (!is.numeric(L) | !is.vector(L) | length(L) > 2 | length(L) < 1) {
-    stop("Error: `L` must be a numeric vector of length 1 or 2", call. = FALSE)
-  }
 
-  if (length(L) == 2) {
-    L_m <- L[1]
-    L_a <- L[2]
-  } else {
-    L_m <- L
-    L_a <- L
-  }
-
+  cl <- match.call(expand.dots = TRUE)
   mf <- match.call(expand.dots = FALSE)
 
   m <- match(
@@ -193,24 +183,26 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
 
   ## must be valid formula
   formula <- Formula::as.Formula(formula)
-  stopifnot(length(formula)[1] == 1L, length(formula)[2] %in% 1:4)
+  T <- length(formula)[2] / 2
+  if (T < 2 | (T %% 1) != 0) {
+    stop(
+      "Right-hand side of `formula` must have an even number of groups.",
+      "\n Groups should be divded by `|`", call. = FALSE
+    )
+  }
+
+  ### If length of L is 1, L_a and L_m are the same
+  if (!is.numeric(L) | !is.vector(L) | !(length(L)  %in% c(1, T))) {
+    stop("Error: `L` must be a numeric vector of length 1 or T", call. = FALSE)
+  }
+
+  if (length(L) == 1) {
+    L <- rep(L, times = T)
+  }
+
+  stopifnot(length(formula)[1] == 1L)
   if (inherits(try(terms(formula), silent = TRUE), "try-error")) {
     stop("cannot use dot '.' in formulas")
-  }
-
-  mt_x <- terms(formula, data = data, rhs = 1)
-  mt_a <- terms(formula, data = data, rhs = 2)
-  mt_xz <- terms(formula, data = data, rhs = c(1, 3))
-  mt_m <- terms(formula, data = data, rhs = 4)
-  aname <- attr(mt_a, "term.labels")
-  mname <- attr(mt_m, "term.labels")
-  yname <- rownames(mt_x$factors)[1]
-
-  if (length(mname) > 1) {
-    stop("Error: there must only be single mediator.", call. = FALSE)
-  }
-  if (length(aname) > 1)  {
-    stop("Error: there must only be single mediator.", call. = FALSE)
   }
 
   ## add to mf call
@@ -219,372 +211,446 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
   mf <- eval(mf, parent.frame())
   mt <- attr(mf, "terms") # terms object
   included <- rownames(data) %in% rownames(mf)
-
+  
   all_data <- model.matrix(mt, mf, contrasts)
   Y <- model.response(mf, "numeric")
-  X <- model.matrix(mt_x, mf, contrasts)
-  XZ <- model.matrix(mt_xz, mf, contrasts)
-  A <- all_data[, aname, drop = FALSE]
-  M <- all_data[, mname, drop = FALSE]
 
-
-  ## pick which columns need to be dropped from X and XZ for matching.
-  ## any column that is a function A or M and the intercept
-  a_in_x <- which(rownames(attributes(mt_x)$factors) == aname)
-  a_in_xz <- which(rownames(attributes(mt_xz)$factors) == aname)
-  m_in_xz <- which(rownames(attributes(mt_xz)$factors) == mname)
-
-  if (separate_bc & length(c(a_in_x, a_in_xz, m_in_xz))) {
-    stop(
-      "Error: Treatment and mediator terms in not permitted  ",
-      "specifications are not permitted with `separate_bc = TRUE`.",
-      call. = FALSE
-    )
-  }
-  x_drop <- which(attributes(mt_x)$factors[a_in_x, ] == 1)
-  if (colnames(X)[1] == "(Intercept)") x_drop <- c(1, x_drop + 1)
-
-  xz_drop <- c(
-    which(attributes(mt_xz)$factors[a_in_xz, ] == 1),
-    which(attributes(mt_xz)$factors[m_in_xz, ] == 1)
-  )
-  xz_drop <- unique(xz_drop)
-  if (colnames(XZ)[1] == "(Intercept)") xz_drop <- c(1, xz_drop + 1)
-
-  ### Number of observations
-  ### we don't use nrow(data) since it might be subsetted
   N <- length(Y)
+
+  X <- list()
+  drops <- list()
+  A <- matrix(NA, nrow = N, ncol = T)
+  a_names <- rep("", times = T)
+
+  x_spots <- seq(1, T * 2, by = 2)
+  a_spots <- seq(2, T * 2, by = 2)
+  for (s in seq_len(T)) {
+    ## covariates up to s
+    mt_a <- terms(formula, data = data, rhs = a_spots[s])
+    if (length(attr(mt_a, "term.labels")) != 1) {
+      stop("Error: there must only be single treatment in each period.",
+           call. = FALSE)
+    }
+    a_names[s] <- attr(mt_a, "term.labels")
+    A[, s] <- all_data[, a_names[s]]
+    mt_x <- terms(formula, data = data, rhs = x_spots[1:s])
+    X[[s]] <- model.matrix(mt_x, mf, contrasts)
+
+    ## treatnent in covariate specifications. need to dropped for
+    ## matching
+    a_in_x <- which(rownames(attributes(mt_x)$factors) %in% a_names[1:s])
+    drops[[s]] <- which(attributes(mt_x)$factors[a_in_x, ] == 1)
+    if (colnames(X[[s]])[1] == "(Intercept)") drops[[s]] <- c(1, drops[[s]] + 1)
+
+    if (separate_bc & length(a_in_x)) {
+      stop(
+        "Error: covariate specification can't contain treatment terms",
+        "when `separate_bc = TRUE`.",
+        call. = FALSE
+      )
+    }
+  }
+
 
   ####################
   #### Sanity checks
   ####################
 
-  ### Check -2 - Is the ci within (0, 100).
-  if (ci <= 0 | ci >= 100) {
-    warning(paste(
-      "Warning: 'ci' must be within the interval (0, 100).",
-      "Defaulting to 95% confidence intervals."
-    ))
-    ci <- 95
-  }
-  ci.alpha <- 1 - ci / 100
+  m_out <- list()
+  r_out_big <- list()
+  K <- list()
+  K_paths <- list()
 
+  ## matching
+  if (verbose) message("Beginning matching...")
+  for (s in T:1) {
+    if (verbose) message("Matching ", a_names[s], "...")
+    A_hist <- A[, 1:s, drop = FALSE]
+    m_out[[s]] <- match_at_time(A_hist, X[[s]], L[s], drops[[s]], caliper)
 
+    ## indirect matches are a pain with T > 2 bc an indirect match can
+    ## come from t=1 to t=2, t=1 to t=3, or t=1 to t=2 to t=3. using
+    ## `combn` here to set up those possibilities and
+    ## `find_indirect_matches` "crawls" the path get the indirect
+    ## matches for each unit.
 
-  ## Check 3 - Treatment is binary 0-1
-  if (!isTRUE(all.equal(unique(A)[order(unique(A))], c(0, 1)))) {
-    stop("Error: 'treatment' must have only two levels: 0,1")
-  }
-
-  ## Check 4 - Mediator is binary 0-1
-  if (!isTRUE(all.equal(unique(M)[order(unique(M))], c(0, 1)))) {
-    stop("Error: 'mediator' must have only two levels: 0,1")
-  }
-
-
-  ######################
-  ### Pre-estimation set-up
-  ######################
-
-  pre.treatment <- colnames(X[, -x_drop])
-  ### Post-treatment covariates are those in first stage but not in second stage
-  post.treatment <- setdiff(colnames(XZ[, -xz_drop]), colnames(X[, -x_drop]))
-
-  ## Diagnostic, print implied pre-treatment and post-treatment covariates
-  if (verbose) {
-    cat("Telescope matching setup:\n")
-    cat(paste0("Outcome: ", yname, "\n"))
-    cat(paste0("Treatment: ", aname, "\n"))
-    cat(paste0("Mediator: ", mname, "\n"))
-    cat(paste0("Pre-treatment Covariates: ",
-              paste(pre.treatment, collapse = ", "), "\n"))
-    cat(paste0("Post-treatment Covariates: ",
-              paste(post.treatment, collapse = ", "), "\n"))
-    cat(paste0("Number of matches in first stage (mediator): ",
-              L_m, "\n"))
-    cat(paste0("Number of matches in second stage (treatment): ",
-               L_a, "\n"))
-    cat("\n")
+    ## NB: Ks are divided by L values.
+    path_lengths <- 1:(T - s + 1)
+    paths <- lapply(
+      path_lengths,
+      function(x) combn(s:T, m = x, simplify = FALSE)
+    )
+    paths <- unlist(paths, recursive = FALSE)
+    paths <- paths[unlist(lapply(paths, function(x) x[1] == s))]
+    K[[s]] <- lapply(
+      paths,
+      function(x) find_indirect_matches(m_out, path = x, N) / prod(L[x])
+    )
+    K_paths[[s]] <- unlist(
+      lapply(
+        paths,
+        function(x) paste0(a_names[x], collapse = ":")
+      )
+    )
+    
+    names(K[[s]]) <- unlist(lapply(paths, paste0, collapse = ":"))
+    names(K[[s]]) <- paste0("K_", names(K[[s]]))
   }
 
-  ######################
-  ### First-stage: Estimate Y(a, 0) conditional on
-  ### pre-/post-treatment covariates
-  ######################
+  K <- as.data.frame(unlist(K, recursive = FALSE))
+  
+  ## bias correction
+  if (verbose) message("Beginning bias correction...")
+  A_levs <- expand.grid(rep(list(c(0, 1)), times = T - 1))
+  tau_i <- matrix(NA, nrow = N, ncol = nrow(A_levs))
+  tau_raw <- rep(0, times = nrow(A_levs))
+  tau_se <- rep(0, times = nrow(A_levs))
+  mu_hat <- matrix(NA, nrow = N, ncol = T)
+  Yt <- matrix(NA, nrow = N, ncol = T * nrow(A_levs))
+  for (j in seq_len(nrow(A_levs))) {
+    A_j <- A_levs[j, ]
+    Ytilde <- Y
+    r_out <- list()
+    for (s in T:1) {
+      A_hist <- A[, 1:s, drop = FALSE]
+      r_out[[s]] <- regress_at_time(Ytilde, A_hist, X[[s]], separate_bc)
+      yhat_r <- A_j[s - 1] * r_out[[s]]$yhat_r_1 +
+        (1 - A_j[s - 1]) * r_out[[s]]$yhat_r_0
 
-  ### First stage matching - inexact on X and Z covariates, exact on A
-  tm.first <- Match(Y = Y, Tr = M, X = cbind(XZ[, -xz_drop], A), M = L_m,
-                    exact = c(rep(FALSE, ncol(XZ[, -xz_drop])), TRUE),
-                    BiasAdjust = FALSE, estimand = "ATT", ties = FALSE,
-                    Weight = 2, version = "fast")
+      yhat_mr_0 <- lapply(
+        m_out[[s]]$matches,
+        function(x) mean(r_out[[s]]$yhat_r_0[x])
+      )
+      yhat_mr_1 <- lapply(
+        m_out[[s]]$matches,
+        function(x) mean(r_out[[s]]$yhat_r_1[x])
+      )
+      yhat_mr <- A_j[s - 1] * unlist(yhat_mr_1) +
+        (1 - A_j[s - 1]) * unlist(yhat_mr_0)
 
-  tm.first.atc <- Match(Y = Y, Tr = M, X = cbind(XZ[, -xz_drop], A), M = L_m,
-                    exact = c(rep(FALSE, ncol(XZ[, -xz_drop])), TRUE),
-                    BiasAdjust = FALSE, estimand = "ATC", ties = FALSE,
-                    Weight = 2, version = "fast")
+      yhat_m <- unlist(lapply(m_out[[s]]$matches, function(x) mean(Ytilde[x])))
 
-  ### Summarize input - First Stage
-  if (verbose) {
-    cat("First-stage matching: Mediator on pre-treatment, post-treatment\n")
-    cat("Number of observations with 'mediator' = 0 matched to each observation with 'mediator' = 1: ", L_m, "\n", sep = "")
-    cat("Number of observations with 'mediator' = 1: ", sum(M), "\n",
-        sep = "")
-    cat("Number of observations with 'mediator' = 0: ", sum(1 - M), "\n",
-        sep = "")
-    cat("\n")
-  }
+      not_a_j <- A[, s] != A_j[s - 1]
 
-  ### Summarize sample sizes with mediator/treatment
-  n_summary <- data.frame(
-    c(0, 1, 0, 1),
-    c(0, 0, 1, 1),
-    as.vector(table(A, M))
-  )
-  colnames(n_summary) <- c(aname, mname, "N")
+      Ytilde[not_a_j] <- yhat_m[not_a_j] + (yhat_r[not_a_j] - yhat_mr[not_a_j])
+      Yt[, j + (T - s)] <- Ytilde
 
-  ### Count of # of matches for each M=0 unit in the first stage (K_L^m)
-  KLm_tab <- table(tm.first$index.control)
-  ### Which M=1 units did each M=0 match to?
-  first_stage_matchedTo <- tapply(
-    tm.first$index.treated,
-    tm.first$index.control,
-    function(x) x)
-  ## Save K_L^m in data
-  KLm <- rep(0, times = N)
-  KLm[as.numeric(names(KLm_tab))] <- KLm_tab
-
-  ### Regression imputation in the first stage
-  ## Fit a regression in the set with mediator = 0
-  if (separate_bc) {
-    s1.reg.10 <- lm.fit(y = Y[A == 1 & M == 0], x = XZ[A == 1 & M == 0, ])
-    s1.reg.00 <- lm.fit(y = Y[A == 0 & M == 0], x = XZ[A == 0 & M == 0, ])
-    pred.Y.10 <- XZ[, names(s1.reg.10$coefficients)] %*% s1.reg.10$coefficients
-    pred.Y.00 <- XZ[, names(s1.reg.00$coefficients)] %*% s1.reg.00$coefficients
-    pred.Y.m0 <- A * pred.Y.10 + (1 - A) * pred.Y.00
-  } else {
-    s1.reg <- lm(formula(mt), data = mf)
-    mf.m0 <- mf
-    mf[[mname]] <- 0
-    pred.Y.m0 <- predict(s1.reg, data = mf.m0)
-  }
-
-  ## Predicted value of regression for each X under control
-
-  #### Average of matched values for each unit
-  y.m0.m.imp <- Y ## Matching imputation
-  y.m0.m.imp[unique(tm.first$index.treated)] <- tapply(
-    tm.first$index.control, tm.first$index.treated, function(x) mean(Y[x])
-  )
-  #### Imputed value under M=0 using regression-imputed value of the matches
-  y.m0.r.imp <- pred.Y.m0 ## Regression imputation
-  y.m0.r.imp[unique(tm.first$index.treated)] <- tapply(
-    tm.first$index.control,
-    tm.first$index.treated,
-    function(x) mean(pred.Y.m0[x])
-  )
-
-  ### Impute the outcome under M=0 for units with M=1
-  Ytilde <- Y ## Bias-corrected matching imputation for the M=1 units
-  ### Average of imputations +
-  ### (Regression prediction for X_i - regression prediction for all
-  ### imputed units)
-
-  Ytilde[M == 1] <- y.m0.m.imp[M == 1] +
-    (pred.Y.m0[M == 1] - y.m0.r.imp[M == 1])
-
-  ################################################
-  ### Second stage - Estimate E[Y(1,0) - Y(0,0)] -
-  ### conditional on pre-treatment covariates
-  ################################################
-
-  ### Summarize input - Second stage
-  if (verbose) {
-    cat("Second-stage matching: Treatment on pre-treatment\n")
-    cat("Number of observations matched to each unit with opposite treatment: ",
-        L_a,  "\n", sep = "")
-    cat("Number of observations with 'treatment' = 1: ", sum(A), "\n",
-        sep = "")
-    cat("Number of observations with 'treatment' = 0: ", sum(1 - A), "\n",
-        sep = "")
-    cat("\n")
-  }
-
-  ##### Second stage regression on blipped-down outcome
-  ## Ytilde is Y_i(a, 0)
-  if (separate_bc) {
-    badcols.a0 <- which(apply(X[A == 0, ], 2, var) < 10 * .Machine$double.eps)
-    badcols.a0 <- badcols.a0[colnames(X)[badcols.a0] != "(Intercept)"]
-    badcols.a1 <- which(apply(X[A == 1, ], 2, var) < 10 * .Machine$double.eps)
-    badcols.a1 <- badcols.a1[colnames(X)[badcols.a1] != "(Intercept)"]
-
-    if (!setequal(badcols.a0, badcols.a1)) {
-      warning("Some baseline covariates do not vary in one treatment arm.")
+      if (s > 1) {
+        mu_hat[, s] <- yhat_r
+      }
     }
+    mu_hat[, 1] <- A[, 1] * r_out[[1]]$yhat_r_1 +
+      (1 - A[, 1]) * r_out[[1]]$yhat_r_0
 
-    s2.reg.a0 <- lm.fit(y = Ytilde[A == 0], x = X[A == 0, ])
-    pred.Y.a0 <- X[, names(s2.reg.a0$coefficients)] %*% s2.reg.a0$coefficients
-    s2.reg.a1 <- lm.fit(y = Ytilde[A == 1], x = X[A == 1, ])
-    pred.Y.a1 <- X[, names(s2.reg.a1$coefficients)] %*% s2.reg.a1$coefficients
-  } else {
-    s2.reg <- lm(formula(terms(formula, rhs = 1:2)), data = mf)
-    mf.a1 <- mf.a0 <- mf
-    mf.a1[[aname]] <- 1
-    mf.a0[[aname]] <- 0
-    pred.Y.a1 <- predict(s2.reg, newdata = mf.a1)
-    pred.Y.a0 <- predict(s2.reg, newdata = mf.a0)
+    cdes <- calculate_cdes(Y, A, K, mu_hat, r_out, A_j)
+    tau_i[, j] <- cdes$tau_i
+    tau_raw[j] <- cdes$tau_raw
+    tau_se[j] <- cdes$tau_se
+    r_out_big[[j]] <- r_out
   }
-  pred.Y.A <- A * pred.Y.a1 + (1 - A) * pred.Y.a0 ### Predict factual
-  pred.Y.1.A <- A * pred.Y.a0 + (1 - A) * pred.Y.a1 ## Predict counterfactual
+  tau <- colMeans((2 * A[, 1] - 1) * tau_i)
+  
+  names(K) <- unlist(K_paths)
 
-  ### Match controls to treated
-  tm.second.a1 <- Match(Y = Ytilde, Tr = A, X = X[, -x_drop],
-                        estimand = "ATT", caliper = caliper,
-                        M = L_a, ties = FALSE,
-                    Weight = 2, version = "fast")
+  effects <- data.frame(active = a_names[1], A_levs)
+  names(effects)[-1] <- a_names[-1]
+  
+  ### Return output
+  out <- list(call = cl, formula = formula, m_out = m_out, K = K, L = L, 
+              r_out = r_out_big, tau = tau, tau_raw = tau_raw, tau_se = tau_se,
+              tau_i = tau_i, included = included, effects = effects,
+              a_names = a_names)
 
-  ## Count of matched controls - stage 2
-  KLa0 <- table(tm.second.a1$index.control)
-  ### Match treateds to control
-  tm.second.a0 <- Match(Y = Ytilde, Tr = A, X = X[, -x_drop],
-                        estimand = "ATC", caliper = caliper,
-                        M = L_a, ties = FALSE,
-                        Weight = 2, version = "fast")
+  class(out) <- "tmatch"
+  return(out)
 
-  ## Count of matched treated - stage 2
-  KLa1 <- table(tm.second.a0$index.treated)
+}
 
-  ## Total match counts - stage 2
-  KLa <- rep(0, times = N)
-  KLa[as.numeric(names(KLa0))] <- KLa0
-  KLa[as.numeric(names(KLa1))] <- KLa1
 
-  ## Sum of KLa of matched units
-  SLmatch <- lapply(first_stage_matchedTo, function(x) sum(KLa[x]))
-  SLm <- rep(0, times = N)
-  SLm[as.integer(names(SLmatch))] <- unlist(SLmatch)
+## given the matching output and a set of periods `path = (k, ..., j)`
+## find the number of times units are used indirectly as a match in
+## period `k` through the given path. E.g., if `path = c(1, 2 ,3)`,
+## then this returns the number of times each unit is matched to a
+## unit j in period 3, j is matched to h in period 2, and h is matched
+## to g in period 1, where j, h, and g are all different.
+find_indirect_matches <- function(m_out, path, N) {
+  K <- rep(0, times = N)
+  path <- sort(path, decreasing = TRUE)
+  d <- m_out[[path[1]]]$donors
+  path <- path[-1]
+  for (j in path) {
+    d <- lapply(d, function(x) unlist(m_out[[j]]$donors[as.character(x)]))
+  }
+  n_ind_matches <- lapply(d, length)
+  pos <- as.numeric(names(n_ind_matches))
+  K[pos] <- unlist(n_ind_matches)
+  return(K)
+}
 
-  ## Imputed Y_i(0,0) of matches - regression
-  Yhat00.r <- pred.Y.a0
-  Yhat00.r[unique(tm.second.a1$index.treated)] <- tapply(
-    tm.second.a1$index.control,
-    tm.second.a1$index.treated,
-    function(x) mean(pred.Y.a0[x])
+## working assumption: the A matrix is n \times k where the first
+## column is t=1 and the last column is t=T-k+1.
+match_at_time <- function(A, X, L, drops, caliper) {
+  k <- ncol(A)
+  Ak <- A[, k]
+  if (!isTRUE(all.equal(unique(Ak)[order(unique(Ak))], c(0, 1)))) {
+    stop(
+      "Error: treatments must only take on values 0 or 1",
+      "\n treatment ", k, " non-binary values."
+    )
+  }
+  X_m <- cbind(X[, -drops], A[, -k])
+
+  exacts <- c(
+    rep(FALSE, times = ncol(X[, -drops, drop = FALSE])),
+    rep(TRUE, times = k - 1)
   )
 
-  ## Imputed Y_i(1,0) of matches - regression
-  Yhat10.r <- pred.Y.a1
-  Yhat10.r[unique(tm.second.a0$index.control)] <- tapply(
-    tm.second.a0$index.treated,
-    tm.second.a0$index.control,
-    function(x) mean(pred.Y.a1[x])
+  tm_att <- Matching::Match(
+    Tr = Ak, X = X_m,
+    estimand = "ATT",
+    exact = exacts,
+    caliper = caliper,
+    M = L, ties = FALSE,
+    Weight = 2
+  )
+  tm_atc <- Matching::Match(
+    Tr = Ak, X = X_m,
+    estimand = "ATC",
+    exact = exacts,
+    caliper = caliper,
+    M = L, ties = FALSE,
+    Weight = 2
   )
 
-  ## regression imputations of the CEF under 1-A_i
-  ## (1/L) \sum_{j \in J^a(i)} mu_{1-A_i,0}(X_j, 1-A_i)
+  ## donation lists: where each unit was used as a match
+  donors_1 <- split(tm_att$index.treated, tm_att$index.control)
+  donors_0 <- split(tm_atc$index.control, tm_atc$index.treated)
+  donors <- c(donors_1, donors_0)
+  donors <- donors[as.character(sort(as.numeric(names(donors))))]
 
-  ## Linearized form for bootstrapping
-  sm.part <- (1 - M) * (1 + KLa / L_a + KLm / L_m + SLm / (L_a * L_m)) * Y
-  bm.part <- ((1 - M) * (KLm / L_a + SLm / (L_a * L_m)) -
-                M * (1 + KLa / L_a)) * pred.Y.m0
-  ba.part <- pred.Y.1.A + (KLa / L_a) * pred.Y.A
+  ## matched sets: matched for each unit
+  matches_1 <- split(tm_att$index.control, tm_att$index.treated)
+  matches_0 <- split(tm_atc$index.treated, tm_atc$index.control)
+  matches <- c(matches_1, matches_0)
+  matches <- matches[as.character(sort(as.numeric(names(matches))))]
 
-  tau.i <- (2 * A - 1) * (sm.part - bm.part - ba.part)
+  out <- list(matches = matches, donors = donors, tr = Ak)
+  return(out)
 
-  ## Point estimate
-  tau <- mean(tau.i)
-  tau_raw <- mean((2 * A - 1) * sm.part)
+}
 
-  ########################################
-  ## Variance estimation
-  ########################################
 
-  if (boot == FALSE) {
+## calculates fitted values for all units under treatment at time `k`
+regress_at_time <- function(y, A, X, separate_bc) {
+  N <- nrow(A)
+  k <- ncol(A)
+  Ak <- A[, k]
+  A_past <- A[, -k, drop = FALSE]
+  if (ncol(A_past) == 0) A_past <- rep(0, times = N)
 
-    ###############
-    ### Asymptotic variance
-    ###################
+  if (separate_bc) {
+    A_fact <- do.call(interaction, list(as.data.frame(A_past), sep = "_"))
+    A_split <- split(1:N, A_fact)
+    preds_0 <- lapply(
+      X = A_split,
+      FUN = strata_reg_predict,
+      y = y, x = X, Ak = Ak, Ak_lev = 0
+    )
+    preds_1 <- lapply(
+      X = A_split,
+      FUN = strata_reg_predict,
+      y = y, x = X, Ak = Ak, Ak_lev = 1
+    )
 
-    ### Calculate weights
-    ww <- (1 - M) * (1 + KLa / L_a + KLm / L_m + SLm / (L_a * L_m))
+    n_coefs <- length(A_split) * ncol(X) * 2
+    yhat_r_0 <- unsplit(preds_0, A_fact)
+    yhat_r_1 <- unsplit(preds_1, A_fact)
+  } else {
+    X_des <- cbind(X, A)
+    cf <- lm.fit(y = y, x = X_des)$coefficients
+    cf <- cf[!is.na(cf)]
+    X_des[, ncol(X_des)] <- 0
+    yhat_r_0 <- X_des[, names(cf)] %*% cf
+    X_des[, ncol(X_des)] <- 1
+    yhat_r_1 <- X_des[, names(cf)] %*% cf
+    n_coefs <- ncol(X_des)
+  }
+  out <- list(yhat_r_0 = yhat_r_0, yhat_r_1 = yhat_r_1, n_coefs = n_coefs)
+  return(out)
+}
 
-    ### Number of units with M=0
-    N0 <- sum(1 - M)
-    ### Parameters in the first-stage regression
-    if (separate_bc) {
-      P1 <- length(coef(s1.reg.10)) + length(coef(s1.reg.00))
-      P2 <- length(coef(s2.reg.a1)) + length(coef(s2.reg.a0))
+
+## this function allows us to send strata based on the past treatment
+## values (where the rows indicate observations within those strata)
+## and calculate predicted values from the regression among those with
+## `A_t_lev` current treatment status.
+strata_reg_predict <- function(rows, y, x, Ak, Ak_lev) {
+  rows_lev <- rows[which(Ak[rows] == Ak_lev)]
+
+  cf <- lm.fit(y = y[rows_lev], x = x[rows_lev, ])$coefficients
+  cf <- cf[!is.na(cf)]
+  pred <- x[rows, names(cf)] %*% cf
+
+  return(as.vector(pred))
+}
+
+calculate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
+  N <- length(Y)
+  T <- ncol(A)
+
+  ## calculate simple matching parts
+  sm_part <- (1 + rowSums(K)) * Y
+  A_fut <- A[, -1, drop = FALSE]
+  A_fut_str <-  apply(A_fut, 1, paste0, collapse = "")
+  i_j <- as.numeric(A_fut_str == paste0(A_j, collapse = ""))
+
+  tau_i <- i_j * sm_part
+  tau_raw <- mean((2 * A[, 1] - 1) * tau_i)
+
+  mu_hat_A <- A[, 1] * r_out[[1]]$yhat_r_1 +
+    (1 - A[, 1]) * r_out[[1]]$yhat_r_0
+
+  mu_hat_1_A <- A[, 1] * r_out[[1]]$yhat_r_0 +
+      (1 - A[, 1]) * r_out[[1]]$yhat_r_1
+
+  K_term <- i_j * rowSums(K) - (1 - i_j)
+  tau_i <- tau_i - K_term * mu_hat_A - mu_hat_1_A
+
+  ## we have to adjust for the fact that we run regressions for all
+  ## treatment combinations, but the CDE is only for one sequence
+  ## (for t>1)
+  p <- sapply(r_out, function(x) x$n_coefs)
+  p <- p / (2 ^ (0:(T - 1)))
+  
+  dfc_1 <- sum(i_j) / (sum(i_j) - p[T])
+  epsilon <- Y - mu_hat[, T]
+  tau_var <- dfc_1 * mean(i_j * (1 + rowSums(K))^2 * epsilon ^ 2)
+
+  for (s in 2:T) {
+    ## get indices for A_{s+1}:T == A_j
+    if (s < T) {
+      A_fut <- A[, (s + 1):T, drop = FALSE]
+      A_fut_str <-  apply(A_fut, 1, paste0, collapse = "")
+      i_j <- A_fut_str == paste0(A_j[(s - 1):(T - 1)], collapse = "")
+      i_j <- as.numeric(i_j)
     } else {
-      P1 <- length(coef(s1.reg))
-      P2 <- length(coef(s2.reg))
+      i_j <- rep(1, N)
     }
+    A_jt <- as.numeric(A[, s] == A_j[s - 1])
 
-    ### Variance component 1
-    em.var <- (N0 / (N0 - P1)) * (Y - pred.Y.m0)^2
+    ## calculate K weight for this period
+    fut_patt <- paste0("[", paste0(s:T, collapse = ""), "]")
+    past_K <- grep(fut_patt, names(K), invert = TRUE)
+    fut_K <- grep(fut_patt, names(K))
+    K_term <- (A_jt * rowSums(K[fut_K]) - (1 - A_jt) * (1 + rowSums(K[past_K])))
 
-    ### Variance component 2
-    ea.var <- (N / (N - (P1 + P2))) * (pred.Y.m0 - pred.Y.A)^2
+    eta <- mu_hat[, s] - mu_hat[, s - 1]
+    tau_i <- tau_i - as.numeric(i_j) * K_term * eta
 
-    ### Variance component 3
-    tau.var <- (N / (N - (P1 + P2 + 1))) * mean((pred.Y.a1 - pred.Y.a0 - tau)^2)
+    mu_lag_A <- A[, s - 1] * r_out[[s - 1]]$yhat_r_1 +
+      (1 - A[, s - 1]) * r_out[[s - 1]]$yhat_r_0
+    eta_v <- mu_hat[, s] - mu_lag_A
+    dfc_s <- sum(i_j) / (sum(i_j) - sum(p[(s - 1) : T]))
+    tau_var <- tau_var +
+      dfc_s * mean(i_j * (1 + rowSums(K[past_K])) ^ 2 * eta_v ^ 2)
+  }
 
-    ### combine all three components
-    se.est2 <- sqrt(tau.var / N +
-                      (mean((1 - M) * ww^2 * em.var) +
-                         mean((1 + KLa / L_a)^2 * ea.var)) / N)
+  tau <- mean((2 * A[, 1] - 1) * tau_i)
 
-    ### No bootstrap
-    Tstar <- NULL
+  tau_x <- r_out[[1]]$yhat_r_1 - r_out[[1]]$yhat_r_0
+  dfc_t <- N / (N - sum(p) - 1)
+  tau_var <- tau_var + dfc_t * mean((tau_x - tau) ^ 2)
+  tau_se <- sqrt(tau_var / N)
 
-    ### CI bounds
-    ci.low <- tau - abs(qnorm(ci.alpha / 2)) * se.est2
-    ci.high <- tau + abs(qnorm(ci.alpha / 2)) * se.est2
+  return(list(tau = tau, tau_i = tau_i, tau_raw = tau_raw, tau_se = tau_se))
+}
 
-  } else {
 
-    ################
-    ### Wild Bootstrap
-    ################
+#' Bootstrap Uncertainty Estimats for Telescope Matching
+#' 
+#' Performs a weighted bootstrap procedure for the output of
+#' \code{\link{telescope_match}}. 
+#'
+#' @param obj A \code{tmatch} object, computed by \code{\link{telescope_match}}.
+#' @param boots The number of bootstrap replicates. Defaults to 1000.
+#' @param ci_alpha alpha value for the bootstrapped confidence
+#' intervals. Corresponds to a 100 * (1-alpha) confidence interval. 
+#'
+#' @return An data.frame with columns `ci_low` and `ci_high` which
+#' contain the bootstrapped confidence intervals for the estimated
+#' ACDEs in \code{obj$tau}.
+#'
+#' @examples
+#' \donttest{
+#' data(jobcorps)
+#'
+#' ## Split male/female
+#' jobcorps_female <- subset(jobcorps, female == 1)
+#'
+#' ## Telescope matching formula - First stage (X and Z)
+#' tm_form <- exhealth30 ~  schobef + trainyrbef + jobeverbef  |
+#' treat | emplq4 + emplq4full | work2year2q
+#'
+#'
+#' ### Estimate ACDE for women holding employment at 0
+#' tm_out <-  telescope_match(
+#'   tm_form,
+#'   data = jobcorps_female,
+#'   L = 3,
+#'   boot = FALSE,
+#'   verbose = TRUE
+#' )
+#'
+#' out.boots <- boots_tm(tm_out)
+#'
+#' out.boots
+#' }
+#' @export
+#' @importFrom stats rbinom quantile
+#'
+boots_tm <- function(obj, boots = 1000, ci_alpha = 0.05) {
 
-    ## De-mean
-    tau.norm <- tau.i - tau
-
-    ## Bootstrap iterations
+  N <- nrow(obj$tau_i)
+  J <- length(obj$tau)
+  ## Bootstrap iterations
     W.bern <- sapply(
-      1:nBoot,
+      1:boots,
       function(x) rbinom(N, 1, prob = (sqrt(5) - 1) / (2 * sqrt(5)))
     )
     Wstar <- (((sqrt(5) + 1) / 2) * W.bern +
                 ((-sqrt(5) + 1) / 2) * (1 - W.bern)) / N
 
-    ## Apply bootstrap weights to each "observation"
-    Tstar <- (t(Wstar) %*% tau.norm)
-
-    ## Add in tau
-    Tstar <- Tstar + tau
-
-    ### Asypmtotic estimate is null
-    se.est2 <- NULL
-
-    ### Get quantiles for the CI
-    ci.low <- quantile(Tstar, ci.alpha / 2)
-    ci.high <- quantile(Tstar, 1 - ci.alpha / 2)
+  ci_high <- ci_low <- rep(NA, times = J)
+  for (j in seq_len(J)) {
+    tau_norm <- obj$tau_i[, j]  - obj$tau[j]
+    Tstar <- (t(Wstar) %*% tau_norm)
+    Tstar <- Tstar + obj$tau[j]
+    ci_low[j] <- quantile(Tstar, ci_alpha / 2)
+    ci_high[j] <- quantile(Tstar, 1 - ci_alpha / 2)
   }
 
-  ### Return output
-  output <- list(formula = formula, outcome = yname, treatment = aname,
-                 mediator = mname, included = included,
-                 N = N, L_m = L_m, L_a = L_a, N_summary = n_summary,
-                 estimate = tau, nobc_estimate = tau_raw,
-                 std.err = se.est2, boot.dist = as.vector(Tstar), KLm = KLm,
-                 KLa = KLa, outcome.vec = Y, treatment.vec = A,
-                 mediator.vec = M, pre.treatment = pre.treatment,
-                 post.treatment = post.treatment, conf.low = ci.low,
-                 conf.high = ci.high, ci.level = ci, SLm = SLm, pred.Y.m0 = pred.Y.m0,
-                 pred.Y.a1 = pred.Y.a1, pred.Y.a0 = pred.Y.a0, Ytilde = Ytilde)
+  return(data.frame(ci_low = ci_low, ci_high = ci_high))
+}
 
-  class(output) <- "tmatch"
-  return(output)
 
+#' @export 
+print.tmatch <- function(x, ...) {
+  cat("\nTelescope matching output\n\n")
+  cat("Call:\n")
+  print(x$call)
+
+  cat("\nActive treatment: ", x$effects$active[1], "\n")
+  cat("Controlled treatment(s):", names(x$effects)[-1])
+
+  cat(
+    "\n\nEstimated controlled direct effects of ",
+    x$effects$active[1],
+    ":\n", sep = ""
+  )
+  df <- data.frame(
+    x$effects[, -1, drop = FALSE],
+    estimate = x$tau)
+  print(df)
 }
 
 
@@ -597,169 +663,108 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
 #' call to \code{telescope_match}
 #' @param ... additional arguments affecting the summary produced.
 #'
-#' @details Returns a summary data frame containing the estimate,
-#' standard error and confidence  interval from the `telescope_match`
-#' object.
+#' @details Returns a summary data frame containing the estimate and
+#' standard errors from the `telescope_match` object.
 #'
 #' @return Returns an object of \code{class} \code{summary.tmatch}.
 #' Contains the following components
 #' \itemize{
-#' \item outcome: Name of outcome variable
-#' \item treatment: Name of treatment variable
-#' \item mediator: Name of mediator variable
-#' \item pre.treatment: Vector of names of pre-treatment confounders
-#' (appear in both stage 1 and 2)
-#' \item post.treatment: Vector of names of post-treatment confounders
-#' (appear only in stage 1)
-#' \item sizes: Number of observations in each treatment-mediator combination
-#' \item L_m: Number of units matched in the mediator (first) stage
-#' \item L_a: Number of units matched in the treatment (second) stage
-#' \item estimate: Point estimate of the ACDE
-#' \item se.type: Character indicating the type of standard error
-#' estimator used in the
-#' telescope_matching routine, either 'Asymptotic" or 'Bootstrap'
-#' \item std.err: Estimated standard error of the ACD
-#' \item ci.level: Confidence interval level
-#' \item conf.low: Lower bound of the `ci.level` asymptotically normal
-#' confidence interval
-#' \item conf.high: Upper bound of the `ci.level` asymptotically
-#' normal confidence interval
+#'   \item \code{call}: matched call.
+#'   \item \code{m_summary}: data.frame summarizes the matching
+#'     ratios (\code{{ratio}}), number of units \code{n_1, n_0},
+#'     and number of matched units (\code{matched_1, matched_0}) for
+#'     each treatment/mediator (\code{term}).
+#'   \item \code{K}: \code{K} data frame from the \code{object}
+#'     telescope matching output.
+#'   \item \code{L}: \code{L} vector from the \code{object}
+#'     telescope matching output.
+#'   \item \code{a_names}: character vector of the names of the
+#'     treatment/mediator variables used in matching. 
+#'   \item \code{estimates}: matrix of estimated ACDEs with and
+#'     without bias correction and the estimated standard errors.
 #' }
 #' @export
 summary.tmatch <- function(object, ...) {
 
-  summary_obj <- NULL
-
-  ### Names of treatments/outcome
-  summary_obj$outcome <- object$outcome
-  summary_obj$treatment <- object$treatment
-  summary_obj$mediator <- object$mediator
-
-  ### Covariates
-  summary_obj$pre.treatment <- object$pre.treatment
-  summary_obj$post.treatment <- object$post.treatment
-
-  ### Sample size
-  summary_obj$sizes <- object$N_summary
-
-  ### Number of units matched in each stage
-  summary_obj$L_m <- object$L_m
-  summary_obj$L_a <- object$L_a
-
-  ### Estimates
-  if (!is.null(object$std.err)) {
-    summary_obj$se.type <- "Asymptotic"
-    summary_obj$std.err <- object$std.err
-  } else {
-    summary_obj$se.type <- "Bootstrap"
-    summary_obj$std.err <- sd(object$boot.dist)
+  
+  an <- object$a_names
+  J <- length(an)
+  sum_mat <- matrix(NA, nrow = J, ncol = 4)
+  for (j in 1:J) {
+    tr <- object$m_out[[j]]$tr
+    sum_mat[j, ] <- c(
+      sum(tr), sum(1 - tr),
+      sum(object$K[[an[j]]] * tr > 0),
+      sum(object$K[[an[j]]] * (1 - tr) > 0)
+    )
   }
+  colnames(sum_mat) <- c(
+    "n_1", "n_0", "matched_1", "matched_0"
+  )
 
-  summary_obj$estimate <- object$estimate
-  summary_obj$ci.level <- object$ci.level
-  summary_obj$conf.low <- object$conf.low
-  summary_obj$conf.high <- object$conf.high
+  
+  out <- list()
+  out$call <- object$call
+  out$m_summary <- data.frame(term = an, ratio = object$L, sum_mat)
 
-  class(summary_obj) <- "summary.tmatch"
+  out$K <- object$K
+  out$L <- object$L
+  out$a_names <- an
 
-  return(summary_obj)
+  cf <- cbind(
+    object$effects[, -1, drop  = FALSE],
+    "Estimate" = object$tau,
+    "Estimate (no BC)" = object$tau_raw,
+    "Std. Err." = object$tau_se
+  )
 
+  out$estimates <- as.matrix(cf)
+
+  A_levs <- expand.grid(rep(list(c(0, 1)), times = J - 1))
+  lab_1 <- paste0("(1, ", apply(A_levs, 1, paste0, collapse = ", "), ")")
+  lab_0 <- paste0("(0, ", apply(A_levs, 1, paste0, collapse = ", "), ")")
+  labs <- paste0(lab_1, " vs. ", lab_0)
+  rownames(out$estimates) <- labs
+  
+  class(out) <- "summary.tmatch"
+
+  return(out)
 }
 
-print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3)) {
-  cat("Telescope matching results\n")
-  cat("----------------------------\n")
-  cat("Variables:\n")
-  cat(paste("Outcome: ", object$outcome, "\n", sep = ""))
-  cat(paste("Treatment: ", object$treatment, "\n", sep = ""))
-  cat(paste("Mediator: ", object$mediator, "\n", sep = ""))
-  cat("----------------------------\n")
-  cat(paste(
-    "Pre-treatment Covariates: ",
-    paste(object$pre.treatment, collapse = ", "),
-    "\n", sep = ""))
-  cat(paste(
-    "Post-treatment Covariates: ",
-    paste(object$post.treatment, collapse = ", "),
-    "\n", sep = ""))
-  cat("----------------------------\n")
-  cat(
-    paste(
-      "Number of units matched to each observation in first stage (mediator): ",
-      object$L_m, "\n", sep = ""
-    )
-  )
-  cat(paste(
-    "Number of units matched to each observation in second stage (treatment): ",
-    object$L_a, "\n", sep = ""
-  ))
-  cat("----------------------------\n")
-  cat("Results:\n")
-  if (object$se.type == "Asymptotic") {
-    cat(paste(
-      "Estimated ACDE: ",
-      format(object$estimate, digits = digits), "\n", sep = ""
-    ))
-    cat(paste(
-      "Asymptotic Standard Error: ",
-      format(object$std.err, digits = digits), "\n", sep = ""
-    ))
-    cat(paste(
-      "Asymptotic ", format(object$ci.level, digits = digits),
-      "% confidence interval: [",
-      format(object$conf.low, digits = digits), ", ",
-      format(object$conf.high, digits = digits), "]\n", sep = ""
-    ))
-  } else if (object$se.type == "Bootstrap") {
-    cat(paste(
-      "Estimated ACDE: ",
-      format(object$estimate, digits = digits), "\n", sep = ""
-    ))
-    cat(paste(
-      "Bootstrap Standard Error: ",
-      format(object$std.err, digits = digits), "\n", sep = ""
-    ))
-    cat(paste(
-      "Bootstrap ", format(object$ci.level, digits = digits),
-      "% confidence interval (percentile): [",
-      format(object$conf.low, digits = digits), ", ",
-      format(object$conf.low, digits = digits), "]\n", sep = ""
-    ))
-  } else {
-    cat("Something went wrong with the summary - SEs not Asymptotic or Bootstrap\n")
-  }
-  cat("----------------------------\n")
-  cat("Sample sizes (N):\n")
-  cat(paste(
-    "Treatment = 0, Mediator = 0: ",
-    object$sizes$N[
-      object$sizes[[object$treatment]] == 0 &
-        object$sizes[[object$mediator]] == 0],
-    "\n", sep = ""
-  ))
-  cat(paste(
-    "Treatment = 0, Mediator = 1: ",
-    object$sizes$N[
-      object$sizes[[object$treatment]] == 0 &
-        object$sizes[[object$mediator]] == 1],
-    "\n", sep = ""
-  ))
-  cat(paste(
-    "Treatment = 1, Mediator = 0: ",
-    object$sizes$N[
-      object$sizes[[object$treatment]] == 1 &
-        object$sizes[[object$mediator]] == 0],
-    "\n", sep = ""
-  ))
-  cat(paste(
-    "Treatment = 1, Mediator = 1: ",
-    object$sizes$N[
-      object$sizes[[object$treatment]] == 1 &
-        object$sizes[[object$mediator]] == 1],
-    "\n", sep = ""
-  ))
-  cat("----------------------------\n")
+#' @export
+print.summary.tmatch <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
 
+  cat("Telescope matching results\n")
+  cat("----------------------------\n\n")
+
+  cat("Call:\n")
+  print(x$call)
+
+  cat("\nActive treatment: ", x$a_names[1], "\n")
+  cat("Controlled treatment(s):", x$a_names[-1], "\n\n")
+
+  cat("Matching summary:\n")
+  m_sum <- x$m_summary
+  names(m_sum) <- c(
+    "Term", "Matching Ratio L:1", "N == 1", "N == 0",
+    "Matched == 1", "Matched == 0"
+  )
+  print(m_sum)
+
+  cat("\n\nSummary of units matching contributions:\n")
+  print(t(sapply(x$K, summary)))
+  
+  cat(
+    "\n\nEstimated controlled direct effects of ",
+    x$a_names[1],
+    ":\n", sep = ""
+  )
+
+  print(
+    x$estimates,
+    digits = digits, quote = FALSE, right = TRUE
+  )
+  cat("\n")
 }
 
 #' Balance diagnostics for Telescope Match objects
@@ -778,6 +783,10 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
 #'   separated by a +.
 #' @param data the data frame used in the call to
 #'   \code{telescope_match}
+#' @param comparison a binary indicator for if the function should
+#' return the balance for the treated group (`1`), for the control
+#' group (`0`), or for overall combined balanced (`NULL`, the
+#' default). 
 #'
 #' @return Returns a data frame with the following columns.
 #' \itemize{
@@ -822,7 +831,7 @@ print.summary.tmatch <- function(object, digits = max(3, getOption("digits") - 3
 #' @export
 #' @importFrom stats as.formula model.frame weighted.mean
 
-balance.tmatch <- function(object, vars, data) {
+balance.tmatch <- function(object, vars, data, comparison = NULL) {
 
   ##################
   ### Sanity checks
@@ -830,32 +839,31 @@ balance.tmatch <- function(object, vars, data) {
 
   ### Is the class a 'tmatch'
   if (class(object) != "tmatch") {
-    stop("Error: 'object' not of class 'tmatch'")
+    stop("`object` not of class 'tmatch'", call. = FALSE)
   }
 
   ### Does N of data match number of obs
   if (nrow(data) != length(object$included)) {
-    stop("Error: number of rows in data not consistent with object")
-  }
-
-  data_tr <- data[[object$treatment]][object$included]
-  if (!all.equal(as.numeric(data_tr),
-                 as.numeric(object$treatment.vec))) {
-    stop("Error: treatment vector in data and object don't match")
+    stop(
+      "number of rows in data not consistent with object",
+      .call = FALSE
+    )
   }
 
   ##########################
   ### Validating the formula
-  if (object$treatment == as.character(vars[2])) {
-    ### Balance diagnostics for treatment
-    get.balance <- "treatment"
-  } else if (object$mediator == as.character(vars[2])) {
-    ### Balance diagnostics for mediator
-    get.balance <- "mediator"
-  } else {
-    stop("Error: Left-hand side of 'vars' must be either the 'treatment' or the 'mediator' from 'object'")
+  a_names <- names(object$K)
+
+  if (!(as.character(vars[2]) %in% a_names)) {
+    stop(
+      "Left-hand side of `vars` must be a treatment variable from `object`.",
+      call. = FALSE
+    )
   }
 
+  this_K <- object$K[, a_names == as.character(vars[2])]
+
+  
   ###########################
   ### Validating the data frame
 
@@ -888,14 +896,11 @@ balance.tmatch <- function(object, vars, data) {
   before_diff <- before_1 - before_0
   before_std_diff <- before_diff / before_sd
 
-  ### Generate weights on each observation
-  if (get.balance == "mediator") {
-    ### If it's the mediator, all M=1 units get KLm+1, all M=0 get KLm
-    obs.weights <- (object$KLm / object$L_m + 1) * A +
-      (object$KLm / object$L_m) * (1 - A)
-  } else if (get.balance == "treatment") {
-    ### If it's the treatment, all A=1 units get KLa+1, all A=0 get KLa+1
-    obs.weights <- (object$KLa / object$L_a + 1)
+  if (!is.null(comparison)) {
+    obs.weights <- comparison * (this_K * (1 - A) + A) +
+      (1 - comparison) * (this_K * A + (1 - A))
+  } else {
+    obs.weights <- this_K + 1
   }
 
   ## get weighted means of each variable
@@ -926,18 +931,15 @@ balance.tmatch <- function(object, vars, data) {
 #'
 #' @param object an object of class \code{tmatch} -- results from a
 #' call  to \code{telescope_match}
-#' @param stage a character vector equal to either 'mediator' or
-#' 'treatment'. If equal to 'mediator', returns a histogram
-#' of matching weights for units with mediator = 0. If equal to
-#' 'treatment', returns a histogram of matching weights for
-#' all units.
+#' @param stage a character vector equal to the name of one treatment
+#' from the `object`. 
 #'
 #' @returns Outputs a `plot()` object containing the histogram of match counts
 #'
 #' @export
 #' @importFrom graphics hist
 
-plotDiag.tmatch <- function(object, stage = "mediator") {
+plotDiag.tmatch <- function(object, stage) {
 
   ##################
   ### Sanity checks
@@ -945,79 +947,31 @@ plotDiag.tmatch <- function(object, stage = "mediator") {
 
   ### Is the class a 'tmatch'
   if (class(object) != "tmatch") {
-    stop("Error: 'object' not of class 'tmatch'")
+    stop("`object` not of class 'tmatch'", call. = FALSE)
   }
 
-  if (stage != "mediator" & stage != "treatment") {
-    stop("Error: 'stage' must be either 'mediator' or 'treatment'.")
+
+  a_names <- names(object$K)
+  if (missing(stage)) stage <- a_names[1]
+  
+  if (!(stage %in% a_names)) {
+    stop("`stage` must be a treatment in `object`.", call. = FALSE)
   }
 
   #######################
   ### Main output
   #######################
 
-  ### If it's mediator, plot the histogram of K_Lm for mediator == 0
-  if (stage == "mediator") {
-    plot_title <- paste("Matching weights for first stage (mediator)\namong M = 0")
-    hist(
-      object$KLm[object$mediator.vec == 0] / object$L_m,
-      main = plot_title,
-      xlab = "Number of times unit is matched"
-    )
-    abline(v = 1, col = "red", lty = 2, lwd = 2)
-  } else if (stage == "treatment") {
-    plot_title <- paste("Matching weights for second stage (treatment)")
-    hist(
-      object$KLa / object$L_a,
-      main = plot_title,
-      xlab = "Number of times unit is matched"
-    )
-    abline(v = 1, col = "red", lty = 2, lwd = 2)
-  }
+  this_K <- object$K[, a_names == stage]
+  
+  plot_title <- paste0("Matching weights for ", stage)
+  hist(
+    this_K,
+    main = plot_title,
+    xlab = "Number of times unit is matched"
+  )
+  abline(v = 1, col = "red", lty = 2, lwd = 2)
 
-  return()
+  invisible()
 
-}
-
-##' Calculate telescope matching weights
-##'
-##' Calculates the weight given to each unit in the telescope matching
-##' estimation procedure.
-##'
-##' @param object an object of class `tmatch` from [telescope_match]
-##' output.
-##' @param data a data.frame that was passed to [telescope_match] to
-##' produce `object`.
-##' @return A list containing two vectors:
-##' \item{treat_w}{A n-length vector containing the matching weights
-##' for the treatment or first period matching.}
-##' \item{med_w}{A n-length vector containing the matching weights
-##' for the mediator or second period matching.}
-##' @author Matthew Blackwell
-##' @export
-tmatch_weights <- function(object, data) {
-  ### Is the class a 'tmatch'
-  if (class(object) != "tmatch") {
-    stop("Error: 'object' not of class 'tmatch'")
-  }
-
-  ### Does N of data match number of obs
-  if (nrow(data) != length(object$included)) {
-    stop("Error: number of rows in data not consistent with object")
-  }
-
-  data_tr <- data[[object$treatment]][object$included]
-  if (!all.equal(as.numeric(data_tr),
-                 as.numeric(object$treatment.vec))) {
-    stop("Error: treatment vector in data and object don't match")
-  }
-  a_w <- rep(NA, nrow(data))
-  m_w <- rep(NA, nrow(data))
-
-  M <- object$mediator.vec
-  a_w[object$included] <- (object$KLa / object$L_a + 1)
-  m_w[object$included] <- (object$KLm / object$L_m + 1) * M +
-    (object$KLm / object$L_m) * (1 - M)
-
-  return(list(treat_w = a_w, med_w = m_w))
 }

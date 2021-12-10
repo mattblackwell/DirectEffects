@@ -7,3 +7,7 @@ README\.md
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^vignettes/\.auto/
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$

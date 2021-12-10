@@ -9,7 +9,7 @@ U.S. Job Corps employment training experiment.}
 A data frame with 10025 observations and 62 variables.
 }
 \source{
-\url{https://doi.org/10.1002/jae.2341}
+\doi{10.1002/jae.2341}
 }
 \usage{
 data(jobcorps)
@@ -66,5 +66,5 @@ A dataset to replicate the analysis in Huber (2014).
 \references{
 Huber, M. (2014). Identifying causal mechanisms 
 (primarily) based on inverse probability weighting. Journal of 
-Applied Econometrics, 29(6), 920-943.
+Applied Econometrics, 29(6), 920-943. \doi{10.1002/jae.2341}
 }
