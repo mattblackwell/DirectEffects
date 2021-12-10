@@ -2,12 +2,13 @@ Package: DirectEffects
 Version: 0.2.9000
 Title: Estimating Controlled Direct Effects for Explaining Causal Findings
 Authors@R: c(
-    person("Matthew", "Blackwell", email = "mblackwell@gov.harvard.edu", role = c("aut", "cre")),
+    person("Matthew", "Blackwell", email = "mblackwell@gov.harvard.edu", role = c("aut", "cre"),
+             comment = c(ORCID = "0000-0002-3689-9527")),
     person("Avidit", "Acharya", email = "avidit@stanford.edu", role = c("aut")),
     person("Maya", "Sen", email = "maya_sen@hks.harvard.edu", role = c("aut")),
-    person("Shiro", "Kuriwaki", email = "kuriwaki@g.harvard.edu", role = c("aut")),
+    person("Shiro", "Kuriwaki", email = "shirokuriwaki@gmail.com", role = c("aut")),
     person("Jacob", "Brown", email = "jrbrown@g.harvard.edu", role = c("aut")),
-    person("Anton", "Strezhnev", email = "as6672@nyu.edu", role = c("aut")))
+    person("Anton", "Strezhnev", email = "astrezhnev@uchicago.edu", role = c("aut")))
 Imports:
     stats,
     Formula,
@@ -23,9 +24,9 @@ Suggests:
     reshape2,
     scales,
     testthat
-Description: A set of functions to estimate the controlled direct effect of treatment fixing a potential mediator to a specific value. Implements the sequential g-estimation estimator described in Vansteelandt (2009) <doi:10.1097/EDE.0b013e3181b6f4c9> and Acharya, Blackwell, and Sen (2016) <doi:10.1017/S0003055416000216> and the telescope matching estimator described in Blackwell and Strezhnev (2020) <doi:10.1111/rssa.12759.  
+Description: A set of functions to estimate the controlled direct effect of treatment fixing a potential mediator to a specific value. Implements the sequential g-estimation estimator described in Vansteelandt (2009) <doi:10.1097/EDE.0b013e3181b6f4c9> and Acharya, Blackwell, and Sen (2016) <doi:10.1017/S0003055416000216> and the telescope matching estimator described in Blackwell and Strezhnev (2020) <doi:10.1111/rssa.12759>.  
 License: GPL (>= 2)
-URL: https://www.mattblackwell.org/software/direct-effects/
+URL: https://mattblackwell.github.io/DirectEffects
 BugReports: https://github.com/mattblackwell/DirectEffects/issues
 VignetteBuilder: knitr
 LazyData: true
