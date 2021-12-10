@@ -1,5 +1,9 @@
 ## Overview
 
+  <!-- badges: start -->
+  [![R-CMD-check](https://github.com/mattblackwell/DirectEffects/workflows/R-CMD-check/badge.svg)](https://github.com/mattblackwell/DirectEffects/actions)
+  <!-- badges: end -->
+
 `DirectEffects` is an R package to estimate controlled direct effects (CDEs). As of now, the package supports sequential g-estimation and a two-stage matching approach called telescope matching. For more information on how CDEs can be useful for applied research and a brief introduction to sequential g-estimation, see [Acharya, Blackwell, and Sen (2016)][de-paper]. For more on the telescope matching procedure, see  [Blackwell and Strezhnev (2022)][tm-paper]. 
 
 
