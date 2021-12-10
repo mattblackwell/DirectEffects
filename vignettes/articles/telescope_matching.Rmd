@@ -2,7 +2,7 @@
 title: "Telescope matching"
 date: "`r Sys.Date()`"
 link-citations: yes
-bibliography: DirectEffects.bib
+bibliography: ../DirectEffects.bib
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Telescope matching}
@@ -37,7 +37,7 @@ Identification still depends crucially on the sequential unconfoundedness assump
 \hat{\tau} = \frac{1}{N}\sum_{i=1}^N \left(\widehat{Y}_i(1,0) - \widehat{Y}_i(0,0)\right)
 \]
 
-To obtain the imputations $\hat{Y}_i(1,0)$ and $\hat{Y_i(0,0)}$ for each unit, the telescope matching approach proceeds in two stages. The first step matches each unit with $M_i = 1$ to some user-specified number of units with $M_i = 0$ that share treatment status $A_i$ and are similar in both pre-treatment covariates $X_i$ and post-treatment covariates $Z_i$ as measured by some distance metric (in `telescope_match` we implement the Mahalanobis distance). Let $\mathcal{J}_L^m(i)$ denote the set of units matched to unit $i$. We define the following imputation for each unit's potential outcome fixing $M_i$ to 0.
+To obtain the imputations $\widehat{Y}_i(1,0)$ and $\widehat{Y}_i(0,0)$ for each unit, the telescope matching approach proceeds in two stages. The first step matches each unit with $M_i = 1$ to some user-specified number of units with $M_i = 0$ that share treatment status $A_i$ and are similar in both pre-treatment covariates $X_i$ and post-treatment covariates $Z_i$ as measured by some distance metric (in `telescope_match` we implement the Mahalanobis distance). Let $\mathcal{J}_L^m(i)$ denote the set of units matched to unit $i$. We define the following imputation for each unit's potential outcome fixing $M_i$ to 0.
 
 \[
 \widehat{Y}_i(A_i, 0) =\begin{cases} Y_i & \text{ if } M_i = 0 \\ \frac{1}{L} \sum_{\ell\in \mathcal{J}^m_L(i)} Y_{\ell} & \text{ if } M_i = 1\end{cases}
