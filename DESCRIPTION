@@ -24,7 +24,6 @@ Suggests:
     scales,
     testthat
 Description: A set of functions to estimate the controlled direct effect of treatment fixing a potential mediator to a specific value. Implements the sequential g-estimation estimator described in Vansteelandt (2009) <doi:10.1097/EDE.0b013e3181b6f4c9> and Acharya, Blackwell, and Sen (2016) <doi:10.1017/S0003055416000216> and the telescope matching estimator described in Blackwell and Strezhnev (2020) <doi:10.1111/rssa.12759.  
->>>>>>> telescope
 License: GPL (>= 2)
 URL: https://www.mattblackwell.org/software/direct-effects/
 BugReports: https://github.com/mattblackwell/DirectEffects/issues
