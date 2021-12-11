@@ -7,12 +7,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="description" content="DirectEffects">
 <title>Estimating controlled direct effects • DirectEffects</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.1.0/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.1.0/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- bootstrap-toc --><script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v1.0.1/dist/bootstrap-toc.min.js"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Estimating controlled direct effects">
 <meta property="og:description" content="DirectEffects">
+<meta property="og:image" content="https://mattblackwell.github.io/DirectEffects/logo.png">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -67,9 +74,9 @@
 </nav><div class="container template-article">
 <script src="DirectEffects_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <main id="main"><div class="page-header">
-      <img src="" class="logo" alt=""><h1>Estimating controlled direct effects</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Estimating controlled direct effects</h1>
             
-            <h4 data-toc-skip class="date">2021-12-10</h4>
+            <h4 data-toc-skip class="date">2021-12-11</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/mattblackwell/DirectEffects/blob/HEAD/vignettes/DirectEffects.Rmd" class="external-link"><code>vignettes/DirectEffects.Rmd</code></a></small>
       <div class="d-none name"><code>DirectEffects.Rmd</code></div>
@@ -210,14 +217,14 @@
 <span class="co">## Summary of bootstrapped coefficients: </span>
 <span class="co">## </span>
 <span class="co">##                           Estimate Std. Err.   t value     2.5 %  97.5 %</span>
-<span class="co">## (Intercept)               12.68830   4.22683   3.00185   3.36103 19.9804</span>
-<span class="co">## plow                      -4.90288   2.52984  -1.93802 -10.31484 -0.0461</span>
-<span class="co">## agricultural_suitability   4.41084   3.32122   1.32808  -1.88211 10.5896</span>
-<span class="co">## tropical_climate          -2.10549   2.48625  -0.84685  -6.57257  3.0299</span>
-<span class="co">## large_animals             -1.14327   4.69751  -0.24338 -10.01702  7.6973</span>
-<span class="co">## political_hierarchies      0.45407   1.15845   0.39196  -1.54475  2.6155</span>
-<span class="co">## economic_complexity       -0.17131   0.53709  -0.31896  -1.10970  0.9211</span>
-<span class="co">## rugged                    -0.30589   0.51217  -0.59724  -1.33131  0.5541</span></code></pre>
+<span class="co">## (Intercept)               12.37462   4.61614   2.68073   4.28467 21.6587</span>
+<span class="co">## plow                      -5.14210   2.76547  -1.85939 -10.75926  0.1153</span>
+<span class="co">## agricultural_suitability   4.66219   3.30802   1.40936  -1.93396 11.4493</span>
+<span class="co">## tropical_climate          -2.13054   2.53082  -0.84184  -7.24989  3.2023</span>
+<span class="co">## large_animals             -0.81100   4.39833  -0.18439 -10.49774  7.0677</span>
+<span class="co">## political_hierarchies      0.52688   1.08511   0.48556  -1.50514  2.5695</span>
+<span class="co">## economic_complexity       -0.20832   0.52643  -0.39572  -1.27718  0.6389</span>
+<span class="co">## rugged                    -0.27702   0.54181  -0.51129  -1.38496  0.6804</span></code></pre>
 <p>The coefficient on the treatment variable (here, <code>plow</code>), is the estimate of the ACDE. The results show a negative ACDE of plows—in other words, the effect of the plough is negative for fixed income levels. This controlled direct effect is larger in magnitude than the estimated the total effect:</p>
 <p><img src="DirectEffects_files/figure-html/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;"></p>
 </div>
