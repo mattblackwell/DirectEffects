@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   DirectEffects: DirectEffects.html
   telescope_matching: telescope_matching.html
-last_built: 2021-12-11T03:18Z
+last_built: 2021-12-16T23:26Z
 urls:
   reference: https://mattblackwell.github.io/DirectEffects/reference
   article: https://mattblackwell.github.io/DirectEffects/articles
