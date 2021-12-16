@@ -14,7 +14,7 @@
 #'   Calipers are specified in standard deviations of the covariates.
 #'   NULL by default (no caliper).
 #' @param L Number of matches to use for each unit. Must be a numeric
-#'   vector of eitehr length 1 or 2. If length 1, L sets the number of
+#'   vector of either length 1 or 2. If length 1, L sets the number of
 #'   matches used in both the first stage (matching on mediator) and
 #'   in the second stage (matching on treatment). If length 2, the
 #'   first element sets the number of matches used in the first stage
@@ -43,7 +43,7 @@
 #'  \code{data.frame} passed to \code{data} should be in the wide
 #'  format so that each row corresponds to a single unit and
 #'  treatments and covariates from different time periods appear as
-#'  different columns. The \code{formula} arugment specifies both the
+#'  different columns. The \code{formula} argument specifies both the
 #'  causal ordering of the variables and the regression specifications
 #'  for the bias correction. It should be of the form \code{Y ~ X1 |
 #'  A1 | X2 | A2}, where \code{Y} is the outcome, \code{X1} is a
@@ -87,7 +87,7 @@
 #' \itemize{
 #'   \item \code{call}: the matched call.
 #'   \item \code{formula}: formula used to fit the model.
-#'   \item \code{m_out}: list of matching soluations at each time
+#'   \item \code{m_out}: list of matching solutions at each time
 #'     point. Each member of the list has a `matches` list giving the
 #'     units matched to that unit, a `donors` list with the units to
 #'     which the unit is matched, and a `tr` vector which is just the
@@ -566,7 +566,7 @@ calculate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
 }
 
 
-#' Bootstrap Uncertainty Estimats for Telescope Matching
+#' Bootstrap Uncertainty Estimates for Telescope Matching
 #' 
 #' Performs a weighted bootstrap procedure for the output of
 #' \code{\link{telescope_match}}. 
@@ -926,7 +926,7 @@ balance.tmatch <- function(object, vars, data, comparison = NULL) {
 #' Histograms of matching weights
 #'
 #' @details Provides histograms of the number of times each unit is
-#' used as a match given a  \code{tmatch} object returned by
+#' used as a match given a \code{tmatch} object returned by
 #' \code{telescope_match}
 #'
 #' @param object an object of class \code{tmatch} -- results from a
