@@ -2,7 +2,7 @@
 % Please edit documentation in R/telescope_match.R
 \name{boots_tm}
 \alias{boots_tm}
-\title{Bootstrap Uncertainty Estimats for Telescope Matching}
+\title{Bootstrap Uncertainty Estimates for Telescope Matching}
 \usage{
 boots_tm(obj, boots = 1000, ci_alpha = 0.05)
 }

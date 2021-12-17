@@ -21,6 +21,6 @@ Histograms of matching weights
 }
 \details{
 Provides histograms of the number of times each unit is
-used as a match given a  \code{tmatch} object returned by
+used as a match given a \code{tmatch} object returned by
 \code{telescope_match}
 }
