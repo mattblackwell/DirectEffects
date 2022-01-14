@@ -114,14 +114,23 @@ estimate_cde <- function(object, formula, data, out) {
   if (class(object) %has% "reg_impute") {
     for (e in seq_along(eff_vars)) {
       j <- eff_pos[e]
-      p_levs <- unique(A[, j])
+      j_levs <- unique(A[, j])
       out$estimates <- rbind(
         out$estimates,
-        compute_reg_impute(j, p_levs, y, paths, out$outreg_pred[[e]], eff_vars[e], N)
+        compute_reg_impute(j, j_levs, y, paths, out$outreg_pred[[e]], eff_vars[e], N)
       )
     }
-    
+  }
 
+  if (class(object) %has% "aipw") {
+    for (e in seq_along(eff_vars)) {
+      j <- eff_pos[e]
+      j_levs <- unique(A[, j])
+      out$estimates <- rbind(
+        out$estimates,
+        compute_aipw(j, j_levs, y, paths, out, object$args, eff_vars[e], N)
+      )
+    }
   }
   out
 

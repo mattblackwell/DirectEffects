@@ -13,16 +13,6 @@ new_cde_estimator <- function(type, args, model_spec) {
 
 
 
-#' @export
-cde_aipw <- function(...) {
-  args <- rlang::enquos(...)
-
-  new_cde_estimator(
-    "aipw",
-    args = args,
-    model_spec = NULL
-  )
-}
 
 
 

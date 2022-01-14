@@ -127,3 +127,19 @@ check_cde_estimator <- function(...) TRUE
 
 
 `%has%` <- function(lhs, rhs) rhs %in% lhs
+
+
+get_path_inds <- function(A, path) {
+  path <- unlist(strsplit(path, "_"))
+  data_paths <- strsplit(as.character(A), "_")
+  out <- matrix(NA, nrow = length(A), ncol = length(path))
+
+  for (j in seq_along(path)) {
+    c_paths <- lapply(
+      data_paths,
+      function(x) paste0(x[1L:j], collapse = "_")
+    )
+    out[, j] <- as.numeric(c_paths == paste0(path[1L:j], collapse = "_"))
+  }
+  out
+}

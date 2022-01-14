@@ -1,7 +1,8 @@
 #' @export
-cde_ipw <- function(hajek = TRUE) {
+cde_ipw <- function(hajek = TRUE, trim = c(0.01, 0.99)) {
   args <- list(
-    hajek = hajek
+    hajek = hajek,
+    trim = trim
   )
 
   new_cde_estimator(
@@ -26,6 +27,8 @@ get_ipw_preds <- function(x, levs) {
   }
   out
 }
+
+
 
 compute_ipw_contrasts <- function(j, levs, psi, psi_sq, term_name, N) {
   levs <- sort(levs)
@@ -59,4 +62,16 @@ compute_ipw_contrasts <- function(j, levs, psi, psi_sq, term_name, N) {
   }
   rownames(est_tab) <- NULL
   est_tab
+}
+
+trim_weights <- function(x, trim) {
+  ## todo: add checks for trim here or upon user input
+  for (j in seq_len(ncol(x))) {
+    qs <- quantile(x, trim)
+    xt <- x[, j]
+    xt[xt <= qs[1]] <- qs[1]
+    xt[xt >= qs[2]] <- qs[2]
+    x[, j] <- xt
+  }
+  x
 }
