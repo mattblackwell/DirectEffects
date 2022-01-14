@@ -10,6 +10,16 @@ cde_reg_impute <- function(...) {
 }
 
 
+get_reg_preds <- function(x, path) {
+  num_treat <- length(x$outreg_pred)
+  levs <- unlist(strsplit(path, "_"))
+  out <- matrix(NA, nrow = nrow(x$outreg_pred[[1L]]), ncol = num_treat)
+  for (j in seq_len(num_treat)) {
+    out[, j] <- x$outreg_pred[[j]][, path]
+  }
+  out
+}
+
 
 compute_reg_impute <- function(j, levs, y, treat, mu_hat, term_name, N) {
   levs <- sort(levs)
@@ -30,10 +40,10 @@ compute_reg_impute <- function(j, levs, y, treat, mu_hat, term_name, N) {
       trt <- as.numeric(treat == plus)
       N_t <- sum(trt)
       N_b <- N_t + N_c
-      psi <- mu_hat[, plus] + (N_b / N_t) * trt * (y - mu_hat[, plus])
-      psi <- psi - mu_hat[, base] - (N_b / N_c) * ctr * (y - mu_hat[, base])
-      est <- sum((trt + ctr) * psi) / N_b
-      est_var <- sum((trt + ctr) * (psi - est)^ 2) / N_b ^ 2
+      psi <- mu_hat[, plus] + (N / N_t) * trt * (y - mu_hat[, plus])
+      psi <- psi - mu_hat[, base] - (N / N_c) * ctr * (y - mu_hat[, base])
+      est <- mean(psi)
+      est_var <- mean((psi - est)^ 2) / N
       this_est <- data.frame(
         term = term_name,
         block_num = j,
