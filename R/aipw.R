@@ -13,9 +13,9 @@ cde_aipw <- function(trim = c(0.01, 0.99)) {
 
 
 
-compute_aipw <- function(j, j_levs, y, treat, out, args, term_name, N) {
+compute_aipw <- function(j, j_levs, y, treat, out, args, term_name) {
   num_treat <- length(out$outreg_pred)
-  N <- nrow(out$outreg_pred[[1L]])
+  N <- length(treat)
   j_levs <- sort(j_levs)
   paths <- colnames(out$outreg_pred[[j]])
   
@@ -57,8 +57,8 @@ compute_aipw <- function(j, j_levs, y, treat, out, args, term_name, N) {
 
       N_b <- N_t + N_c
       if (length(args$trim)) {
-        w_trt <- trim_weights(w_trt, args$trim)
-        w_ctr <- trim_weights(w_ctr, args$trim)
+        w_trt <- winsorize_matrix(w_trt, args$trim)
+        w_ctr <- winsorize_matrix(w_ctr, args$trim)
       }
       w_trt <- cbind(1, w_trt)
       w_ctr <- cbind(1, w_ctr)

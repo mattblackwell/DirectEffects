@@ -21,9 +21,10 @@ get_reg_preds <- function(x, path) {
 }
 
 
-compute_reg_impute <- function(j, levs, y, treat, mu_hat, term_name, N) {
+compute_reg_impute <- function(j, levs, y, treat, mu_hat, term_name) {
   levs <- sort(levs)
-  paths <- colnames(mu_hat)
+  N <- length(treat)
+  paths <- levels(treat)
   sp <- strsplit(paths, "_")
   templates <- unique(replace_each(sp, j, NA))
   est_tab <- empty_est_tab()
