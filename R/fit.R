@@ -57,6 +57,7 @@ fit_fold <- function(object, data, fit_rows, pred_rows) {
   out <- list()
   if (object$has_ipw) out$ipw_pred <- make_pred_holder(A_pred, type = "ipw")
   if (object$has_outreg) out$outreg_pred <- make_pred_holder(A_pred, type = "outreg")
+  fit_env$pred_data <- data[pred_rows, ]
   
   for (j in block_seq) {
     
@@ -77,7 +78,6 @@ fit_fold <- function(object, data, fit_rows, pred_rows) {
       }
       M <- length(fit_splits)
       #### Fix this
-      fit_env$pred_data <- data[pred_rows, ]
       for (m in seq_len(M)) {
         fit_env$fit_data <- data[fit_rows[fit_splits[[m]]], ]
         treat_fit <- fit_model(object$model_spec[[j]]$treat_spec, fit_env)
@@ -100,7 +100,7 @@ fit_fold <- function(object, data, fit_rows, pred_rows) {
       M_past <- length(unique(past_fit))
       M_fut <- length(unique(fut_fit))
       fit_splits <- split(seq_len(nrow(A_fit)), past_fit)
-      for (mp in seq_len(M_past)) {    
+      for (mp in seq_len(M_past)) {
         for (mf in seq_len(M_fut)) {
           fit_env$fit_data <- data[fit_rows[fit_splits[[mp]]], ]
           if (j == num_treat) {

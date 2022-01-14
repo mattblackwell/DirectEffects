@@ -6,7 +6,7 @@ estimate <- function(object, formula, data, crossfit = TRUE, n_folds, fold_seed 
 
   A <- get_treat_df(object, data)
   object$has_ipw <- object$type %in% c("ipw", "aipw", "tmatch")
-  object$has_outreg <- object$type %in% c("snmm", "aipw", "tmatch")
+  object$has_outreg <- object$type %in% c("reg_impute", "aipw", "tmatch")
 
   if (missing(n_folds)) {
     if (crossfit) {
@@ -78,12 +78,13 @@ estimate_cde <- function(object, formula, data, out) {
   A <- get_treat_df(object, data)
   N <- nrow(A)
   num_treat <- length(tr_names)
+  out$estimates <- empty_est_tab()
+  paths <- interaction(A, sep = "_")
+  path_levs <- levels(paths)
+  path_splits <- split(1L:N, paths)
   
   if (class(object) %has% "ipw") {
 
-    paths <- interaction(A, sep = "_")
-    path_levs <- levels(paths)
-    path_splits <- split(1L:N, paths)
     psi <- vector("numeric", length = length(path_levs))
     psi_sq <- vector("numeric", length = length(path_levs))
     names(psi) <- names(psi_sq) <- path_levs
@@ -100,7 +101,6 @@ estimate_cde <- function(object, formula, data, out) {
       psi_sq[p] <- (N / N_p ^ 2) * sum(y[p_rows] ^ 2 / weights[p_rows] ^ 2)      
     }
 
-    out$estimates <- empty_est_tab()
     for (e in seq_along(eff_vars)) {
       j <- eff_pos[e]
       p_levs <- unique(A[, j])
@@ -109,6 +109,19 @@ estimate_cde <- function(object, formula, data, out) {
         compute_ipw_contrasts(j, p_levs, psi, psi_sq, eff_vars[e], N)
       )
     }
+  }
+
+  if (class(object) %has% "reg_impute") {
+    for (e in seq_along(eff_vars)) {
+      j <- eff_pos[e]
+      p_levs <- unique(A[, j])
+      out$estimates <- rbind(
+        out$estimates,
+        compute_reg_impute(j, p_levs, y, paths, out$outreg_pred[[e]], eff_vars[e], N)
+      )
+    }
+    
+
   }
   out
 

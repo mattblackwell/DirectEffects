@@ -32,24 +32,6 @@ compute_ipw_contrasts <- function(j, levs, psi, psi_sq, term_name, N) {
   paths <- names(psi)
   sp <- strsplit(paths, "_")
   templates <- unique(replace_each(sp, j, NA))
-
-  num_treat <- split_length(paths[1L], "_")
-  wild <- rep(".*", times = num_treat)
-  pre <- paste0(wild[setdiff(1:num_treat, j:num_treat)], collapse = "_")
-  post <- paste0(wild[setdiff(1:num_treat, 1:j)], collapse = "_")
-  patts <- paste0(
-    "^", pre, ifelse(nchar(pre), "_", ""),
-    levs,
-    ifelse(nchar(post), "_", ""), post, "$"
-  )
-  sorted_paths <- lapply(patts, function(x) grep(x, paths))
-  base <- sorted_paths[[1L]]
-  sorted_paths <- sorted_paths[-1L]
-
-  labs <- names(psi)[base]
-  labs <- make_effect_labels(labs, j)
-  names(sorted_paths) <- paste0(levs[-1L], "_vs_", levs[1L])
-
   est_tab <- empty_est_tab()
   for (k in seq_along(templates)) {
     base <- templates[[k]]

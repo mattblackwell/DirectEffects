@@ -24,14 +24,5 @@ cde_aipw <- function(...) {
   )
 }
 
-#' @export
-cde_sequential_g <- function(...) {
-  args <- rlang::enquos(...)
 
-  new_cde_estimator(
-    "seq_g",
-    args = args,
-    model_spec = NULL
-  )
-}
 
