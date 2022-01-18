@@ -43,11 +43,11 @@ fit_fold <- function(object, data, fit_rows, pred_rows) {
 
   fit_env <- rlang::env()  
   A_fit <- get_treat_df(object, data[fit_rows, ])
-  A_pred <- get_treat_df(object, data[pred_rows, ])
-  Y_fit <- get_outcome(object, data[fit_rows, ])
+  A <- get_treat_df(object, data)
+  paths <- interaction(A, sep = "_")
+  Y <- get_outcome(object, data)
   
   N_f <- nrow(A_fit)
-  N_p <- nrow(A_pred)
   num_treat <- length(object$model_spec)
 
   ## move backward through blocks
@@ -55,9 +55,9 @@ fit_fold <- function(object, data, fit_rows, pred_rows) {
 
   
   out <- list()
-  if (object$has_ipw) out$ipw_pred <- make_pred_holder(A_pred, type = "ipw")
-  if (object$has_outreg) out$outreg_pred <- make_pred_holder(A_pred, type = "outreg")
-  fit_env$pred_data <- data[pred_rows, ]
+  if (object$has_ipw) out$ipw_pred <- make_pred_holder(A, type = "ipw")
+  if (object$has_outreg) out$outreg_pred <- make_pred_holder(A, type = "outreg")
+  fit_env$pred_data <- data
   
   for (j in block_seq) {
     
@@ -66,18 +66,13 @@ fit_fold <- function(object, data, fit_rows, pred_rows) {
     if (object$has_ipw) {
       if (j > 1) {
         past_fit <- interaction(A_fit[, 1:(j - 1), drop = FALSE], sep = "_")
-        past_pred <- interaction(A_pred[, 1:(j - 1), drop = FALSE], sep = "_")
         fit_splits <- split(1:nrow(A_fit), past_fit)
       } else {
         past_fit <- rep(0, times = N_f)
-        past_pred <- rep(0, times = N_p)
         fit_splits <- list(1:nrow(A_fit))
       }
-      if (!identical(sort(unique(past_fit)), sort(unique(past_pred)))) {
-        rlang::abort("lack of overlap not possible with `separate == TRUE`.")
-      }
+      ## TODO: add check about overlap?
       M <- length(fit_splits)
-      #### Fix this
       for (m in seq_len(M)) {
         fit_env$fit_data <- data[fit_rows[fit_splits[[m]]], ]
         treat_fit <- fit_model(object$model_spec[[j]]$treat_spec, fit_env)
@@ -102,15 +97,15 @@ fit_fold <- function(object, data, fit_rows, pred_rows) {
       fit_splits <- split(seq_len(nrow(A_fit)), past_fit)
       for (mp in seq_len(M_past)) {
         for (mf in seq_len(M_fut)) {
-          fit_env$fit_data <- data[fit_rows[fit_splits[[mp]]], ]
           if (j == num_treat) {
-            fit_env$`.de_y` <- Y_fit[fit_splits[[mp]]]
             strata <- levels(past_fit)[mp]
           } else {
             strata <- paste0(levels(past_fit)[mp], "_", levels(fut_fit)[mf])
-            old_fitted <- out$outreg_pred[[j + 1]][, strata]
-            fit_env$`.de_y` <- old_fitted[fit_rows[fit_splits[[mp]]]]
           }
+          
+          fit_strata_rows <- fit_rows[fit_splits[[mp]]]
+          fit_env$fit_data <- data[fit_strata_rows, ]
+          fit_env$`.de_y` <- blip_down(object, out, Y, paths, j, strata, fit_strata_rows)
           
           outreg_fit <- fit_model(object$model_spec[[j]]$outreg_spec, fit_env)
           out$outreg_pred[[j]][, strata] <- outreg_fit
@@ -122,4 +117,42 @@ fit_fold <- function(object, data, fit_rows, pred_rows) {
     }
   }
   out
+}
+
+
+blip_down <- function(object, out, y, treat, j, strata, rows) {
+  num_treat <- length(object$model_spec)
+  y <- y[rows]
+  if (j == num_treat) {
+    return(y)
+  }
+
+  if (class(object) %has% "aipw") {
+    p_scores <- get_ipw_preds(out, strata)
+    p_scores <- p_scores[rows, (j + 1):num_treat, drop = FALSE]
+
+    ## apply + do.call to ensure that weights is always a matrix
+    weights <- apply(p_scores, 1, cumprod, simplify = FALSE)
+    weights <- do.call(rbind, weights) 
+    regs <- get_reg_preds(out, strata)
+    regs <- regs[rows, (j + 1):num_treat, drop = FALSE]
+    A <- get_path_inds(treat, strata)
+    A <- A[rows, j:num_treat, drop = FALSE]
+    eps <- cbind(regs, y) - cbind(0, regs)
+    weights <- cbind(1, weights)
+    if (length(object$args$trim)) {
+      weights <- winsorize_matrix(weights, object$args$trim)
+    }
+    if (object$args$aipw_blip) {
+      blipped_y <- rowSums(A * eps / weights)
+    } else {
+      blipped_y <- regs[, 1L]
+    }
+    
+  }
+
+  if (class(object) %has% "reg_impute") {
+    blipped_y <- out$outreg_pred[[j + 1]][rows, strata]
+  }
+  blipped_y
 }

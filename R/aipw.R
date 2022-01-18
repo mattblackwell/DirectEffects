@@ -1,7 +1,8 @@
 #' @export
-cde_aipw <- function(trim = c(0.01, 0.99)) {
+cde_aipw <- function(trim = c(0.01, 0.99), aipw_blip = TRUE) {
   args <- list(
-    trim = trim
+    trim = trim,
+    aipw_blip = aipw_blip
   )
 
   new_cde_estimator(

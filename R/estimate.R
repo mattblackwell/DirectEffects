@@ -49,10 +49,10 @@ estimate <- function(object, formula, data, crossfit = TRUE, n_folds, fold_seed 
     ## fill in prediction matrices
     for (j in seq_len(J)) {
       if (object$has_ipw) {
-        out$ipw_pred[[j]][pred_rows, ] <- res$ipw_pred[[j]]
+        out$ipw_pred[[j]][pred_rows, ] <- res$ipw_pred[[j]][pred_rows, ]
       }
       if (object$has_outreg) {
-        out$outreg_pred[[j]][pred_rows, ] <- res$outreg_pred[[j]]
+        out$outreg_pred[[j]][pred_rows, ] <- res$outreg_pred[[j]][pred_rows, ]
       }
     }
     
