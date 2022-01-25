@@ -56,7 +56,11 @@ treat_model <- function(object,
     }
     
   }
-  
+  args <- rlang::enquos(...)
+  if (engine == "Matching" & is.null(args$L)) {
+    args$L <- quo(3)
+  }
+
   this_treat <- list(
     formula = formula,
     engine = engine,
@@ -136,6 +140,7 @@ outreg_model <- function(object,
     engine = engine,
     separate = separate,
     include_past = include_past,
+    df = length(attr(terms(formula), "term.labels")),
     args = rlang::enquos(...)
   )
 

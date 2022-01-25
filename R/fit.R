@@ -24,6 +24,7 @@ fit_model <- function(model, fit_env) {
     fit_call <- rlang::call2("glm", !!!args, .ns = "stats")
     pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
   }
+
   fit_env$fit <- rlang::eval_tidy(fit_call, env = fit_env)
   preds <- rlang::eval_tidy(pred_call, env = fit_env)
 
@@ -39,7 +40,7 @@ fit_model <- function(model, fit_env) {
 }
 
 
-fit_fold <- function(object, data, fit_rows, pred_rows) {
+fit_fold <- function(object, data, fit_rows, pred_rows, out) {
 
   fit_env <- rlang::env()  
   A_fit <- get_treat_df(object, data[fit_rows, ])
@@ -54,27 +55,26 @@ fit_fold <- function(object, data, fit_rows, pred_rows) {
   block_seq <- rev(seq_len(num_treat))
 
   
-  out <- list()
   if (object$has_ipw) out$ipw_pred <- make_pred_holder(A, type = "ipw")
   if (object$has_outreg) out$outreg_pred <- make_pred_holder(A, type = "outreg")
+  if (object$has_match) blipped_y <- make_pred_holder(A, type = "outreg")
   fit_env$pred_data <- data
   
   for (j in block_seq) {
-    
-
-    
-    if (object$has_ipw) {
+    if (object$has_ipw)  {
       if (j > 1) {
         past_fit <- interaction(A_fit[, 1:(j - 1), drop = FALSE], sep = "_")
-        fit_splits <- split(1:nrow(A_fit), past_fit)
+        fit_splits <- split(seq_len(nrow(A_fit)), past_fit)
       } else {
         past_fit <- rep(0, times = N_f)
-        fit_splits <- list(1:nrow(A_fit))
+        fit_splits <- list(seq_len(nrow(A_fit)))
       }
+      M <- length(fit_splits)      
+      
       ## TODO: add check about overlap?
-      M <- length(fit_splits)
       for (m in seq_len(M)) {
-        fit_env$fit_data <- data[fit_rows[fit_splits[[m]]], ]
+        fit_strata_rows <- fit_rows[fit_splits[[m]]]
+        fit_env$fit_data <- data[fit_strata_rows, ]
         treat_fit <- fit_model(object$model_spec[[j]]$treat_spec, fit_env)
         nms <- paste0(
           names(fit_splits)[[m]],
@@ -105,22 +105,22 @@ fit_fold <- function(object, data, fit_rows, pred_rows) {
           
           fit_strata_rows <- fit_rows[fit_splits[[mp]]]
           fit_env$fit_data <- data[fit_strata_rows, ]
-          fit_env$`.de_y` <- blip_down(object, out, Y, paths, j, strata, fit_strata_rows)
+          blipped_y[[j]][fit_strata_rows, strata] <- blip_down(object, out, Y, blipped_y, paths, j, strata, fit_strata_rows)
           
+          fit_env$`.de_y` <- blipped_y[[j]][fit_strata_rows, strata]
           outreg_fit <- fit_model(object$model_spec[[j]]$outreg_spec, fit_env)
           out$outreg_pred[[j]][, strata] <- outreg_fit
         }
         
       }
       
-
     }
   }
   out
 }
 
 
-blip_down <- function(object, out, y, treat, j, strata, rows) {
+blip_down <- function(object, out, y, b_y, treat, j, strata, rows) {
   num_treat <- length(object$model_spec)
   y <- y[rows]
   if (j == num_treat) {
@@ -154,5 +154,18 @@ blip_down <- function(object, out, y, treat, j, strata, rows) {
   if (class(object) %has% "reg_impute") {
     blipped_y <- out$outreg_pred[[j + 1]][rows, strata]
   }
+
+  if (class(object) %has% "telescope_match") {
+    blipped_y <- b_y[[j + 1]][rows, strata]
+    regs <- get_reg_preds(out, strata)
+    regs <- regs[rows, j + 1]
+    A <- get_path_inds(treat, strata)
+    A <- A[rows, j + 1]
+    matches <- out$match_out[[j + 1]]$matches[rows]
+    yhat_mr <- unlist(lapply(matches, function(x) mean(regs[x])))
+    yhat_m <- unlist(lapply(matches, function(x) mean(blipped_y[x])))
+    blipped_y[A == 0] <- yhat_m[A == 0] + (regs[A == 0] - yhat_mr[A == 0])
+  }
+  
   blipped_y
 }

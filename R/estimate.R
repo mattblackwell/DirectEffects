@@ -5,9 +5,10 @@ estimate <- function(object, formula, data, crossfit = TRUE, n_folds, fold_seed 
   J <- length(object$model_spec)
 
   A <- get_treat_df(object, data)
-  object$has_ipw <- object$type %in% c("ipw", "aipw", "tmatch")
-  object$has_outreg <- object$type %in% c("reg_impute", "aipw", "tmatch")
-
+  object$has_ipw <- object$type %in% c("ipw", "aipw")
+  object$has_outreg <- object$type %in% c("reg_impute", "aipw", "telescope_match")
+  object$has_match <- object$type %in% c("telescope_match")
+  
   if (missing(n_folds)) {
     if (crossfit) {
       n_folds <- 5L
@@ -17,7 +18,25 @@ estimate <- function(object, formula, data, crossfit = TRUE, n_folds, fold_seed 
   }
 
   object$outcome <- formula[[2L]]
+
   
+
+    
+  out <- list()
+  if (object$has_ipw) out$ipw_pred <- make_pred_holder(A, type = "ipw")
+  if (object$has_outreg) out$outreg_pred <- make_pred_holder(A, type = "outreg")
+
+
+  ## match outside the crossfit loop
+  if (object$has_match) {
+    if (crossfit) {
+      rlang::warn("cannot use crossfitting with matching; setting `crossfit = FALSE`")
+      crossfit <- FALSE
+    }
+    out$match_out <- t_match(object, data)
+  }
+
+
   if (crossfit) {
     if (length(fold_seed)) set.seed(fold_seed)
     fold_size <- N / n_folds
@@ -25,12 +44,7 @@ estimate <- function(object, formula, data, crossfit = TRUE, n_folds, fold_seed 
     folds <- split(sample(seq_len(N)), f_split)
   } else {
     folds <- list(seq_len(N))
-  }
-    
-  out <- list()
-  if (object$has_ipw) out$ipw_pred <- make_pred_holder(A, type = "ipw")
-  if (object$has_outreg) out$outreg_pred <- make_pred_holder(A, type = "outreg")
-  
+  }  
   out$n_folds <- n_folds
   out$folds <- folds
 
@@ -44,7 +58,7 @@ estimate <- function(object, formula, data, crossfit = TRUE, n_folds, fold_seed 
       pred_rows <- 1L:N
     }
     
-    res <- fit_fold(object, data, fit_rows, pred_rows)
+    res <- fit_fold(object, data, fit_rows, pred_rows, out)
 
     ## fill in prediction matrices
     for (j in seq_len(J)) {
@@ -55,7 +69,7 @@ estimate <- function(object, formula, data, crossfit = TRUE, n_folds, fold_seed 
         out$outreg_pred[[j]][pred_rows, ] <- res$outreg_pred[[j]][pred_rows, ]
       }
     }
-    
+
   }
   out <- estimate_cde(object, formula, data, out)
   
@@ -132,6 +146,19 @@ estimate_cde <- function(object, formula, data, out) {
       )
     }
   }
+
+  if (class(object) %has% "telescope_match") {
+    dfs <- unlist(lapply(object$model_spec, function(x) x$outreg_spec$df))
+    for (e in seq_along(eff_vars)) {
+      j <- eff_pos[e]
+      j_levs <- unique(A[, j])
+      out$estimates <- rbind(
+        out$estimates,
+        compute_telescope_match(j, j_levs, y, paths, out, object$args, eff_vars[e], dfs)
+      )
+    }
+  }
+
   out
 
 }
