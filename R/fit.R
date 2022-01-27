@@ -56,8 +56,10 @@ fit_fold <- function(object, data, fit_rows, pred_rows, out) {
 
   
   if (object$has_ipw) out$ipw_pred <- make_pred_holder(A, type = "ipw")
-  if (object$has_outreg) out$outreg_pred <- make_pred_holder(A, type = "outreg")
-  if (object$has_match) blipped_y <- make_pred_holder(A, type = "outreg")
+  if (object$has_outreg) {
+    out$outreg_pred <- make_pred_holder(A, type = "outreg")
+    blipped_y <- make_pred_holder(A, type = "outreg")
+  }
   fit_env$pred_data <- data
   
   for (j in block_seq) {
@@ -127,7 +129,7 @@ blip_down <- function(object, out, y, b_y, treat, j, strata, rows) {
     return(y)
   }
 
-  if (class(object) %has% "aipw") {
+  if (class(object) %has% c("aipw", "did_aipw")) {
     p_scores <- get_ipw_preds(out, strata)
     p_scores <- p_scores[rows, (j + 1):num_treat, drop = FALSE]
 

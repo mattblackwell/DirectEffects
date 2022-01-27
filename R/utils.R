@@ -38,7 +38,7 @@ get_treat_df <- function(object, data) {
   
   model_spec <- object$model_spec
   vars <- as.list(rlang::set_names(seq_along(data), names(data)))
-  locs <- lapply(model_spec, function(x) eval_tidy(x$treat, vars))
+  locs <- lapply(model_spec, function(x) rlang::eval_tidy(x$treat, vars))
   locs <- unlist(locs)
 
   data[, locs, drop = FALSE]
@@ -46,7 +46,7 @@ get_treat_df <- function(object, data) {
 
 get_outcome <- function(object, data) {
   vars <- as.list(rlang::set_names(seq_along(data), names(data)))
-  locs <- eval_tidy(object$outcome, vars)
+  locs <- rlang::eval_tidy(object$outcome, vars)
   data[[locs]]
 }
 
@@ -126,7 +126,7 @@ empty_est_tab <- function() {
 check_cde_estimator <- function(...) TRUE
 
 
-`%has%` <- function(lhs, rhs) rhs %in% lhs
+`%has%` <- function(lhs, rhs) any(rhs %in% lhs)
 
 
 get_path_inds <- function(A, path) {

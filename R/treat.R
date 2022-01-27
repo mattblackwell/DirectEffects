@@ -46,12 +46,12 @@ treat_model <- function(object,
     if (!separate) {
       formula <- update.formula(
         formula,
-        expr(. ~ . + !!last_form[[2L]] + !!last_form[[3L]])
+        rlang::expr(. ~ . + !!last_form[[2L]] + !!last_form[[3L]])
       )
     } else {
       formula <- update.formula(
         formula,
-        expr(. ~ .  + !!last_form[[3L]])
+        rlang::expr(. ~ .  + !!last_form[[3L]])
       )
     }
     
@@ -119,12 +119,12 @@ outreg_model <- function(object,
       last_tr <- rlang::get_expr(model_spec[[last_block - 1]]$treat)
       formula <- update.formula(
         formula,
-        expr(`.de_y` ~ . + !!last_tr + !!last_form[[3L]])
+        rlang::expr(`.de_y` ~ . + !!last_tr + !!last_form[[3L]])
       )
     } else {
       formula <- update.formula(
         formula,
-        expr(`.de_y` ~ .  + !!last_form[[3L]])
+        rlang::expr(`.de_y` ~ .  + !!last_form[[3L]])
       )
     }    
   } else {

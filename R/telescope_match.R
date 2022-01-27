@@ -1014,7 +1014,7 @@ t_match <- function(object, data) {
   
   out <- list()
   out$match_out <- make_match_holder(A)
-  L <- unlist(lapply(object$model_spec, function(x) eval_tidy(x$treat_spec$args$L)))
+  L <- unlist(lapply(object$model_spec, function(x) rlang::eval_tidy(x$treat_spec$args$L)))
   for (j in block_seq) {
     if (j > 1) {
       past_fit <- interaction(A[, 1:(j - 1), drop = FALSE], sep = "_")
@@ -1079,7 +1079,7 @@ match_model <- function(model, fit_env, ...) {
   matches_0 <- split(tm_atc$index.treated, tm_atc$index.control)
   matches <- c(matches_1, matches_0)
   matches <- matches[as.character(sort(as.numeric(names(matches))))]
-  return(list(donors = donors, matches = matches, L = eval_tidy(args$M)))
+  return(list(donors = donors, matches = matches, L = rlang::eval_tidy(args$M)))
 
 }
 
@@ -1099,7 +1099,7 @@ compute_match_weights <- function(object, out, j) {
   paths <- paths[unlist(lapply(paths, function(x) x[1] == j))]
   L <- unlist(lapply(
     object$model_spec,
-    function(x) eval_tidy(x$treat_spec$args$L)
+    function(x) rlang::eval_tidy(x$treat_spec$args$L)
   ))
   K <- lapply(
     paths,

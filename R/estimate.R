@@ -5,8 +5,8 @@ estimate <- function(object, formula, data, crossfit = TRUE, n_folds, fold_seed 
   J <- length(object$model_spec)
 
   A <- get_treat_df(object, data)
-  object$has_ipw <- object$type %in% c("ipw", "aipw")
-  object$has_outreg <- object$type %in% c("reg_impute", "aipw", "telescope_match")
+  object$has_ipw <- object$type %in% c("ipw", "aipw", "did_aipw")
+  object$has_outreg <- object$type %in% c("reg_impute", "aipw", "did_aipw", "telescope_match")
   object$has_match <- object$type %in% c("telescope_match")
   
   if (missing(n_folds)) {
@@ -145,6 +145,17 @@ estimate_cde <- function(object, formula, data, out) {
         compute_aipw(j, j_levs, y, paths, out, object$args, eff_vars[e])
       )
     }
+  }
+
+  if (class(object) %has% "did_aipw") {
+    j <- eff_pos[1L]
+    j_levs <- unique(A[, 1L])
+    m0_name <- rlang::as_label(object$args$base_mediator)
+    m0 <- data[[m0_name]]
+    out$estimates <- rbind(
+      out$estimates,
+      compute_did_aipw(j, j_levs, y, paths, out, object$args, eff_vars[1L], m0)
+    )
   }
 
   if (class(object) %has% "telescope_match") {
