@@ -25,6 +25,12 @@ fit_model <- function(model, fit_env) {
     pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
   }
 
+  if (model$engine == "multinom") {
+    pred_args$type <- "probs"
+    fit_call <- rlang::call2("multinom", !!!args, .ns = "nnet")
+    pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
+  }
+
   fit_env$fit <- rlang::eval_tidy(fit_call, env = fit_env)
   preds <- rlang::eval_tidy(pred_call, env = fit_env)
 
