@@ -2,12 +2,14 @@
 cde_did_aipw <- function(
                         base_mediator,
                         trim = c(0.01, 0.99),
-                        aipw_blip = TRUE
+                        aipw_blip = TRUE,
+                        on_treated = FALSE
                         ) {
   args <- list(
     base_mediator = rlang::enquo(base_mediator),
     trim = trim,
-    aipw_blip = aipw_blip
+    aipw_blip = aipw_blip,
+    on_treated = on_treated
   )
   new_cde_estimator(
     "did_aipw",
@@ -22,7 +24,7 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
   N <- length(treat)
   j_levs <- sort(j_levs)
   paths <- colnames(out$outreg_pred[[j]])
-  
+
   sp <- strsplit(paths, "_")
   templates <- unique(replace_each(sp, j, NA))
 
@@ -59,7 +61,7 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
       A_trt <- get_path_inds(treat, plus)
       A_trt <- cbind(1, A_trt[, j:num_treat, drop = FALSE])
       eps_trt <- cbind(r_trt, y) - cbind(0, r_trt)
-      
+
 
       N_b <- N_t + N_c
       if (length(args$trim)) {
@@ -68,12 +70,27 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
       }
       w_trt <- cbind(1, w_trt)
       w_ctr <- cbind(1, w_ctr)
-      psi_trt <- rowSums(A_trt * eps_trt / w_trt)
-      psi_ctr <- rowSums(A_ctr * eps_ctr / w_ctr)
-      
-      psi <- psi_trt - psi_ctr
-      est <- mean(psi[M_0 == 1L])
-      est_var <- mean((psi[M_0 == 1L] - est)^ 2) / sum(M_0)
+      if (args$on_treated) {
+        ## assumes only 2 treatments
+        a_trt <- M_0 * A_trt[, 2] * A_trt[, 3]
+        a_ctr <- M_0 * A_ctr[, 2] * A_ctr[, 3]
+        ipw <-  1 / mean(M_0 * A_trt[, 2] * A_trt[, 3])
+        psi_trt <- a_trt * (eps_trt[, 3] + r_trt[, 2] - r_ctr[, 2])
+        
+        p_ratio <- p_trt[, 2] / p_ctr[, 2]
+
+        psi_ctr <- a_ctr * (p_ratio * eps_ctr[, 3])
+        psi <- ipw * (psi_trt - psi_ctr)
+        est <- mean(psi)
+        est_var <- mean((psi - ipw * a_trt * est) ^ 2) / N
+      } else {
+        psi_trt <- rowSums(A_trt * eps_trt / w_trt)
+        psi_ctr <- rowSums(A_ctr * eps_ctr / w_ctr)
+        psi <- psi_trt - psi_ctr
+        est <- mean(psi[M_0 == 1L])
+        est_var <- mean((psi[M_0 == 1L] - est)^ 2) / sum(M_0)
+      }
+
       this_est <- data.frame(
         term = term_name,
         block_num = j,
@@ -82,7 +99,7 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
         estimate = est,
         std_err = sqrt(est_var)
       )
-      est_tab <- rbind(est_tab, this_est)      
+      est_tab <- rbind(est_tab, this_est)
     }
   }
 
