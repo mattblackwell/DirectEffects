@@ -4,7 +4,8 @@ cde_reg_impute <- function(...) {
 
   new_cde_estimator(
     "reg_impute",
-    args = args,
+    args = args,    
+    formula = NULL,
     model_spec = NULL
   )
 }

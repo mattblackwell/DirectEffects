@@ -13,7 +13,8 @@ cde_did_aipw <- function(
   )
   new_cde_estimator(
     "did_aipw",
-    args = args,
+    args = args,    
+    formula = NULL,
     model_spec = NULL
   )
 }

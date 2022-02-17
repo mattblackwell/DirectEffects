@@ -933,6 +933,8 @@ balance.tmatch <- function(object, vars, data, comparison = NULL) {
   return(bal_tab)
 }
 
+
+
 #' Histograms of matching weights
 #'
 #' @details Provides histograms of the number of times each unit is
@@ -993,7 +995,8 @@ cde_telescope_match <- function(...) {
 
   new_cde_estimator(
     "telescope_match",
-    args = args,
+    args = args,    
+    formula = NULL,
     model_spec = NULL
   )
 }

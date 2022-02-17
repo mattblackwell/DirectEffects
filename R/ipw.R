@@ -8,6 +8,7 @@ cde_ipw <- function(hajek = TRUE, trim = c(0.01, 0.99)) {
   new_cde_estimator(
     "ipw",
     args = args,
+    formula = NULL,
     model_spec = NULL
   )
 }

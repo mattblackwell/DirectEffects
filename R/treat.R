@@ -12,6 +12,7 @@ set_treatment <- function(object, treat, formula = NULL) {
   new_cde_estimator(
     type = object$type,
     args = object$args,
+    formula = object$formula,
     model_spec = model_spec
   )
   
@@ -54,6 +55,14 @@ treat_model <- function(object,
         rlang::expr(. ~ .  + !!last_form[[3L]])
       )
     }
+    if (is.null(object$formula)) {
+      object$formula <- as.formula(rlang::expr( ~ !!formula[[2L]] + !!formula[[3L]]))
+    } else {
+      object$formula <- update.formula(
+        object$formula,
+        rlang::expr(. ~ . + !!formula[[2L]] + !!formula[[3L]])
+      )      
+    }
     
   }
   args <- rlang::enquos(...)
@@ -78,6 +87,7 @@ treat_model <- function(object,
   new_cde_estimator(
     type = object$type,
     args = object$args,
+    formula = object$formula,
     model_spec = model_spec
   )
 
@@ -130,6 +140,14 @@ outreg_model <- function(object,
   } else {
     formula <- update.formula(formula, `.de_y` ~ .)
   }
+  if (is.null(object$formula)) {
+      object$formula <- as.formula(rlang::expr( ~  !!formula[[3L]]))
+  } else {
+    object$formula <- update.formula(
+      object$formula,
+      rlang::expr(. ~ . + !!formula[[3L]])
+    )      
+  }
 
   if (separate & tr_name %in% all.vars(formula)) {
     rlang::abort("`outreg_model` cannot contain treatment variable if `separate == TRUE`.")
@@ -162,6 +180,7 @@ outreg_model <- function(object,
   new_cde_estimator(
     type = object$type,
     args = object$args,
+    formula = object$formula,
     model_spec = model_spec
   )
 }

@@ -8,6 +8,7 @@ cde_aipw <- function(trim = c(0.01, 0.99), aipw_blip = TRUE) {
   new_cde_estimator(
     "aipw",
     args = args,
+    formula = NULL,
     model_spec = NULL
   )
 }
