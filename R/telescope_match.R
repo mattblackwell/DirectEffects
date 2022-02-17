@@ -934,6 +934,96 @@ balance.tmatch <- function(object, vars, data, comparison = NULL) {
 }
 
 
+#' @export
+balance_table <- function(object, vars, data, comparison = NULL) {
+
+  ##################
+  ### Sanity checks
+  ##################
+
+  ### Is the class a 'tmatch'
+  if (!all(c("cde_estimate", "telescope_match") %in% class(object))) {
+    rlang::abort("not a valid `telescope_match` output")
+  }
+
+  ### Does N of data match number of obs
+  if (nrow(data) != length(object$included)) {
+    stop(
+      "number of rows in data not consistent with object",
+      .call = FALSE
+    )
+  }
+
+  ##########################
+  ### Validating the formula
+  if (!(as.character(vars[2]) %in% object$treat_names)) {
+    stop(
+      "Left-hand side of `vars` must be a treatment variable from `object`.",
+      call. = FALSE
+    )
+  }
+  j <- which(object$treat == as.character(vars[[2L]]))
+  this_K <- object$match_out[[j]]$K[[paste0("K_", j)]]
+
+  
+  ###########################
+  ### Validating the data frame
+
+  ## subset to the selected rows used in matching
+  data <- data[object$included, ]
+
+  ## Do model.frame first to parse any functions
+  mf <- tryCatch({
+    model.frame(vars, data)
+  },
+  error = function(e) {
+    stop("Could not extract all variables in 'formula' from data")
+  })
+
+  ## Do model.matrix to get functions/interactions/expansions
+  X <- tryCatch({
+    model.matrix(vars, mf)
+  },
+  error = function(e) {
+    stop("Could not extract all variables in 'formula' from data")
+  })
+
+  ## Strip out the "(Intercept) column
+  X <- X[, colnames(X) != "(Intercept)"]
+  A <- model.response(mf)
+
+  before_0 <- colMeans(X[A == 0, ])
+  before_1 <- colMeans(X[A == 1, ])
+  before_sd <- apply(X, 2, sd)
+  before_diff <- before_1 - before_0
+  before_std_diff <- before_diff / before_sd
+
+  if (!is.null(comparison)) {
+    obs.weights <- comparison * (this_K * (1 - A) + A) +
+      (1 - comparison) * (this_K * A + (1 - A))
+  } else {
+    obs.weights <- this_K + 1
+  }
+
+  ## get weighted means of each variable
+  after_0 <- apply(X[A == 0, ], 2, weighted.mean, obs.weights[A == 0])
+  after_1 <- apply(X[A == 1, ], 2, weighted.mean, obs.weights[A == 1])
+  after_diff <- after_1 - after_0
+  after_std_diff <- after_diff / before_sd
+
+  bal_tab <- data.frame(
+    variable = colnames(X),
+    before_0 = before_0, before_1 = before_1,
+    after_0 = after_0, after_1 = after_1,
+    before_sd = before_sd,
+    before_diff = before_diff, before_std_diff,
+    after_diff = after_diff, after_std_diff
+  )
+
+
+  ## Output
+  return(bal_tab)
+}
 
 #' Histograms of matching weights
 #'
