@@ -112,14 +112,24 @@ format_path <- function(paths) {
   out
 }
 
-empty_est_tab <- function() {
-  data.frame(
+format_term <- function(term, template, plus, base, var_names) {
+
+  vars <- var_names[!is.na(template)]
+  levs <- template[!is.na(template)]
+  j_str <- paste0(plus, " vs ", base)
+  lev_str <- paste0(vars, " = ", levs, collapse = ", ")
+  out <- paste0(term, " [", j_str, ", ", lev_str, "]")
+  out
+}
+
+empty_est_tab <- function() {  
+  out <- data.frame(
     term = character(0),
-    block_num = integer(0),
     active = character(0),
     control = character(0),
     estimate = numeric(0),
-    std_err = numeric(0)
+    std.error = numeric(0),
+    DF = numeric(0)
   )
 }
 

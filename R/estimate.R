@@ -23,6 +23,10 @@ estimate <- function(object, formula, data, crossfit = TRUE, n_folds, fold_seed 
 
     
   out <- list()
+  out$type <- object$type
+  out$formula <- formula
+  out$crossfit <- crossfit
+  out$n_folds <- n_folds
   if (object$has_ipw) out$ipw_pred <- make_pred_holder(A, type = "ipw")
   if (object$has_outreg) out$outreg_pred <- make_pred_holder(A, type = "outreg")
 
@@ -72,7 +76,7 @@ estimate <- function(object, formula, data, crossfit = TRUE, n_folds, fold_seed 
 
   }
   out <- estimate_cde(object, formula, data, out)
-  
+  class(out) <- class(object)
   out
 }
 
@@ -85,10 +89,11 @@ estimate_cde <- function(object, formula, data, out) {
   if (!all(eff_vars %in% tr_names)) {
     rlang::abort("Unspecified treatment included in `estimate()` formula.")
   }
-
+  
   eff_pos <- match(eff_vars, tr_names)
   eff_vars <- eff_vars[eff_pos]
   eff_pos <- sort(eff_pos)
+  out$treat_names <- tr_names
   A <- get_treat_df(object, data)
   N <- nrow(A)
   num_treat <- length(tr_names)
@@ -120,7 +125,7 @@ estimate_cde <- function(object, formula, data, out) {
       j_levs <- unique(A[, j])
       out$estimates <- rbind(
         out$estimates,
-        compute_ipw(j, j_levs, y, paths, out, object$args, eff_vars[e])
+        compute_ipw(j, j_levs, y, paths, out, object$args, tr_names[j])
       )
     }
   }

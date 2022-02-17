@@ -93,11 +93,11 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
 
       this_est <- data.frame(
         term = term_name,
-        block_num = j,
-        active = format_path(plus),
-        control = format_path(base),
+        active = plus,
+        control = base,
         estimate = est,
-        std_err = sqrt(est_var)
+        std.error = sqrt(est_var),
+        DF = N_c + N_t
       )
       est_tab <- rbind(est_tab, this_est)
     }
@@ -105,13 +105,18 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
 
   marg_est <- sum(est_tab$estimate * pi_0)
   marg_var <- sum(est_tab$std_err ^ 2 * pi_0 ^ 2)
+
+  plus <- templates[[k]]
+  plus[j] <- j_levs[-1L][p]
+  
+  plus <- paste0(plus, collapse = "_")
   this_est <- data.frame(
     term = term_name,
-    block_num = j,
-    active = "(1, *)",
-    control = "(0, *)",
-    estimate = marg_est,
-    std_err = sqrt(marg_var)
+    active = paste0(j_levs[2L], "_*"),
+    control = paste0(j_levs[1L], "_*"),
+    estimate = est,
+    std.error = sqrt(est_var),
+    DF = N
   )
   est_tab <- rbind(est_tab, this_est)
   rownames(est_tab) <- NULL

@@ -12,6 +12,14 @@ cde_aipw <- function(trim = c(0.01, 0.99), aipw_blip = TRUE) {
   )
 }
 
+print.aipw <- function(x, ...) {
+  cat("Augmented Inverse Probability Weighting Estimator\n\n")
+
+  cat("Effect Formula: ")
+  print(x$formula)
+
+  invisible(x)
+}
 
 
 compute_aipw <- function(j, j_levs, y, treat, out, args, term_name) {
@@ -71,11 +79,11 @@ compute_aipw <- function(j, j_levs, y, treat, out, args, term_name) {
       est_var <- mean((psi - est)^ 2) / N
       this_est <- data.frame(
         term = term_name,
-        block_num = j,
-        active = format_path(plus),
-        control = format_path(base),
+        active = plus,
+        control = base,
         estimate = est,
-        std_err = sqrt(est_var)
+        std.error = sqrt(est_var),
+        DF = N_c + N_t
       )
       est_tab <- rbind(est_tab, this_est)      
     }

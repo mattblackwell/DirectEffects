@@ -1187,7 +1187,7 @@ compute_telescope_match <- function(j, j_levs, y, treat, out, args, term_name, d
 
     dfc_1 <- N_s / (N_s - dfs[num_treat])
     tau_v <- W ^ 2 * (trt * eps_trt[, num_treat] ^ 2 + ctr * eps_ctr[, num_treat] ^ 2)
-    tau_var <- dfc_1 * mean(tau_v[this_past == 1L])
+    est_var <- dfc_1 * mean(tau_v[this_past == 1L])
     if (j == num_treat) {
       fut <- numeric(0)
     } else {
@@ -1212,23 +1212,23 @@ compute_telescope_match <- function(j, j_levs, y, treat, out, args, term_name, d
 
       dfc_s <- sum(D * this_past) / (sum(D * this_past) - sum(dfs[(s - 1):num_treat]))
       tau_v <- dfc_s * (W - rowSums(K[fut_K])) ^ 2 * (A_j * eps_trt[, s - 1] ^ 2 + (1 - A_j) * eps_ctr[, s - 1] ^ 2)
-      tau_var <- tau_var + mean(tau_v[this_past == 1L])
+      est_var <- est_var + mean(tau_v[this_past == 1L])
     }
     
-    tau_est <- mean(tau_i[this_past == 1])
+    est <- mean(tau_i[this_past == 1])
     dfc_x <- sum(this_past) / (sum(this_past) - sum(dfs) - 1)
-    tau_x <- dfc_x * (r_trt[, j] - r_ctr[, j] - tau_est) ^ 2
-    tau_var <- tau_var + mean(tau_x[this_past == 1L])
-    this_est <- data.frame(
-        term = term_name,
-        block_num = j,
-        active = format_path(plus),
-        control = format_path(base),
-        estimate = tau_est,
-        std_err = sqrt(tau_var / sum(this_past))
-    )
-      est_tab <- rbind(est_tab, this_est)
+    tau_x <- dfc_x * (r_trt[, j] - r_ctr[, j] - est) ^ 2
+    est_var <- (est_var + mean(tau_x[this_past == 1L])) / sum(this_past)
 
+    this_est <- data.frame(
+      term = term_name,
+      active = plus,
+      control = base,
+      estimate = est,
+      std.error = sqrt(est_var),
+      DF = N_c + N_t
+    )
+    est_tab <- rbind(est_tab, this_est)
   }
   rownames(est_tab)
   est_tab

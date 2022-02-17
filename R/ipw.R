@@ -38,9 +38,7 @@ compute_ipw <- function(j, j_levs, y, treat, out, args, term_name) {
   
   sp <- strsplit(paths, "_")
   templates <- unique(replace_each(sp, j, NA))
-
   est_tab <- empty_est_tab()
-  
   for (k in seq_along(templates)) {
     base <- templates[[k]]
     base[j] <- j_levs[1L]
@@ -71,11 +69,11 @@ compute_ipw <- function(j, j_levs, y, treat, out, args, term_name) {
       est_var <- mean((psi - est)^ 2) / N
       this_est <- data.frame(
         term = term_name,
-        block_num = j,
-        active = format_path(plus),
-        control = format_path(base),
+        active = plus,
+        control = base,
         estimate = est,
-        std_err = sqrt(est_var)
+        std.error = sqrt(est_var),
+        DF = N_c + N_t
       )
       est_tab <- rbind(est_tab, this_est)      
     }
