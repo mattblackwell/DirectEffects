@@ -15,6 +15,19 @@ new_cde_estimator <- function(type, args, model_spec) {
   out
 }
 
+
+#' @export
+print.cde_estimator <- function(x, ...) {
+  cat("\n", x$type, "CDE Estimator\n")
+  cat("---------------------------\n")
+  cat("Causal variables:", paste0(x$treat_names, collapse = ", "), "\n")
+  
+  cat("\nEstimated Effects:\n")
+  print(x$estimates[, c("term", "active", "control", "estimate")])
+  cat("\n")
+  invisible()
+}
+
 #' @export
 tidy.cde_estimator <- function(x, conf.int = TRUE, conf.level = 0.95, ...) {
   est <- x$estimates
