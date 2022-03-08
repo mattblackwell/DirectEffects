@@ -24,10 +24,10 @@ print.aipw <- function(x, ...) {
 
 
 compute_aipw <- function(j, j_levs, y, treat, out, args, term_name) {
-  num_treat <- length(out$outreg_pred)
+  num_treat <- length(out$model_fits)
   N <- length(treat)
   j_levs <- sort(j_levs)
-  paths <- colnames(out$outreg_pred[[j]])
+  paths <- colnames(out$model_fits[[j]]$outreg_pred)
   
   sp <- strsplit(paths, "_")
   templates <- unique(replace_each(sp, j, NA))

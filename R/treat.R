@@ -1,18 +1,28 @@
+reg_engines <- c("lm")
+class_engines <- c("logit", "multinom")
+match_engines <- c("Matching")
+
 #' @export
-set_treatment <- function(object, treat, formula = NULL) {
+set_treatment <- function(object,
+                          treat,
+                          formula = NULL,
+                          treat_type = "categorical",
+                          eval_vals = NULL) {
   
   model_spec <- object$model_spec
   last_block <- length(model_spec)
   model_spec[[last_block + 1]] <- list(
     treat = rlang::enquo(treat),
-    formula = formula
+    formula = formula,
+    treat_type = treat_type,
+    eval_vals = eval_vals
   )
   model_spec <- add_class(model_spec, "model_spec")
   
   new_cde_estimator(
     type = object$type,
     args = object$args,
-    formula = object$formula,
+    formula = object$formula,    
     model_spec = model_spec
   )
   
@@ -27,6 +37,7 @@ treat_model <- function(object,
   
   model_spec <- object$model_spec
   last_block <- length(model_spec)
+
   
 
   if (missing(formula)) {
@@ -65,17 +76,31 @@ treat_model <- function(object,
     }
     
   }
+  
   args <- rlang::enquos(...)
   if (engine == "Matching" & is.null(args$L)) {
     args$L <- quo(3)
   }
 
+  ## override treat_type
+  if (engine %in% class_engines) {
+    model_spec[[last_block]]$treat_type <- "categorical"
+    engine_type <- "class"
+  } else if (engine %in% reg_engines) {
+    model_spec[[last_block]]$treat_type <- "continuous"
+    engine_type <- "reg"
+  } else if (engine %in% match_engines) {
+    model_spec[[last_block]]$treat_type <- "categorical"
+    engine_type <- "match"
+  }
+  
   this_treat <- list(
     formula = formula,
     engine = engine,
+    engine_type = engine_type,
     separate = separate,
     include_past = include_past,
-    args = rlang::enquos(...)
+    args = args 
   )
 
   if (length(model_spec) == 0) {
@@ -152,10 +177,15 @@ outreg_model <- function(object,
   if (separate & tr_name %in% all.vars(formula)) {
     rlang::abort("`outreg_model` cannot contain treatment variable if `separate == TRUE`.")
   }
-  
+  if (engine %in% reg_engines) {
+    engine_type <- "reg"
+  } else {
+    engine_type <- "class"
+  }  
   this_outreg <- list(
     formula = formula,
     engine = engine,
+    engine_type = engine_type,
     separate = separate,
     include_past = include_past,
     df = length(attr(terms(formula), "term.labels")),

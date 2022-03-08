@@ -15,28 +15,25 @@ cde_ipw <- function(hajek = TRUE, trim = c(0.01, 0.99)) {
 
 
 get_ipw_preds <- function(x, levs) {  
-  levs <- unlist(strsplit(levs, "_"))
-  if (length(x$ipw_pred) != length(levs)) {
-    rlang::abort("levs must match number of causal blocks with ipw predictions")
-  }
-  out <- matrix(NA, nrow = nrow(x$ipw_pred[[1L]]), ncol = length(levs),
-                dimnames = list(NULL, 1L:length(levs)))
-  for (j in seq_along(levs)) {    
-    label <- paste0(levs[1L:j], collapse = "_")
+  N <- nrow(x$model_fits[[1L]]$treat_pred)
+  J <- length(x$model_fits)
+  out <- matrix(NA, nrow = N, ncol = J,
+                dimnames = list(NULL, seq_len(J)))
+  for (j in seq_len(J)) {    
+    label <- subset_history_string(levs, 1L:j)
     colnames(out)[j] <- label
-    out[, j] <- x$ipw_pred[[j]][, label]
+    out[, j] <- x$model_fits[[j]]$treat_pred[, label]
   }
   out
 }
 
 
 
-compute_ipw <- function(j, j_levs, y, treat, out, args, term_name) {
-  num_treat <- length(out$ipw_pred)
+compute_ipw <- function(j, j_levs, y, treat, out, args, term_name, eval_vals) {
+  num_treat <- length(out$model_fits)
   N <- length(treat)
   j_levs <- sort(j_levs)
-  paths <- levels(treat)
-  
+  paths <- create_history_strings(eval_vals, 1L:num_treat)
   sp <- strsplit(paths, "_")
   templates <- unique(replace_each(sp, j, NA))
   est_tab <- empty_est_tab()

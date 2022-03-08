@@ -12,11 +12,12 @@ cde_reg_impute <- function(...) {
 
 
 get_reg_preds <- function(x, path) {
-  num_treat <- length(x$outreg_pred)
+  num_treat <- length(x$model_fits)
+  N <- nrow(x$model_fits[[1L]]$outreg_pred)
   levs <- unlist(strsplit(path, "_"))
-  out <- matrix(NA, nrow = nrow(x$outreg_pred[[1L]]), ncol = num_treat)
+  out <- matrix(NA, nrow = N, ncol = num_treat)
   for (j in seq_len(num_treat)) {
-    out[, j] <- x$outreg_pred[[j]][, path]
+    out[, j] <- x$model_fits[[j]]$outreg_pred[, path]
   }
   out
 }
@@ -25,7 +26,7 @@ get_reg_preds <- function(x, path) {
 compute_reg_impute <- function(j, levs, y, treat, mu_hat, term_name) {
   levs <- sort(levs)
   N <- length(treat)
-  paths <- levels(treat)
+  paths <- colnames(mu_hat)
   sp <- strsplit(paths, "_")
   templates <- unique(replace_each(sp, j, NA))
   est_tab <- empty_est_tab()
@@ -42,8 +43,14 @@ compute_reg_impute <- function(j, levs, y, treat, mu_hat, term_name) {
       trt <- as.numeric(treat == plus)
       N_t <- sum(trt)
       N_b <- N_t + N_c
-      psi <- mu_hat[, plus] + (N / N_t) * trt * (y - mu_hat[, plus])
-      psi <- psi - mu_hat[, base] - (N / N_c) * ctr * (y - mu_hat[, base])
+      ## check here in case eval_vals are not in the observed set. 
+      if (N_b > 0 & N_c > 0) {
+        psi <- mu_hat[, plus] + (N / N_t) * trt * (y - mu_hat[, plus])
+        psi <- psi - mu_hat[, base] - (N / N_c) * ctr * (y - mu_hat[, base])        
+      } else {
+        ## TODO: check if this is valid for SEs/crossfitting.
+        psi <- mu_hat[, plus] - mu_hat[, base]
+      }
       est <- mean(psi)
       est_var <- mean((psi - est)^ 2) / N
       this_est <- data.frame(

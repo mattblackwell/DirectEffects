@@ -21,11 +21,11 @@ cde_did_aipw <- function(
 
 
 compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
-  num_treat <- length(out$outreg_pred)
+  num_treat <- length(out$model_fits)
   N <- length(treat)
   j_levs <- sort(j_levs)
-  paths <- colnames(out$outreg_pred[[j]])
-
+  paths <- colnames(out$model_fits[[j]]$outreg_pred)
+  
   sp <- strsplit(paths, "_")
   templates <- unique(replace_each(sp, j, NA))
 
@@ -105,8 +105,7 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
   }
 
   marg_est <- sum(est_tab$estimate * pi_0)
-  marg_var <- sum(est_tab$std_err ^ 2 * pi_0 ^ 2)
-
+  marg_var <- sum(est_tab$std.err ^ 2 * pi_0 ^ 2)
   plus <- templates[[k]]
   plus[j] <- j_levs[-1L][p]
   
@@ -115,8 +114,8 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
     term = term_name,
     active = paste0(j_levs[2L], "_*"),
     control = paste0(j_levs[1L], "_*"),
-    estimate = est,
-    std.error = sqrt(est_var),
+    estimate = marg_est,
+    std.error = sqrt(marg_var),
     DF = N
   )
   est_tab <- rbind(est_tab, this_est)

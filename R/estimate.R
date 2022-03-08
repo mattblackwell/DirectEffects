@@ -17,10 +17,15 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, fo
   N <- nrow(data)
   J <- length(object$model_spec)
 
+
+  
   A <- get_treat_df(object, data)
   object$has_ipw <- object$type %in% c("ipw", "aipw", "did_aipw")
   object$has_outreg <- object$type %in% c("reg_impute", "aipw", "did_aipw", "telescope_match")
   object$has_match <- object$type %in% c("telescope_match")
+  object$has_blip <- object$type %in% c("sequential_g")
+
+  check_cde_estimator(object)
   
   if (missing(n_folds)) {
     if (crossfit) {
@@ -43,9 +48,9 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, fo
   out$model_spec <- object$model_spec
   out$N <- N
   out$included <- all_rownames %in% rownames(data)
-  if (object$has_ipw) out$ipw_pred <- make_pred_holder(A, type = "ipw")
-  if (object$has_outreg) out$outreg_pred <- make_pred_holder(A, type = "outreg")
 
+  eval_vals <- get_eval_vals(object, data)
+  out$model_fits <- make_model_fits(A, eval_vals, object$model_spec)
 
   ## match outside the crossfit loop
   if (object$has_match) {
@@ -77,18 +82,9 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, fo
       fit_rows <- 1L:N
       pred_rows <- 1L:N
     }
-    
-    res <- fit_fold(object, data, fit_rows, pred_rows, out)
 
-    ## fill in prediction matrices
-    for (j in seq_len(J)) {
-      if (object$has_ipw) {
-        out$ipw_pred[[j]][pred_rows, ] <- res$ipw_pred[[j]][pred_rows, ]
-      }
-      if (object$has_outreg) {
-        out$outreg_pred[[j]][pred_rows, ] <- res$outreg_pred[[j]][pred_rows, ]
-      }
-    }
+    res <- fit_fold(object, data, fit_rows, pred_rows, out)
+    out$model_fits <- res 
 
   }
   out <- estimate_cde(object, formula, data, out)
@@ -115,34 +111,20 @@ estimate_cde <- function(object, formula, data, out) {
   N <- nrow(A)
   num_treat <- length(tr_names)
   out$estimates <- empty_est_tab()
+
+
+  eval_vals <- get_eval_vals(object, data)
   paths <- interaction(A, sep = "_")
   path_levs <- levels(paths)
   path_splits <- split(1L:N, paths)
   
   if (class(object) %has% "ipw") {
-
-    psi <- vector("numeric", length = length(path_levs))
-    psi_sq <- vector("numeric", length = length(path_levs))
-    names(psi) <- names(psi_sq) <- path_levs
-    for (p in path_levs) {
-      p_rows <- path_splits[[p]]
-      p_scores <- get_ipw_preds(out, p)
-      weights <- apply(p_scores, 1, prod)
-      if (object$args$hajek) {
-        N_p <-  sum(1 / weights[p_rows])
-      } else {
-        N_p <- length(p_rows)
-      }
-      psi[p] <- sum(y[p_rows] / weights[p_rows]) / N_p
-      psi_sq[p] <- (N / N_p ^ 2) * sum(y[p_rows] ^ 2 / weights[p_rows] ^ 2)      
-    }
-
     for (e in seq_along(eff_vars)) {
       j <- eff_pos[e]
       j_levs <- unique(A[, j])
       out$estimates <- rbind(
         out$estimates,
-        compute_ipw(j, j_levs, y, paths, out, object$args, tr_names[j])
+        compute_ipw(j, j_levs, y, paths, out, object$args, tr_names[j], eval_vals)
       )
     }
   }
@@ -150,11 +132,13 @@ estimate_cde <- function(object, formula, data, out) {
   if (class(object) %has% "reg_impute") {
     for (e in seq_along(eff_vars)) {
       j <- eff_pos[e]
-      j_levs <- unique(A[, j])
-      out$estimates <- rbind(
-        out$estimates,
-        compute_reg_impute(j, j_levs, y, paths, out$outreg_pred[[e]], eff_vars[e])
-      )
+      j_levs <- eval_vals[[j]]
+      if (length(j_levs) > 1L) { 
+        out$estimates <- rbind(
+          out$estimates,
+          compute_reg_impute(j, j_levs, y, paths, out$model_fits[[e]]$outreg_pred, eff_vars[e])
+        )
+      }
     }
   }
 
@@ -193,7 +177,6 @@ estimate_cde <- function(object, formula, data, out) {
   }
 
   out
-
 }
 
 #' @export

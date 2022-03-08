@@ -1220,11 +1220,11 @@ make_match_holder <- function(A) {
 }
 
 compute_telescope_match <- function(j, j_levs, y, treat, out, args, term_name, dfs) {
-  num_treat <- length(out$outreg_pred)
+  num_treat <- length(out$model_fits)
   N <- length(treat)
   j_levs <- sort(j_levs)
-  paths <- colnames(out$outreg_pred[[j]])
-  sp <- strsplit(paths, "_")
+  paths <- colnames(out$model_fits[[j]]$outreg_pred)
+  sp <- strsplit(as.character(paths), "_")
   templates <- unique(replace_each(sp, j, NA))
   A <- strsplit(as.character(treat), "_", fixed = TRUE)
   A <- do.call(rbind, lapply(A, as.numeric))

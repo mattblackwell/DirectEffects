@@ -4,8 +4,6 @@ generics::glance
 
 new_cde_estimator <- function(type, args, formula, model_spec) {
   
-  check_cde_estimator(type, model_spec)
-
   out <- list(
     type = type,
     args = args,
