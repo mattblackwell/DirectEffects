@@ -1,5 +1,5 @@
 #' @export
-estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, fold_seed = NULL) {
+estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_splits = 1L) {
 
   if (!missing(subset)) {
     rows <- rlang::eval_tidy(rlang::enquo(subset), data)
@@ -50,7 +50,6 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, fo
   out$included <- all_rownames %in% rownames(data)
 
   eval_vals <- get_eval_vals(object, data)
-  out$model_fits <- make_model_fits(A, eval_vals, object$model_spec)
 
   ## match outside the crossfit loop
   if (object$has_match) {
@@ -62,32 +61,44 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, fo
   }
 
 
-  if (crossfit) {
-    if (length(fold_seed)) set.seed(fold_seed)
-    fold_size <- N / n_folds
-    f_split <- ceiling(seq_len(N) / fold_size)
-    folds <- split(sample(seq_len(N)), f_split)
-  } else {
-    folds <- list(seq_len(N))
-  }  
-  out$n_folds <- n_folds
-  out$folds <- folds
-
-  for (k in seq_len(n_folds)) {
-
-    if (crossfit) {
-      fit_rows <- unlist(folds[-k])
-      pred_rows <- unlist(folds[k])
-    } else {
-      fit_rows <- 1L:N
-      pred_rows <- 1L:N
-    }
-
-    res <- fit_fold(object, data, fit_rows, pred_rows, out)
-    out$model_fits <- res 
-
-  }
+  ## do initial fit without cross-fitting
+  out$model_fits <- make_model_fits(A, eval_vals, object$model_spec)
+  fit_rows <- 1L:N
+  pred_rows <- 1L:N
+  res <- fit_fold(object, data, fit_rows, pred_rows, out)
+  out$model_fits <- res 
   out <- estimate_cde(object, formula, data, out)
+
+  if (crossfit) {
+    
+    out$n_folds <- n_folds
+    out$n_splits <- n_splits
+    split_ests <- matrix(NA, nrow = n_splits, ncol = nrow(out$estimates))
+    split_ses <- matrix(NA, nrow = n_splits, ncol = nrow(out$estimates))
+    for (s in seq_len(n_splits)) {
+      fold_size <- N / n_folds
+      f_split <- ceiling(seq_len(N) / fold_size)
+      folds <- split(sample(seq_len(N)), f_split)
+      
+      out$model_fits <- make_model_fits(A, eval_vals, object$model_spec)
+      for (k in seq_len(n_folds)) {
+        fit_rows <- unlist(folds[-k])
+        pred_rows <- unlist(folds[k])
+        res <- fit_fold(object, data, fit_rows, pred_rows, out)
+        out$model_fits <- res
+    }
+      out <- estimate_cde(object, formula, data, out)
+      split_ests[s, ] <- out$estimates[, "estimate"]
+      split_ses[s, ] <- out$estimates[, "std.error"]
+    }
+  }
+  med_ests <- apply(split_ests, 2, median)
+  split_vars <- apply(split_ses ^ 2, 2, median) + sweep(split_ests, 2, med_ests) ^ 2
+  med_ses <- sqrt(apply(split_vars, 2, median))
+
+  out$estimates[, "estimate"] <- med_ests
+  out$estimates[, "std.error"] <- med_ses
+
   class(out) <- class(object)
   class(out)[2L] <- "cde_estimate"
   out
