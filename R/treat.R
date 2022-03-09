@@ -1,4 +1,4 @@
-reg_engines <- c("lm")
+reg_engines <- c("lm", "lasso")
 class_engines <- c("logit", "multinom")
 match_engines <- c("Matching")
 

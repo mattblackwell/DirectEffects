@@ -1,3 +1,6 @@
+form_engines <- c("lm", "logit", "multinom")
+matrix_engines <- c("lasso")
+
 ## for now hard code the egnines and the generalize later since its
 ## all under the hood.
 ## here we are going to pass an environment with the data already
@@ -6,61 +9,84 @@
 fit_model <- function(model, fit_env) {
 
   args <- as.list(model$args)  
-  args$data <- quote(fit_data)
-  args$formula <- model$formula
-  environment(args$formula) <- fit_env
+
+  if (model$engine %in% form_engines) {
+    args$data <- quote(fit_data)
+    args$formula <- model$formula
+    environment(args$formula) <- fit_env
+  } else if (model$engine %in% matrix_engines) {
+    mf <- model.frame(model$formula[-2L], data = fit_env$fit_data)
+    fit_env$`.x` <- model.matrix(attr(mf, "terms"), data = mf)[, -1, drop = FALSE]
+    args$x <- quote(`.x`)
+    args$y <- quote(`.de_y`)
+    if (var(fit_env$`.de_y`) == 0) fit_env$`.de_y` <- fit_env$`.de_y` + rnorm(length(fit_env$`.de_y`), 0, 0.0000001)
+  } else {
+    rlang::abort("engine not implemented")
+  }
   
-  pred_args <- model$pred_args
-  pred_args$newdata <- quote(pred_data)
-  pred_args$object <- quote(fit)
   if (model$engine == "lm") {
     fit_call <- rlang::call2("lm", !!!args, .ns = "stats")
-    pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
+  }
+  if (model$engine == "lasso") {
+    if (require(glmnet)) {
+      fit_call <- rlang::call2("cv.glmnet", !!!args, .ns = "glmnet")
+    } else {
+      rlang::abort("glmnet package must be installed for `lasso` engine")
+    }
   }
 
+  
   if (model$engine == "logit") {
     args$family <- quote(binomial(link = "logit"))
-    pred_args$type <- "response"
     fit_call <- rlang::call2("glm", !!!args, .ns = "stats")
-    pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
   }
 
   if (model$engine == "multinom") {
-    pred_args$type <- "probs"
-    fit_call <- rlang::call2("multinom", !!!args, .ns = "nnet")
-    pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
+    if (require(nnet)) {
+      fit_call <- rlang::call2("multinom", !!!args, .ns = "nnet")
+    } else {
+      rlang::abort("nnet package must be installed for `multinom` engine")
+    }
   }
-
   fit_env$fit <- rlang::eval_tidy(fit_call, env = fit_env)
-  preds <- rlang::eval_tidy(pred_call, env = fit_env)
-
-  ## preds for weights should return a matrix of predicted
-  ## probabilities for each level of the outcome.
-  ## TODO: weights for continuous? 
-  if (model$engine == "logit") {
-    preds <- cbind(1 - preds, preds)
-    colnames(preds) <- c("0", "1")
-  }
   fit_env  
 }
 
 predict_model <- function(model, fit_env) {
   
   pred_args <- model$pred_args
-  pred_args$newdata <- quote(pred_data)
   pred_args$object <- quote(fit)
   if (model$engine == "lm") {
+    pred_args$newdata <- quote(pred_data)
     pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
   }
-
   if (model$engine == "logit") {
+    pred_args$newdata <- quote(pred_data)
     pred_args$type <- "response"
     pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
   }
+  
+  if (model$engine == "lasso") {
+    if (require(glmnet)) {
+      mf <- model.frame(model$formula[-2L], data = fit_env$pred_data)
+      fit_env$`.x` <- model.matrix(attr(mf, "terms"), data = mf)[, -1, drop = FALSE]
+      pred_args$newx <- quote(`.x`)
+      pred_args$type <- "response"
+      pred_args$s <- "lambda.1se"
+      pred_call <- rlang::call2("predict", !!!pred_args)
+    } else {
+      rlang::abort("glmnet package must be installed for `lasso` engine")
+    }
+  }
 
+  
   if (model$engine == "multinom") {
-    pred_args$type <- "probs"
-    pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
+    if (require(nnet)) {
+      pred_args$type <- "probs"
+      pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
+    } else {
+      rlang::abort("nnet package must be installed for `multinom` engine")
+    }
   }
 
   preds <- rlang::eval_tidy(pred_call, env = fit_env)
