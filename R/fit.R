@@ -1,5 +1,5 @@
-form_engines <- c("lm", "logit", "multinom")
-matrix_engines <- c("lasso")
+form_engines <- c("lm", "logit", "multinom", "rlasso", "rlasso_logit")
+matrix_engines <- c("lasso", "lasso_logit")
 
 ## for now hard code the egnines and the generalize later since its
 ## all under the hood.
@@ -11,15 +11,22 @@ fit_model <- function(model, fit_env) {
   args <- as.list(model$args)  
 
   if (model$engine %in% form_engines) {
-    args$data <- quote(fit_data)
     args$formula <- model$formula
+    args$data <- quote(fit_data)
     environment(args$formula) <- fit_env
+
+    ## reorder args list to have formula first. 
+    form_pos <- which(names(args) == "formula")
+    args_pos <- seq_along(args)
+    args_pos <- args_pos[c(form_pos, args_pos[-form_pos])]
+    args <- args[args_pos]
   } else if (model$engine %in% matrix_engines) {
-    mf <- model.frame(model$formula[-2L], data = fit_env$fit_data)
+    mf <- model.frame(model$formula, data = fit_env$fit_data)
     fit_env$`.x` <- model.matrix(attr(mf, "terms"), data = mf)[, -1, drop = FALSE]
+    fit_env$`.y` <- model.response(mf)
     args$x <- quote(`.x`)
-    args$y <- quote(`.de_y`)
-    if (var(fit_env$`.de_y`) == 0) fit_env$`.de_y` <- fit_env$`.de_y` + rnorm(length(fit_env$`.de_y`), 0, 0.0000001)
+    args$y <- quote(`.y`)
+    if (var(fit_env$`.y`) == 0) fit_env$`.y` <- fit_env$`.y` + rnorm(length(fit_env$`.y`), 0, 0.0000001)
   } else {
     rlang::abort("engine not implemented")
   }
@@ -28,6 +35,28 @@ fit_model <- function(model, fit_env) {
     fit_call <- rlang::call2("lm", !!!args, .ns = "stats")
   }
   if (model$engine == "lasso") {
+    if (require(glmnet)) {
+      fit_call <- rlang::call2("cv.glmnet", !!!args, .ns = "glmnet")
+    } else {
+      rlang::abort("glmnet package must be installed for `lasso` engine")
+    }
+  }
+  if (model$engine == "rlasso") {
+    if (require(hdm)) {
+      fit_call <- rlang::call2("rlasso", !!!args, .ns = "hdm")
+    } else {
+      rlang::abort("hdm package must be installed for `rlasso` engine")
+    }
+  }
+  if (model$engine == "rlasso_logit") {
+    if (require(hdm)) {
+      fit_call <- rlang::call2("rlassologit", !!!args, .ns = "hdm")
+    } else {
+      rlang::abort("hdm package must be installed for `rlasso` engine")
+    }
+  }
+  if (model$engine == "lasso_logit") {
+    args$family <- quote(binomial())
     if (require(glmnet)) {
       fit_call <- rlang::call2("cv.glmnet", !!!args, .ns = "glmnet")
     } else {
@@ -56,17 +85,17 @@ predict_model <- function(model, fit_env) {
   
   pred_args <- model$pred_args
   pred_args$object <- quote(fit)
-  if (model$engine == "lm") {
+  if (model$engine %in% c("lm", "rlasso")) {
     pred_args$newdata <- quote(pred_data)
     pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
   }
-  if (model$engine == "logit") {
+  if (model$engine %in% c("logit", "rlasso_logit")) {
     pred_args$newdata <- quote(pred_data)
     pred_args$type <- "response"
     pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
   }
   
-  if (model$engine == "lasso") {
+  if (model$engine %in% c("lasso", "lasso_logit")) {
     if (require(glmnet)) {
       mf <- model.frame(model$formula[-2L], data = fit_env$pred_data)
       fit_env$`.x` <- model.matrix(attr(mf, "terms"), data = mf)[, -1, drop = FALSE]
@@ -94,7 +123,7 @@ predict_model <- function(model, fit_env) {
   ## preds for weights should return a matrix of predicted
   ## probabilities for each level of the outcome.
   ## TODO: weights for continuous? 
-  if (model$engine == "logit") {
+  if (model$engine %in% c("logit", "lasso_logit", "rlasso_logit")) {
     preds <- cbind(1 - preds, preds)
     colnames(preds) <- c("0", "1")
   }
@@ -230,9 +259,9 @@ fit_fold <- function(object, data, fit_rows, pred_rows, out) {
         }
         fit_env$fit_data <- data[these_rows, ]
         if (j == num_treat) {
-          fit_env$`.de_y` <- blipped_y[[j]][these_rows, ]
+          fit_env$fit_data$`.de_y` <- blipped_y[[j]][these_rows, ]
         } else {
-          fit_env$`.de_y` <- blipped_y[[j]][these_rows, aft_j_hist]
+          fit_env$fit_data$`.de_y` <- blipped_y[[j]][these_rows, aft_j_hist]
         }
         fit_env <- fit_model(this_spec$outreg_spec, fit_env)
         outreg_fit <- predict_model(this_spec$outreg_spec, fit_env)

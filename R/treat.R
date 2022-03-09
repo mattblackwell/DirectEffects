@@ -1,5 +1,5 @@
-reg_engines <- c("lm", "lasso")
-class_engines <- c("logit", "multinom")
+reg_engines <- c("lm", "lasso", "rlasso")
+class_engines <- c("logit", "multinom", "lasso_logit", "rlasso_logit")
 match_engines <- c("Matching")
 
 #' @export
