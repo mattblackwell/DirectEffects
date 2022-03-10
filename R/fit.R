@@ -1,5 +1,5 @@
 form_engines <- c("lm", "logit", "multinom", "rlasso", "rlasso_logit")
-matrix_engines <- c("lasso", "lasso_logit")
+matrix_engines <- c("lasso", "lasso_logit", "lasso_multinom")
 
 ## for now hard code the egnines and the generalize later since its
 ## all under the hood.
@@ -54,9 +54,17 @@ fit_model <- function(model, fit_env) {
     } else {
       rlang::abort("hdm package must be installed for `rlasso` engine")
     }
-  }
+  }  
   if (model$engine == "lasso_logit") {
     args$family <- quote(binomial())
+    if (require(glmnet)) {
+      fit_call <- rlang::call2("cv.glmnet", !!!args, .ns = "glmnet")
+    } else {
+      rlang::abort("glmnet package must be installed for `lasso` engine")
+    }
+  }
+    if (model$engine == "lasso_multinom") {
+    args$family <- "multinomial"
     if (require(glmnet)) {
       fit_call <- rlang::call2("cv.glmnet", !!!args, .ns = "glmnet")
     } else {
@@ -72,6 +80,7 @@ fit_model <- function(model, fit_env) {
 
   if (model$engine == "multinom") {
     if (require(nnet)) {
+      if (is.null(args$trace)) args$trace <- FALSE
       fit_call <- rlang::call2("multinom", !!!args, .ns = "nnet")
     } else {
       rlang::abort("nnet package must be installed for `multinom` engine")
@@ -95,7 +104,7 @@ predict_model <- function(model, fit_env) {
     pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
   }
   
-  if (model$engine %in% c("lasso", "lasso_logit")) {
+  if (model$engine %in% c("lasso", "lasso_logit", "lasso_multinom")) {
     if (require(glmnet)) {
       mf <- model.frame(model$formula[-2L], data = fit_env$pred_data)
       fit_env$`.x` <- model.matrix(attr(mf, "terms"), data = mf)[, -1, drop = FALSE]
@@ -111,6 +120,7 @@ predict_model <- function(model, fit_env) {
   
   if (model$engine == "multinom") {
     if (require(nnet)) {
+      pred_args$newdata <- quote(pred_data)
       pred_args$type <- "probs"
       pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
     } else {
@@ -119,7 +129,9 @@ predict_model <- function(model, fit_env) {
   }
 
   preds <- rlang::eval_tidy(pred_call, env = fit_env)
-
+  if (model$engine == "lasso_multinom") {
+    preds <- preds[, , 1L]
+  }
   ## preds for weights should return a matrix of predicted
   ## probabilities for each level of the outcome.
   ## TODO: weights for continuous? 
@@ -222,7 +234,6 @@ fit_fold <- function(object, data, fit_rows, pred_rows, out) {
           if (this_spec$treat_type == "categorical") {
             nms <- paste0(nms, ifelse(j > 1, "_", ""), j_vals)
           }
-    
           model_fits[[j]]$treat_pred[pred_rows, nms] <- treat_fit[pred_rows, j_vals]
           out$model_fits[[j]]$treat_pred[, nms] <- treat_fit[, j_vals]
         }
