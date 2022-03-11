@@ -1,3 +1,12 @@
+#' Initialize an regression imputation CDE estimator
+#'
+#' Initializes the specification of a CDE estimator based on an
+#' regression imputation approach
+#'
+#' @param ... Optional arguments to pass to the regression imputation
+#' estimator.
+#' 
+#' @md
 #' @export
 cde_reg_impute <- function(...) {
   args <- rlang::enquos(...)

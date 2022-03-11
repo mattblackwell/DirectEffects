@@ -1,4 +1,31 @@
+#' Initialize an AIPW DID-CDE estimator 
+#'
+#' Initializes the specification of a difference-in-differences
+#' estimator for the CDE based on an augmented inverse probability
+#' weighting.
+#' 
+#' @param base_mediator The (unquoted) name of the variable that
+#' measures the mediator at baseline.
+#' @inheritParams cde_aipw
+#' @param on_treated If `FALSE` (the defafult), the effects are
+#' average effects conditional on the levels of the baseline mediator.
+#' If `TRUE`, the effects are conditional on the treated path. For
+#' difference in identficiation, see Details below.
+#'
+#' @details
+#' This function, unlike other CDE estimators in the package, only
+#' returns the estimated effects of the first treatment variable.
+#' These effects are conditional on the baseline value of the mediator
+#' (`base_mediator`) when `on_treated` is `TRUE`. A marginalized CDE
+#' estimand is also estimated. When `on_treated` is `FALSE`, these
+#' estimates are conditional on the entire "treated" history.
+#' Identification  requirements are slightly different between these
+#' two cases. When `on_treated` is `FALSE`, the confounders for the
+#' mediator cannot be affected by treatment. See Blackwell et al
+#' (2022) for more information. 
+#' 
 #' @export
+#' @md
 cde_did_aipw <- function(
                         base_mediator,
                         trim = c(0.01, 0.99),

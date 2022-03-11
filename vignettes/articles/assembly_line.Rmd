@@ -1,11 +1,11 @@
 ---
-title: "Telescope matching"
+title: "Assmebly Line"
 date: "`r Sys.Date()`"
 link-citations: yes
 bibliography: ../DirectEffects.bib
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Telescope matching}
+  %\VignetteIndexEntry{Assmebly Line}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -13,10 +13,6 @@ vignette: >
 
 ```{r loadpkg, echo = FALSE, include = FALSE}
 knitr::opts_chunk$set(fig.width = 5, fig.height = 4, fig.align = "center")
-library(dplyr)
-library(scales)
-library(reshape2)
-library(ggplot2)
 library(DirectEffects) 
 ```
 
@@ -25,7 +21,7 @@ library(DirectEffects)
 This vignette introduces a new way to design, specify, and implement various estimators for controlled direct effects using a coding style that we refer to as the "assembly line." Users can specify the various components of the estimators sequentially and easily swap out implementation details such as what exact estimators are used for the estimation of each nuisance function or what arguments to pass to these functions. A unified structure and output across different research designs and estimators should make comparing estimators very easy. Finally, this implementation is built around the idea of cross-fitting for nuisance function estimation. 
 
 Let's see how this works in practice. We first load a subset of the `jobcorps` data from the package:
-```{r}
+```{r data}
 data("jobcorps")
 jc <- jobcorps[
   1:200,
@@ -46,9 +42,9 @@ In context of our CDE estimators, we refer to be $A_i$ (the treatment) and $M_i$
 
 The first step in our assembly line is to choose the type of CDE estimator (or really estimation strategy) that we want to pursue. These choices include IPW (`cde_ipw()`), regression imputation (`cde_reg_impute()`), and augmented IPW (`cde_aipw()`) among others. Some of these different functions will take different arguments to specify different aspects of the estimator. The AIPW estimator is useful to demonstrate because it uses many of the features of the assembly line approach. 
 
-```{r}
+```{r aipw}
 my_aipw <- cde_aipw() |>
-  set_treatmeant(treat, ~ female + age_cat) |>
+  set_treatment(treat, ~ female + age_cat) |>
   treat_model(engine = "logit") |>
   outreg_model(engine = "lm") |>
   set_treatment(work2year2q, ~ emplq4 + pemplq4) |>
@@ -63,11 +59,20 @@ Following this we have two blocks of 3 lines each that look similar with a few d
 
 The `estimate()` function finally implements the specifications given in the previous commands. Users use a formula to set the outcome and which of the treatment variables we want effects for and indicate the data frame where all of these variables can be found. By default, the nuisance functions (the propensity score model and the outcome regression) are fit using cross-fitting. 
 
+We can either use the `summary()` or `tidy()` functions to get a summary of the different effects being estimated:
+
+```{r summary}
+summary(my_aipw)
+tidy(my_aipw)
+```
+
+Because the `estimate()` function included both `treat` and `work2year2q` in the formula, the output includes both  the controlled direct effects of the treatment and the conditional average treatment effect of the mediator. Furthermore, by default, the output contains estimates for an effect for each combination of other treatment variables. This can be changed by setting the `eval_vals` argument in the relevant `set_treatment()` call. 
+
 The modular structure of the call allow users to easily swap out parts of the models. For example, we could easily alter the above call to use lasso versions of the regression and logit model.
 
-```{r}
-my_aipw <- cde_aipw() |>
-  set_treatmeant(treat, ~ female + age_cat) |>
+```{r aipw_lasso, eval = FALSE}
+my_aipw_lasso <- cde_aipw() |>
+  set_treatment(treat, ~ female + age_cat) |>
   treat_model(engine = "rlasso_logit") |>
   outreg_model(engine = "rlasso") |>
   set_treatment(work2year2q, ~ emplq4 + pemplq4) |>

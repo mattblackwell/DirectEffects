@@ -22,6 +22,7 @@
 #' repeated estimates. 
 #' @export
 #' @md
+#' @importFrom stats median update.formula
 estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_splits = 1L) {
 
   if (!missing(subset)) {
@@ -114,13 +115,13 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_
       split_ests[s, ] <- out$estimates[, "estimate"]
       split_ses[s, ] <- out$estimates[, "std.error"]
     }
+    med_ests <- apply(split_ests, 2, median)
+    split_vars <- apply(split_ses ^ 2, 2, median) + sweep(split_ests, 2, med_ests) ^ 2
+    med_ses <- sqrt(apply(split_vars, 2, median))
+    out$estimates[, "estimate"] <- med_ests
+    out$estimates[, "std.error"] <- med_ses
   }
-  med_ests <- apply(split_ests, 2, median)
-  split_vars <- apply(split_ses ^ 2, 2, median) + sweep(split_ests, 2, med_ests) ^ 2
-  med_ses <- sqrt(apply(split_vars, 2, median))
 
-  out$estimates[, "estimate"] <- med_ests
-  out$estimates[, "std.error"] <- med_ses
 
   class(out) <- class(object)
   class(out)[2L] <- "cde_estimate"

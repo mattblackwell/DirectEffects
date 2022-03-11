@@ -26,7 +26,7 @@ fit_model <- function(model, fit_env) {
     fit_env$`.y` <- model.response(mf)
     args$x <- quote(`.x`)
     args$y <- quote(`.y`)
-    if (var(fit_env$`.y`) == 0) fit_env$`.y` <- fit_env$`.y` + rnorm(length(fit_env$`.y`), 0, 0.0000001)
+    if (var(fit_env$`.y`) == 0) fit_env$`.y` <- fit_env$`.y` + stats::rnorm(length(fit_env$`.y`), 0, 0.0000001)
   } else {
     rlang::abort("engine not implemented")
   }
@@ -35,21 +35,21 @@ fit_model <- function(model, fit_env) {
     fit_call <- rlang::call2("lm", !!!args, .ns = "stats")
   }
   if (model$engine == "lasso") {
-    if (require(glmnet)) {
+    if (requireNamespace("glmnet", quietly = TRUE)) {
       fit_call <- rlang::call2("cv.glmnet", !!!args, .ns = "glmnet")
     } else {
       rlang::abort("glmnet package must be installed for `lasso` engine")
     }
   }
   if (model$engine == "rlasso") {
-    if (require(hdm)) {
+    if (requireNamespace("hdm", quietly = TRUE)) {
       fit_call <- rlang::call2("rlasso", !!!args, .ns = "hdm")
     } else {
       rlang::abort("hdm package must be installed for `rlasso` engine")
     }
   }
   if (model$engine == "rlasso_logit") {
-    if (require(hdm)) {
+    if (requireNamespace("hdm", quietly = TRUE)) {
       fit_call <- rlang::call2("rlassologit", !!!args, .ns = "hdm")
     } else {
       rlang::abort("hdm package must be installed for `rlasso` engine")
@@ -57,7 +57,7 @@ fit_model <- function(model, fit_env) {
   }  
   if (model$engine == "lasso_logit") {
     args$family <- quote(binomial())
-    if (require(glmnet)) {
+    if (requireNamespace("glmnet", quietly = TRUE)) {
       fit_call <- rlang::call2("cv.glmnet", !!!args, .ns = "glmnet")
     } else {
       rlang::abort("glmnet package must be installed for `lasso` engine")
@@ -65,7 +65,7 @@ fit_model <- function(model, fit_env) {
   }
     if (model$engine == "lasso_multinom") {
     args$family <- "multinomial"
-    if (require(glmnet)) {
+    if (requireNamespace("glmnet", quietly = TRUE)) {
       fit_call <- rlang::call2("cv.glmnet", !!!args, .ns = "glmnet")
     } else {
       rlang::abort("glmnet package must be installed for `lasso` engine")
@@ -79,7 +79,7 @@ fit_model <- function(model, fit_env) {
   }
 
   if (model$engine == "multinom") {
-    if (require(nnet)) {
+    if (requireNamespace("nnet", quietly = TRUE)) {
       if (is.null(args$trace)) args$trace <- FALSE
       fit_call <- rlang::call2("multinom", !!!args, .ns = "nnet")
     } else {
@@ -105,7 +105,7 @@ predict_model <- function(model, fit_env) {
   }
   
   if (model$engine %in% c("lasso", "lasso_logit", "lasso_multinom")) {
-    if (require(glmnet)) {
+    if (requireNamespace("glmnet", quietly = TRUE)) {
       mf <- model.frame(model$formula[-2L], data = fit_env$pred_data)
       fit_env$`.x` <- model.matrix(attr(mf, "terms"), data = mf)[, -1, drop = FALSE]
       pred_args$newx <- quote(`.x`)
@@ -119,7 +119,7 @@ predict_model <- function(model, fit_env) {
 
   
   if (model$engine == "multinom") {
-    if (require(nnet)) {
+    if (requireNamespace("nnet", quietly = TRUE)) {
       pred_args$newdata <- quote(pred_data)
       pred_args$type <- "probs"
       pred_call <- rlang::call2("predict", !!!pred_args, .ns = "stats")
@@ -294,34 +294,6 @@ fit_fold <- function(object, data, fit_rows, pred_rows, out) {
   model_fits
 }
 
-fit_treat <- function(spec, fit_env, data) {
-  if (!treat_spec$separate) {
-    treat_fit <- fit_model(this_spec$treat_spec, fit_env)
-  } else {
-    
-    
-  }
-  if (j > 1) {
-    past_fit <- interaction(A_fit[, 1:(j - 1), drop = FALSE], sep = "_")
-    fit_splits <- split(seq_len(nrow(A_fit)), past_fit)
-  } else {
-    past_fit <- rep(0, times = N_f)
-    fit_splits <- list(seq_len(nrow(A_fit)))
-  }
-  M <- length(fit_splits)
-  
-  ## TODO: add check about overlap?
-  for (m in seq_len(M)) {
-    fit_strata_rows <- fit_rows[fit_splits[[m]]]
-    fit_env$fit_data <- data[fit_strata_rows, ]
-    treat_fit <- fit_model(this_spec$treat_spec, fit_env)
-    nms <- paste0(
-      names(fit_splits)[[m]],
-      ifelse(j > 1, "_", ""),
-      colnames(treat_fit))
-  }  
-  treat_fit
-}
 
 
 blip_down <- function(object, out, y, b_y, treat, j, strata, rows) {

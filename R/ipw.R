@@ -1,3 +1,15 @@
+#' Initialize an IPW CDE estimator
+#'
+#' Initializes the specification of a CDE estimator based on an
+#' inverse probability weighting approach. 
+#' 
+#' @param hajek If `TRUE`, normalized weights will be used as in the
+#' Hajek estimator. If `FALSE`, traditional IPW weights will be used. 
+#' @param trim A vector of length 2 indicating what quantiles of the
+#' propensity scores should be trimmed. By default this is `c(0.01,
+#' 0.99)` meaning that the top and bottom 1% of propensity scores are
+#' trunctated to these quantiles. If NULL, no trimming occurs. 
+#' @md
 #' @export
 cde_ipw <- function(hajek = TRUE, trim = c(0.01, 0.99)) {
   args <- list(
@@ -59,9 +71,14 @@ compute_ipw <- function(j, j_levs, y, treat, out, args, term_name, eval_vals) {
         w_trt <- winsorize(w_trt, args$trim)
         w_ctr <- winsorize(w_ctr, args$trim)
       }
+
+      
       psi_trt <- trt * y / w_trt
       psi_ctr <- ctr * y / w_ctr
-      
+      if (args$hajek) {
+        psi_trt <- (N / sum(trt / w_trt)) * psi_trt
+        psi_ctr <- (N / sum(ctr / w_ctr)) * psi_ctr
+      }
       psi <- psi_trt - psi_ctr
       est <- mean(psi)
       est_var <- mean((psi - est)^ 2) / N

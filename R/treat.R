@@ -130,7 +130,7 @@ treat_model <- function(object,
   
   args <- rlang::enquos(...)
   if (engine == "Matching" & is.null(args$L)) {
-    args$L <- quo(3)
+    args$L <- rlang::quo(3)
   }
 
   ## override treat_type

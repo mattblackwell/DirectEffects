@@ -1,3 +1,16 @@
+#' Initialize an AIPW CDE estimator
+#'
+#' Initializes the specification of a CDE estimator based on an
+#' augmented inverse probability weighting approach. 
+#' 
+#' @param trim A vector of length 2 indicating what quantiles of the
+#' propensity scores should be trimmed. By default this is `c(0.01,
+#' 0.99)` meaning that the top and bottom 1% of propensity scores are
+#' trunctated to these quantiles. If NULL, no trimming occurs. 
+#' @param aipw_blip If `TRUE` (the default), augmented inverse probability weighting
+#' estimators will be used to estimate intermediate outcome
+#' regressions (blip functions). 
+#' @md
 #' @export
 cde_aipw <- function(trim = c(0.01, 0.99), aipw_blip = TRUE) {
   args <- list(

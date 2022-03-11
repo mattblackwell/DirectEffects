@@ -1079,6 +1079,14 @@ plotDiag.tmatch <- function(object, stage) {
 }
 
 
+#' Initialize an telescope matching CDE estimator
+#'
+#' Initializes the specification of a CDE estimator based on an
+#' telescope matching approach
+#'
+#' @param ... Optional arguments to pass to the telescope matching
+#' estimator. 
+#' @md
 #' @export
 cde_telescope_match <- function(...) {
   args <- rlang::enquos(...)
