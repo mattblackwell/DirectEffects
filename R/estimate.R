@@ -1,4 +1,27 @@
+#' Fit a specified CDE estimator
+#'
+#' Fit a CDE estimator with the engines specified in the `model_spec`
+#' object. 
+#' 
+#' @param object A `cde_estimator` object that has already been passed
+#' to at least one call to `set_treatment`. 
+#' @param formula A formula object with describing the outcome of
+#' interest on the left-hand side and the treatment variables the user
+#' wants to estimate effects for (which might be a subset of the
+#' treatment variables specified). 
+#' @param data A `data.frame` containing all variables, including
+#' treatment variables and covariates specified. 
+#' @param subset Anan optional vector specifying a subset of
+#' observations to be used in the fitting process.
+#' @param crossfit A logical indicator for if cross-fitting should be
+#' used in estimating the effects. 
+#' @param n_folds The number of folds to use within a given instance
+#' of the cross-fitting algorithm. 
+#' @param n_splits The number of times the cross-fitting procedure
+#' should be repeated. Overall estimates use the median value of these
+#' repeated estimates. 
 #' @export
+#' @md
 estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_splits = 1L) {
 
   if (!missing(subset)) {

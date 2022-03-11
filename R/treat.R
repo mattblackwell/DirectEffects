@@ -2,7 +2,34 @@ reg_engines <- c("lm", "lasso", "rlasso")
 class_engines <- c("logit", "multinom", "lasso_logit", "rlasso_logit", "lasso_multinom")
 match_engines <- c("Matching")
 
+#' Specifiy a treatment variable for a controlled direct effect
+#'
+#' This function specifies a treatment variable in the sequence of
+#' treatment variables that define the controlled direct effect of
+#' interest. 
+#' 
+#' 
+#' @param object A `cde_estimator` object that may or may have
+#' previous treatment variables specified/
+#' @param treat Name of the treatment variable (not quoted).
+#' @param formula One-sided formula giving the covariates that are
+#' pre-treatment to this treatment, but post-treatment to any previous
+#' treatment. Unless overridden by the arguments to
+#' [DirectEffects::treat_model()] or [DirectEffects::outreg_model()],
+#' this formula will be the specification used in the modeling of the
+#' propensity scores or outcome regressions. 
+#' @param treat_type A string indicating the type of variable this is.
+#' Takes either the values `"categorical"` or `"regression"` (the
+#' latter is not yet implemented). 
+#' of 
+#' @param eval_vals A numeric vector of values of this variable to
+#' evaluate the controlled direct effecct. If `NULL` (the default),
+#' this will be set to all observed values of the variable. 
+#' @return An updated `cde_estimator` with this information about the
+#' treatment specified. 
+#' @author Matthew Blackwell
 #' @export
+#' @md
 set_treatment <- function(object,
                           treat,
                           formula = NULL,
@@ -27,7 +54,31 @@ set_treatment <- function(object,
   )
   
 }
+
+
+#' Specify the propensity score model for a CDE treatment
+#'
+#' Specifies the functional form and estimation engine for a treatment
+#' previously specified by [DirectEffects::set_treatment()]. 
+#'
+#' 
+#' @param object A `cde_estimator` object that contains output from a
+#' previous call to [DirectEffects::set_treatment()].
+#' @param formula A formula specifying the design matrix of the
+#' covariates. Passed to fitting engine or used with
+#' [stats::model.frame()] and [stats::model.matrix()] to create the
+#' design matrix for fitting engines that do not take formulas. 
+#' @param engine String indicating the name of the fitting engine. 
+#' @param separate Logical indicating whether the fitting algorithm
+#' should be applied separately to each history of the treatment
+#' variables up to this point (default) or not. 
+#' @param include_past A logical value where `TRUE` indicates that
+#' formulas passed to previous `treat_model` calls should be appended
+#' to the formula given. 
+#' @param ... Other arguments to be passed to the engine algorithms.
+#' @author Matthew Blackwell
 #' @export
+#' @md
 treat_model <- function(object,
                       formula,
                       engine,
@@ -121,7 +172,16 @@ treat_model <- function(object,
 ## set treatment should take on different arguments based on
 ## estimation strategy. 
 
+#' Specify the outcome regression model for a CDE treatment
+#'
+#' Specifies the functional form and estimation engine for an outcome
+#' regression of a treatment previously specified by
+#' [DirectEffects::set_treatment()] and the past history of
+#' covariates.
+#'
+#' @inheritParams treat_model
 #' @export
+#' @md
 outreg_model <- function(object,
                          formula,
                          engine,

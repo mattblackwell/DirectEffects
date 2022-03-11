@@ -1,0 +1,84 @@
+---
+title: "Telescope matching"
+date: "`r Sys.Date()`"
+link-citations: yes
+bibliography: ../DirectEffects.bib
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Telescope matching}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r loadpkg, echo = FALSE, include = FALSE}
+knitr::opts_chunk$set(fig.width = 5, fig.height = 4, fig.align = "center")
+library(dplyr)
+library(scales)
+library(reshape2)
+library(ggplot2)
+library(DirectEffects) 
+```
+
+## A new approach
+
+This vignette introduces a new way to design, specify, and implement various estimators for controlled direct effects using a coding style that we refer to as the "assembly line." Users can specify the various components of the estimators sequentially and easily swap out implementation details such as what exact estimators are used for the estimation of each nuisance function or what arguments to pass to these functions. A unified structure and output across different research designs and estimators should make comparing estimators very easy. Finally, this implementation is built around the idea of cross-fitting for nuisance function estimation. 
+
+Let's see how this works in practice. We first load a subset of the `jobcorps` data from the package:
+```{r}
+data("jobcorps")
+jc <- jobcorps[
+  1:200,
+  c("treat", "female", "age_cat", "work2year2q", "pemplq4", "emplq4", "exhealth30")
+]
+```
+
+This is the Job Corps experiment data used in @Hub14 to estimate the effect of a randomized job training program on self-assessed health holding constant the intermediate outcome of employment. We use a subset of the variables from their study, but the basic variable we use here:
+
+* $Y_i$ is an indicator for whether participants reported "very good" health after 2.5 years out after randomization (`exhealth30`)
+* $A_i$ is an indicator for assignment to the job training program (`treat`)
+* $M_i$ is an indicator for employment 1 to 1.5 years after assignment (`work2year2q`)
+* $Z_i$ are the post-treatment, pre-mediator intermediate confounders (`emplq4`, `pemplq4`)
+* $X_i$ are the pre-treatment characteristics (`female`, `age_cat`)
+
+
+In context of our CDE estimators, we refer to be $A_i$ (the treatment) and $M_i$ (the mediator) as *treatment variables* because we are interested in causal effects that contrast different combinations of these two variables. 
+
+The first step in our assembly line is to choose the type of CDE estimator (or really estimation strategy) that we want to pursue. These choices include IPW (`cde_ipw()`), regression imputation (`cde_reg_impute()`), and augmented IPW (`cde_aipw()`) among others. Some of these different functions will take different arguments to specify different aspects of the estimator. The AIPW estimator is useful to demonstrate because it uses many of the features of the assembly line approach. 
+
+```{r}
+my_aipw <- cde_aipw() |>
+  set_treatmeant(treat, ~ female + age_cat) |>
+  treat_model(engine = "logit") |>
+  outreg_model(engine = "lm") |>
+  set_treatment(work2year2q, ~ emplq4 + pemplq4) |>
+  treat_model(engine = "logit") |>
+  outreg_model(engine = "lm") |>
+  estimate(exhealth30 ~ treat + work2year2q, data = jobcorps)
+```
+
+The call here consists of several steps connected by R's pipe operator. The first call `cde_aipw()` simply initializes the estimator as taking the AIPW form, meaning that it will use both propensity score models and outcome regressions to estimate the causal effects. 
+
+Following this we have two blocks of 3 lines each that look similar with a few differences. These "treatment blocks" specify the causal variables of interest **in their causal ordering**. In `set_treatment()` we set the name of the treatment variable and give a formula describing the pre-treatment covariates for this treatment. This formula, unless overridden by the next two functions, will be used in the fitting of the propensity score and outcome regression models. `treat_model()` allows the user to specify how to fit the propensity score model for this treatment with a choice of engine and optional arguments to pass to each engine. `outreg_model()` does the same for the outcome regression. We repeat this specification for the mediator. 
+
+The `estimate()` function finally implements the specifications given in the previous commands. Users use a formula to set the outcome and which of the treatment variables we want effects for and indicate the data frame where all of these variables can be found. By default, the nuisance functions (the propensity score model and the outcome regression) are fit using cross-fitting. 
+
+The modular structure of the call allow users to easily swap out parts of the models. For example, we could easily alter the above call to use lasso versions of the regression and logit model.
+
+```{r}
+my_aipw <- cde_aipw() |>
+  set_treatmeant(treat, ~ female + age_cat) |>
+  treat_model(engine = "rlasso_logit") |>
+  outreg_model(engine = "rlasso") |>
+  set_treatment(work2year2q, ~ emplq4 + pemplq4) |>
+  treat_model(engine = "rlasso_logit") |>
+  outreg_model(engine = "rlasso") |>
+  estimate(exhealth30 ~ treat + work2year2q, data = jobcorps)
+```
+
+Here we use a "rigorous" version of the lasso from the `hdm` package to speed up computation. There are a number of different engines for different outcome and treatment types including:
+
+- GLMs: `lm` (OLS), `logit` (logistic regression), `multinom` (mulitnomial logit)
+- LASSO estimators (from `glmnet`): `lasso`, `lasso_logit`, `lasso_multinom`
+- Rigorous LASSO estimator (from `hdm`): `rlasso`, `rlasso_logit`
+

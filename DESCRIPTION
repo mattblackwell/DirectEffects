@@ -14,7 +14,9 @@ Imports:
     Formula,
     glue,
     Matching,
-    generics
+    generics,
+    rlang,
+    broom
 Depends:
     R (>= 3.5.0)
 Suggests:
