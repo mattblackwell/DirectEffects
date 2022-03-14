@@ -24,7 +24,7 @@ print.cde_estimator <- function(x, ...) {
   cat("\n", x$type, "CDE Estimator\n")
   cat("---------------------------\n")
   tr_names <- unlist(
-    lapply(x$model_spec, function(x) as.character(x$treat[[2L]]))
+    lapply(x$model_spec, function(x) as.character(x$treat))
   )
   for (j in seq_along(tr_names)) {
     cat("Causal variable:", tr_names[j], "\n\n")

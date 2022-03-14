@@ -114,9 +114,10 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
       } else {
         psi_trt <- rowSums(A_trt * eps_trt / w_trt)
         psi_ctr <- rowSums(A_ctr * eps_ctr / w_ctr)
-        psi <- psi_trt - psi_ctr
-        est <- mean(psi[M_0 == 1L])
-        est_var <- mean((psi[M_0 == 1L] - est)^ 2) / sum(M_0)
+        ipw <- M_0 / mean(M_0)
+        psi <- ipw * (psi_trt - psi_ctr)
+        est <- mean(psi)
+        est_var <- mean((psi - ipw * est)^ 2) / N
       }
 
       this_est <- data.frame(

@@ -1,5 +1,5 @@
 form_engines <- c("lm", "logit", "multinom", "rlasso", "rlasso_logit")
-matrix_engines <- c("lasso", "lasso_logit", "lasso_multinom")
+matrix_engines <- c("lasso", "lasso_logit", "lasso_multinom", "ranger")
 
 ## for now hard code the egnines and the generalize later since its
 ## all under the hood.
@@ -7,7 +7,6 @@ matrix_engines <- c("lasso", "lasso_logit", "lasso_multinom")
 ## separated into a fit_data df for the fitting and a pred_data df for
 ## getting predictions. 
 fit_model <- function(model, fit_env) {
-
   args <- as.list(model$args)  
 
   if (model$engine %in% form_engines) {
@@ -64,7 +63,8 @@ fit_model <- function(model, fit_env) {
     }
   }
     if (model$engine == "lasso_multinom") {
-    args$family <- "multinomial"
+      args$family <- "multinomial"
+      args$type.multinomial <- "grouped" ## ungrouped runs into many problems
     if (requireNamespace("glmnet", quietly = TRUE)) {
       fit_call <- rlang::call2("cv.glmnet", !!!args, .ns = "glmnet")
     } else {
@@ -86,6 +86,16 @@ fit_model <- function(model, fit_env) {
       rlang::abort("nnet package must be installed for `multinom` engine")
     }
   }
+
+  if (model$engine == "ranger") {
+    if (requireNamespace("ranger", quietly = TRUE)) {
+      args$probability <- TRUE
+      fit_call <- rlang::call2("ranger", !!!args, .ns = "ranger")
+    } else {
+      rlang::abort("ranger package must be installed for `ranger` engine")
+    }
+  }
+  
   fit_env$fit <- rlang::eval_tidy(fit_call, env = fit_env)
   fit_env  
 }
@@ -128,9 +138,20 @@ predict_model <- function(model, fit_env) {
     }
   }
 
+  if (model$engine == "ranger") {
+    mf <- model.frame(model$formula[-2L], data = fit_env$pred_data)
+    fit_env$`.x` <- model.matrix(attr(mf, "terms"), data = mf)[, -1, drop = FALSE]
+    pred_args$data <- quote(`.x`)
+    pred_call <- rlang::call2("predict", !!!pred_args)
+  }
+
   preds <- rlang::eval_tidy(pred_call, env = fit_env)
   if (model$engine == "lasso_multinom") {
     preds <- preds[, , 1L]
+  } else if (model$engine == "ranger") {
+    preds <- preds$predictions
+    colnames(preds) <- fit_env$fit$forest$class.values
+    preds <- preds[,sort(colnames(preds))]
   }
   ## preds for weights should return a matrix of predicted
   ## probabilities for each level of the outcome.
@@ -184,34 +205,36 @@ fit_fold <- function(object, data, fit_rows, pred_rows, out) {
         j_vals <- as.character(eval_vals[[j]])
         
         if (j > 1L) {
-          past_vals <- apply(eval_grid[1:(j - 1)], paste0, collapse = "_")
+          past_vals <- apply(eval_grid[1:(j - 1)], 1, paste0, collapse = "_")
           
-          for (mp in seq_along(past_fit)) {
-            strata <- paste0(past_fit[mp], "_", j_vals)
+          for (mp in seq_along(past_vals)) {
+            strata <- paste0(past_vals[mp], "_", j_vals)
             curr_vals <- as.numeric(strsplit(past_vals[mp], "_")[[1]])
             
             fit_env$pred_data <- data
             for (k in seq_along(curr_vals)) {              
               fit_env$pred_data[[tr_names[[k]]]] <- curr_vals[k]
             }
+            nms <- past_vals[mp]
+            if (this_spec$treat_type == "categorical") {
+              nms <- paste0(nms, "_", j_vals)
+            }
+
             treat_fit <- predict_model(this_spec$treat_spec, fit_env)
             out$model_fits[[j]]$treat_pred[, nms] <- treat_fit[, j_vals]
             model_fits[[j]]$treat_pred[pred_rows, nms] <- treat_fit[pred_rows, j_vals]
 
           }
+        } else {
+          fit_env$pred_data <- data        
+          treat_fit <- predict_model(this_spec$treat_spec, fit_env)
+
+          nms <- colnames(treat_fit)
+          out$model_fits[[j]]$treat_pred[, nms] <- treat_fit
+          model_fits[[j]]$treat_pred[pred_rows, nms] <- treat_fit[pred_rows, ]
+
         }
         
-        fit_env$pred_data <- data
-        
-        
-        treat_fit <- predict_model(this_spec$treat_spec, fit_env)
-        
-        nms <- "pi"
-        if (this_spec$treat_type == "categorical") {
-          nms <- paste0(nms, "_", colnames(treat_fit))
-        }
-        out$model_fits[[j]]$treat_pred[, nms] <- treat_fit
-        model_fits[[j]]$treat_pred[pred_rows, nms] <- treat_fit[pred_rows, ]
       } else {
         if (j > 1L) {
           past_fit <- interaction(A_fit[, 1:(j - 1), drop = FALSE], sep = "_")

@@ -35,7 +35,12 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_
     object$formula,
     rlang::expr(!!formula[[2L]] ~ . + !!formula[[3L]])
   )
-  
+  if (!is.null(object$args$base_mediator)) {
+    object$formula <- update.formula(
+      object$formula,
+      rlang::expr(. ~ . + !!object$args$base_mediator[[2L]])
+    )
+  }
   data <- model.frame(object$formula, data = data[rows, , drop = FALSE])
   
   N <- nrow(data)
@@ -94,7 +99,6 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_
   out <- estimate_cde(object, formula, data, out)
 
   if (crossfit) {
-    
     out$n_folds <- n_folds
     out$n_splits <- n_splits
     split_ests <- matrix(NA, nrow = n_splits, ncol = nrow(out$estimates))
@@ -132,7 +136,7 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_
 
 estimate_cde <- function(object, formula, data, out) {
   eff_vars <- all.vars(formula)[-1L]
-  tr_names <- unlist(lapply(object$model_spec, function(x) as.character(x$treat[[2L]])))
+  tr_names <- unlist(lapply(object$model_spec, function(x) as.character(x$treat)))
   y <- get_outcome(object, data)
   if (!all(eff_vars %in% tr_names)) {
     rlang::abort("Unspecified treatment included in `estimate()` formula.")
@@ -306,7 +310,7 @@ print.summary.cde_estimate <-  function(x,
   cat("\n", x$type, "CDE Estimator\n")
   cat("---------------------------\n")
   tr_names <- unlist(
-    lapply(x$model_spec, function(x) as.character(x$treat[[2L]]))
+    lapply(x$model_spec, function(x) as.character(x$treat))
   )
   for (j in seq_along(tr_names)) {
     cat("Causal variable:", tr_names[j], "\n\n")

@@ -1,5 +1,5 @@
 reg_engines <- c("lm", "lasso", "rlasso")
-class_engines <- c("logit", "multinom", "lasso_logit", "rlasso_logit", "lasso_multinom")
+class_engines <- c("logit", "multinom", "lasso_logit", "rlasso_logit", "lasso_multinom", "ranger")
 match_engines <- c("Matching")
 
 #' Specifiy a treatment variable for a controlled direct effect
@@ -39,7 +39,7 @@ set_treatment <- function(object,
   model_spec <- object$model_spec
   last_block <- length(model_spec)
   model_spec[[last_block + 1]] <- list(
-    treat = rlang::enquo(treat),
+    treat = rlang::ensym(treat),
     formula = formula,
     treat_type = treat_type,
     eval_vals = eval_vals
