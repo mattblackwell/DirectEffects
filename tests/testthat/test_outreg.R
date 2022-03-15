@@ -9,14 +9,13 @@ jc <- jobcorps[
 test_that(
   "outreg predicted values", {
 
-    test_outreg <- cde_reg_impute() |>
-      set_treatment(treat, ~ female + age_cat)|>
-      outreg_model(engine = "lm") |>
-      set_treatment(work2year2q, ~ pemplq4 + emplq4)|>
-      outreg_model(engine = "lm")
+    test_outreg <- cde_reg_impute()    
+    test_outreg <- set_treatment(test_outreg, treat, ~ female + age_cat)
+    test_outreg <- outreg_model(test_outreg, engine = "lm")
+    test_outreg <- set_treatment(test_outreg, work2year2q, ~ pemplq4 + emplq4)
+    test_outreg <- outreg_model(test_outreg, engine = "lm")
 
-    de_outreg_nocross <- test_outreg |>
-      estimate(exhealth30 ~ treat + work2year2q, data = jc, crossfit = FALSE)
+    de_outreg_nocross <- estimate(test_outreg, exhealth30 ~ treat + work2year2q, data = jc, crossfit = FALSE)
 
     or_m_11_mod <- lm(exhealth30 ~ pemplq4 + emplq4 + female + age_cat,
                       data = jc,

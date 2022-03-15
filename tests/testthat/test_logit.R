@@ -9,13 +9,13 @@ jc <- jobcorps[
 test_that(
   "logit predicted values", {
 
-    test_ipw <- cde_ipw() |>
-      set_treatment(treat, ~ female + age_cat) |>
-      treat_model(engine = "logit") |>
-      set_treatment(work2year2q, ~ pemplq4 + emplq4) |>
-      treat_model(engine = "logit")
+    test_ipw <- cde_ipw()
+    test_ipw <- set_treatment(test_ipw, treat, ~ female + age_cat)
+    test_ipw <- treat_model(test_ipw, engine = "logit")
+    test_ipw <- set_treatment(test_ipw, work2year2q, ~ pemplq4 + emplq4)
+    test_ipw <- treat_model(test_ipw, engine = "logit")
 
-    de_ipw_nocross <- test_ipw |> estimate(exhealth30 ~ treat + work2year2q, jc, crossfit = FALSE)
+    de_ipw_nocross <- estimate(test_ipw, exhealth30 ~ treat + work2year2q, jc, crossfit = FALSE)
 
     ipw_a1_mod <- glm(treat ~ female + age_cat, data = jc, family = binomial())
     ipw_a1_preds <- ipw_a1_mod$fitted
