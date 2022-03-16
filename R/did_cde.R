@@ -95,6 +95,8 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
       if (length(args$trim)) {
         w_trt <- winsorize_matrix(w_trt, args$trim)
         w_ctr <- winsorize_matrix(w_ctr, args$trim)
+        p_trt <- winsorize_matrix(p_trt, args$trim)
+        p_ctr <- winsorize_matrix(p_ctr, args$trim)
       }
       w_trt <- cbind(1, w_trt)
       w_ctr <- cbind(1, w_ctr)
@@ -119,7 +121,6 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
         est <- mean(psi)
         est_var <- mean((psi - ipw * est)^ 2) / N
       }
-
       this_est <- data.frame(
         term = term_name,
         active = plus,
@@ -128,6 +129,7 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
         std.error = sqrt(est_var),
         DF = N_c + N_t
       )
+      
       est_tab <- rbind(est_tab, this_est)
     }
   }

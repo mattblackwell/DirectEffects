@@ -125,7 +125,9 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_
     out$estimates[, "estimate"] <- med_ests
     out$estimates[, "std.error"] <- med_ses
   }
-
+  rownames(out$estimates) <- paste0(
+    out$estimates$term, "_", out$estimates$active
+  )
 
   class(out) <- class(object)
   class(out)[2L] <- "cde_estimate"
