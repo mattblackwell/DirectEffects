@@ -121,6 +121,7 @@ compute_did_aipw <- function(j, j_levs, y, treat, out, args, term_name, m0) {
         est <- mean(psi)
         est_var <- mean((psi - ipw * est)^ 2) / N
       }
+
       this_est <- data.frame(
         term = term_name,
         active = plus,

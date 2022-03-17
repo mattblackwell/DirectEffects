@@ -100,6 +100,7 @@ compute_ipw <- function(j, j_levs, y, treat, out, args, term_name, eval_vals) {
 
 winsorize <- function(x, trim) {
   qs <- quantile(x, trim)
+  if (qs[1L] == 0) qs[1L] <- min(x[x > 0])
   xt <- x
   xt[xt <= qs[1L]] <- qs[1L]
   xt[xt >= qs[2L]] <- qs[2L]
