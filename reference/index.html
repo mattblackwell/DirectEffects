@@ -17,7 +17,7 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div id="navbar" class="collapse navbar-collapse ms-2">
+    <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item">
   <a class="nav-link" href="../articles/DirectEffects.html">Get started</a>
 </li>
@@ -27,6 +27,7 @@
 <li class="nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <a class="dropdown-item" href="../articles/assembly_line.html">Assmebly Line</a>
     <a class="dropdown-item" href="../articles/telescope_matching.html">Telescope matching</a>
   </div>
 </li>
@@ -67,6 +68,11 @@
         <dd>Balance diagnostics for Telescope Match objects</dd>
       </dl><dl><dt>
           
+          <code><a href="balance_table.html">balance_table()</a></code> 
+        </dt>
+        <dd>Balance diagnostics telescope matching</dd>
+      </dl><dl><dt>
+          
           <code><a href="boots_g.html">boots_g()</a></code> 
         </dt>
         <dd>Coefficient Estimates across Bootstrapped Samples</dd>
@@ -75,6 +81,31 @@
           <code><a href="boots_tm.html">boots_tm()</a></code> 
         </dt>
         <dd>Bootstrap Uncertainty Estimates for Telescope Matching</dd>
+      </dl><dl><dt>
+          
+          <code><a href="cde_aipw.html">cde_aipw()</a></code> 
+        </dt>
+        <dd>Initialize an AIPW CDE estimator</dd>
+      </dl><dl><dt>
+          
+          <code><a href="cde_did_aipw.html">cde_did_aipw()</a></code> 
+        </dt>
+        <dd>Initialize an AIPW DID-CDE estimator</dd>
+      </dl><dl><dt>
+          
+          <code><a href="cde_ipw.html">cde_ipw()</a></code> 
+        </dt>
+        <dd>Initialize an IPW CDE estimator</dd>
+      </dl><dl><dt>
+          
+          <code><a href="cde_reg_impute.html">cde_reg_impute()</a></code> 
+        </dt>
+        <dd>Initialize an regression imputation CDE estimator</dd>
+      </dl><dl><dt>
+          
+          <code><a href="cde_telescope_match.html">cde_telescope_match()</a></code> 
+        </dt>
+        <dd>Initialize an telescope matching CDE estimator</dd>
       </dl><dl><dt>
           
           <code><a href="cdesens.html">cdesens()</a></code> 
@@ -87,10 +118,20 @@
         <dd>Data on civil wars and internal conflict from 1945-1999.</dd>
       </dl><dl><dt>
           
+          <code><a href="estimate.html">estimate()</a></code> 
+        </dt>
+        <dd>Fit a specified CDE estimator</dd>
+      </dl><dl><dt>
+          
           <code><a href="jobcorps.html">jobcorps</a></code> 
         </dt>
         <dd>Data on health and employment outcomes measured as part of the
 U.S. Job Corps employment training experiment.</dd>
+      </dl><dl><dt>
+          
+          <code><a href="outreg_model.html">outreg_model()</a></code> 
+        </dt>
+        <dd>Specify the outcome regression model for a CDE treatment</dd>
       </dl><dl><dt>
           
           <code><a href="plot.cdesens.html">plot(<i>&lt;cdesens&gt;</i>)</a></code> 
@@ -115,6 +156,11 @@ women.</dd>
 direct effect of a treatment net the effect of a mediator.</dd>
       </dl><dl><dt>
           
+          <code><a href="set_treatment.html">set_treatment()</a></code> 
+        </dt>
+        <dd>Specifiy a treatment variable for a controlled direct effect</dd>
+      </dl><dl><dt>
+          
           <code><a href="summary.seqg.html">summary(<i>&lt;seqg&gt;</i>)</a></code> 
         </dt>
         <dd>Computes standard errors and p-values of DirectEffects estimates</dd>
@@ -135,6 +181,11 @@ direct effect of a treatment net the effect of a mediator.</dd>
         <dd>Perform telescope matching to estimate the controlled
 direct effect of a binary treatment net the effect of binary
 mediators</dd>
+      </dl><dl><dt>
+          
+          <code><a href="treat_model.html">treat_model()</a></code> 
+        </dt>
+        <dd>Specify the propensity score model for a CDE treatment</dd>
       </dl></div>
   </main></div>
 
@@ -144,7 +195,7 @@ mediators</dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.1.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
 </div>
 
     </footer></div>

@@ -40,7 +40,7 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div id="navbar" class="collapse navbar-collapse ms-2">
+    <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item">
   <a class="nav-link" href="../articles/DirectEffects.html">Get started</a>
@@ -51,6 +51,7 @@
 <li class="active nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <a class="dropdown-item" href="../articles/assembly_line.html">Assmebly Line</a>
     <a class="dropdown-item" href="../articles/telescope_matching.html">Telescope matching</a>
   </div>
 </li>
@@ -72,11 +73,14 @@
     
   </div>
 </nav><div class="container template-article">
+
+
+
 <script src="telescope_matching_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <main id="main"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Telescope matching</h1>
             
-            <h4 data-toc-skip class="date">2021-12-17</h4>
+            <h4 data-toc-skip class="date">2022-03-21</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/mattblackwell/DirectEffects/blob/HEAD/vignettes/articles/telescope_matching.Rmd" class="external-link"><code>vignettes/articles/telescope_matching.Rmd</code></a></small>
       <div class="d-none name"><code>telescope_matching.Rmd</code></div>
@@ -179,49 +183,49 @@ ACDE = E[Y_i(1, 0) - Y_i(0,0)]
 <span class="co">## </span>
 <span class="co">## Matching summary:</span>
 <span class="co">##          Term Matching Ratio L:1 N == 1 N == 0 Matched == 1 Matched == 0</span>
-<span class="co">## 1       treat                  3   2801   1551         2272         1546</span>
-<span class="co">## 2 work2year2q                  3   2559   1793         1366         1526</span>
+<span class="co">## 1       treat                  3   2801   1551         2275         1545</span>
+<span class="co">## 2 work2year2q                  3   2559   1793         1369         1514</span>
 <span class="co">## </span>
 <span class="co">## </span>
 <span class="co">## Summary of units matching contributions:</span>
 <span class="co">##                   Min.   1st Qu.    Median Mean  3rd Qu.       Max.</span>
 <span class="co">## treat                0 0.3333333 0.6666667    1 1.333333   4.666667</span>
-<span class="co">## treat:work2year2q    0 0.0000000 0.3333333    1 1.000000 120.666667</span>
-<span class="co">## work2year2q          0 0.0000000 0.3333333    1 1.333333  67.333333</span>
+<span class="co">## treat:work2year2q    0 0.0000000 0.3333333    1 1.000000 124.333333</span>
+<span class="co">## work2year2q          0 0.0000000 0.3333333    1 1.333333  67.666667</span>
 <span class="co">## </span>
 <span class="co">## </span>
 <span class="co">## Estimated controlled direct effects of treat:</span>
 <span class="co">##                   work2year2q Estimate Estimate (no BC) Std. Err.</span>
-<span class="co">## (1, 0) vs. (0, 0)           0 -0.10282         -0.09355   0.05117</span>
-<span class="co">## (1, 1) vs. (0, 1)           1  0.03571          0.03569   0.02262</span></code></pre>
+<span class="co">## (1, 0) vs. (0, 0)           0 -0.08189         -0.07207   0.05252</span>
+<span class="co">## (1, 1) vs. (0, 1)           1  0.03563          0.03562   0.02255</span></code></pre>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># The coefficients + SE can be accessed directly as well</span>
 <span class="va">tm_out</span><span class="op">$</span><span class="va">tau</span> <span class="co"># Point estimate</span></code></pre></div>
-<pre><code><span class="co">## [1] -0.10282123  0.03571458</span></code></pre>
+<pre><code><span class="co">## [1] -0.08189419  0.03562810</span></code></pre>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">tm_out</span><span class="op">$</span><span class="va">tau_se</span> <span class="co">#Standard error</span></code></pre></div>
-<pre><code><span class="co">## [1] 0.0511668 0.0226153</span></code></pre>
+<pre><code><span class="co">## [1] 0.05251830 0.02255062</span></code></pre>
 <p>Additional diagnostics can be conducted by calling the <code><a href="../reference/balance.tmatch.html">balance.tmatch()</a></code> function on the returned <code>tmatch</code> object to assess the change in pre-/post-matching covariate balance in both the first and second stages.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## Assess mediator balance on selected pre- and post- treatment covariates</span>
 <span class="fu"><a href="../reference/balance.tmatch.html">balance.tmatch</a></span><span class="op">(</span><span class="va">tm_out</span>, vars <span class="op">=</span> <span class="va">work2year2q</span> <span class="op">~</span> <span class="va">schobef</span> <span class="op">+</span> <span class="va">emplq4</span>,
                data <span class="op">=</span> <span class="va">jobcorps_female</span><span class="op">)</span></code></pre></div>
 <pre><code><span class="co">##         variable  before_0  before_1   after_0   after_1 before_sd  before_diff</span>
-<span class="co">## schobef  schobef 0.6352482 0.6287612 0.7034314 0.6314338 0.4824714 -0.006486953</span>
-<span class="co">## emplq4    emplq4 0.1996654 0.7198124 0.4773284 0.5058211 0.5000270  0.520147061</span>
+<span class="co">## schobef  schobef 0.6352482 0.6287612 0.7040441 0.6314338 0.4824714 -0.006486953</span>
+<span class="co">## emplq4    emplq4 0.1996654 0.7198124 0.4778646 0.5057445 0.5000270  0.520147061</span>
 <span class="co">##         before_std_diff  after_diff after_std_diff</span>
-<span class="co">## schobef     -0.01344526 -0.07199755    -0.14922657</span>
-<span class="co">## emplq4       1.04023787  0.02849265     0.05698221</span></code></pre>
+<span class="co">## schobef     -0.01344526 -0.07261029    -0.15049658</span>
+<span class="co">## emplq4       1.04023787  0.02787990     0.05575679</span></code></pre>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## Assess treatment balance on selected pre-treatment covariates</span>
 <span class="fu"><a href="../reference/balance.tmatch.html">balance.tmatch</a></span><span class="op">(</span><span class="va">tm_out</span>, vars <span class="op">=</span> <span class="va">treat</span> <span class="op">~</span> <span class="va">trainyrbef</span> <span class="op">+</span> <span class="va">hhsize</span>,
                data <span class="op">=</span> <span class="va">jobcorps_female</span><span class="op">)</span></code></pre></div>
 <pre><code><span class="co">##              variable   before_0   before_1    after_0    after_1 before_sd</span>
 <span class="co">## trainyrbef trainyrbef 0.01676338 0.01713674 0.01700368 0.01700368 0.1292996</span>
-<span class="co">## hhsize         hhsize 4.54094133 4.53802213 4.55660233 4.53576900 2.2087850</span>
+<span class="co">## hhsize         hhsize 4.54094133 4.53802213 4.53844975 4.54373468 2.2087850</span>
 <span class="co">##              before_diff before_std_diff  after_diff after_std_diff</span>
-<span class="co">## trainyrbef  0.0003733584     0.002887544  0.00000000    0.000000000</span>
-<span class="co">## hhsize     -0.0029191932    -0.001321629 -0.02083333   -0.009432033</span></code></pre>
+<span class="co">## trainyrbef  0.0003733584     0.002887544 0.000000000    0.000000000</span>
+<span class="co">## hhsize     -0.0029191932    -0.001321629 0.005284926    0.002392685</span></code></pre>
 <p>Calling the <code><a href="../reference/plotDiag.tmatch.html">plotDiag.tmatch()</a></code> function will return a histogram of the number of times each unit is used as a match (<span class="math inline">\(K/L\)</span>) in either the first (mediator) stage or the second (treatment) stage.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Number of times each unit is used as a match in the mediator (first) stage</span>
@@ -263,7 +267,7 @@ ACDE = E[Y_i(1, 0) - Y_i(0,0)]
 
 <div class="pkgdown-footer-right">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.1.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
 </div>
 
     </footer>

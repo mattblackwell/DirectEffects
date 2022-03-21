@@ -7,6 +7,9 @@
     <loc>https://mattblackwell.github.io/DirectEffects/articles/DirectEffects.html</loc>
   </url>
   <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/articles/assembly_line.html</loc>
+  </url>
+  <url>
     <loc>https://mattblackwell.github.io/DirectEffects/articles/index.html</loc>
   </url>
   <url>
@@ -22,10 +25,28 @@
     <loc>https://mattblackwell.github.io/DirectEffects/reference/balance.tmatch.html</loc>
   </url>
   <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/balance_table.html</loc>
+  </url>
+  <url>
     <loc>https://mattblackwell.github.io/DirectEffects/reference/boots_g.html</loc>
   </url>
   <url>
     <loc>https://mattblackwell.github.io/DirectEffects/reference/boots_tm.html</loc>
+  </url>
+  <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/cde_aipw.html</loc>
+  </url>
+  <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/cde_did_aipw.html</loc>
+  </url>
+  <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/cde_ipw.html</loc>
+  </url>
+  <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/cde_reg_impute.html</loc>
+  </url>
+  <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/cde_telescope_match.html</loc>
   </url>
   <url>
     <loc>https://mattblackwell.github.io/DirectEffects/reference/cdesens.html</loc>
@@ -34,10 +55,16 @@
     <loc>https://mattblackwell.github.io/DirectEffects/reference/civilwar.html</loc>
   </url>
   <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/estimate.html</loc>
+  </url>
+  <url>
     <loc>https://mattblackwell.github.io/DirectEffects/reference/index.html</loc>
   </url>
   <url>
     <loc>https://mattblackwell.github.io/DirectEffects/reference/jobcorps.html</loc>
+  </url>
+  <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/outreg_model.html</loc>
   </url>
   <url>
     <loc>https://mattblackwell.github.io/DirectEffects/reference/plot.cdesens.html</loc>
@@ -49,10 +76,16 @@
     <loc>https://mattblackwell.github.io/DirectEffects/reference/ploughs.html</loc>
   </url>
   <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/reexports.html</loc>
+  </url>
+  <url>
     <loc>https://mattblackwell.github.io/DirectEffects/reference/seq.g.vcov.html</loc>
   </url>
   <url>
     <loc>https://mattblackwell.github.io/DirectEffects/reference/sequential_g.html</loc>
+  </url>
+  <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/set_treatment.html</loc>
   </url>
   <url>
     <loc>https://mattblackwell.github.io/DirectEffects/reference/summary.seqg.html</loc>
@@ -65,5 +98,8 @@
   </url>
   <url>
     <loc>https://mattblackwell.github.io/DirectEffects/reference/telescope_match.html</loc>
+  </url>
+  <url>
+    <loc>https://mattblackwell.github.io/DirectEffects/reference/treat_model.html</loc>
   </url>
 </urlset>
