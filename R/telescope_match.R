@@ -373,16 +373,27 @@ telescope_match <- function(formula, data, caliper = NULL, L = 5,
 ## then this returns the number of times each unit is matched to a
 ## unit j in period 3, j is matched to h in period 2, and h is matched
 ## to g in period 1, where j, h, and g are all different.
+
+## old tm code used row names, new assembly line code uses positions. 
 find_indirect_matches <- function(m_out, path, N) {
   K <- rep(0, times = N)
   path <- sort(path, decreasing = TRUE)
   d <- m_out[[path[1]]]$donors
   path <- path[-1]
-  for (j in path) {
-    d <- lapply(d, function(x) unlist(m_out[[j]]$donors[as.character(x)]))
+  for (j in path) {   
+    if (length(names(d))) {
+      d <- lapply(d, function(x) unlist(m_out[[j]]$donors[as.character(x)]))
+    } else {
+      d <- lapply(d, function(x) unlist(m_out[[j]]$donors[x]))
+    }
   }
   n_ind_matches <- lapply(d, length)
-  pos <- as.numeric(names(n_ind_matches))
+  if (length(names(n_ind_matches))) {
+    pos <- as.numeric(names(n_ind_matches))
+  } else {
+    pos <- 1L:N
+  }
+
   K[pos] <- unlist(n_ind_matches)
   return(K)
 }
@@ -404,7 +415,6 @@ match_at_time <- function(A, X, L, drops, caliper) {
     rep(FALSE, times = ncol(X[, -drops, drop = FALSE])),
     rep(TRUE, times = k - 1)
   )
-
   tm_att <- Matching::Match(
     Tr = Ak, X = X_m,
     estimand = "ATT",
@@ -539,7 +549,7 @@ calculate_cdes <- function(Y, A, K, mu_hat, r_out, A_j) {
     A_jt <- as.numeric(A[, s] == A_j[s - 1])
 
     ## calculate K weight for this period
-    fut_patt <- paste0("[", paste0(s:T, collapse = ""), "]")
+    fut_patt <- paste0("[", paste0(s:T, collapse = ":"), "]")
     past_K <- grep(fut_patt, names(K), invert = TRUE)
     fut_K <- grep(fut_patt, names(K))
     K_term <- (A_jt * rowSums(K[fut_K]) - (1 - A_jt) * (1 + rowSums(K[past_K])))
@@ -923,6 +933,159 @@ balance.tmatch <- function(object, vars, data, comparison = NULL) {
   return(bal_tab)
 }
 
+#' Balance diagnostics telescope matching
+#'
+#' Provides matching balance diagnostics for telescope matching CDE
+#' estimators 
+#'
+#' @param object output from an estimated \code{cde_telescope_match}
+#' estimator 
+#' @param vars a formula object containing either the treatment or the
+#'   mediator as the dependent variable (which denotes whether
+#'   first-stage or second-stage balance diagnostics are returned) and
+#'   the covariates for which balance diagnostics are requested as the
+#'   independent variables. Each covariate or function of covariates
+#'   (e.g. higher-order polynomials or interactions) should be
+#'   separated by a +.
+#' @param data the data frame used in the call to
+#'   \code{estimate} on the \code{cde_telescope_match} object. 
+#' @param comparison a binary indicator for if the function should
+#' return the balance for the treated group (`1`), for the control
+#' group (`0`), or for overall combined balanced (`NULL`, the
+#' default). 
+#'
+#' @return Returns a data frame with the following columns.
+#' \itemize{
+#'
+#' \item variable: Name of covariate
+#'
+#' \item before_0: Pre-matching average of the covariate in the
+#' mediator == 0 (if first stage balance) or treatment == 0 (if second
+#' stage balance) condition
+#'
+#' \item before_1: Pre-matching average of the covariate in the
+#' mediator == 1 (if first stage balance) or treatment == 1 (if second
+#' stage balance) condition
+#'
+#' \item after_0: Post-matching average of the covariate in the
+#' mediator == 0 (if first stage balance) or treatment == 0 (if second
+#' stage balance) condition
+#'
+#' \item after_1: Post-matching average of the covariate in the
+#' mediator == 1 (if first stage balance) or treatment == 1 (if second
+#' stage balance) condition
+#'
+#' \item before_sd: standard deviation of the outcome (pre-Matching)
+#'
+#' \item before_diff: Pre-matching covariate difference between
+#' mediator arms (if first stage balance) or treatment arms (if second
+#' stage balance).
+#'
+#' \item before_std_diff: Pre-matching standardized covariate
+#' difference between mediator arms (if first stage balance) or
+#' treatment arms (if second stage balance), Equal to Before_Diff/SD.
+#'
+#' \item after_diff: Post--matching covariate difference between
+#' mediator arms (if first stage balance) or treatment arms (if second
+#' stage balance).
+#'
+#' \item after_std_diff: Post-matching standardized covariate
+#' difference between mediator arms (if first stage balance) or
+#' treatment arms (if second stage balance), Equal to Before_Diff/SD.
+#' }
+#'
+#' @export
+#' @importFrom stats as.formula model.frame weighted.mean
+balance_table <- function(object, vars, data, comparison = NULL) {
+
+  ##################
+  ### Sanity checks
+  ##################
+
+  ### Is the class a 'tmatch'
+  if (!all(c("cde_estimate", "telescope_match") %in% class(object))) {
+    rlang::abort("not a valid `telescope_match` output")
+  }
+
+  ### Does N of data match number of obs
+  if (nrow(data) != length(object$included)) {
+    stop(
+      "number of rows in data not consistent with object",
+      .call = FALSE
+    )
+  }
+
+  ##########################
+  ### Validating the formula
+  if (!(as.character(vars[2]) %in% object$treat_names)) {
+    stop(
+      "Left-hand side of `vars` must be a treatment variable from `object`.",
+      call. = FALSE
+    )
+  }
+  j <- which(object$treat == as.character(vars[[2L]]))
+  this_K <- object$match_out[[j]]$K[[paste0("K_", j)]]
+
+  
+  ###########################
+  ### Validating the data frame
+
+  ## subset to the selected rows used in matching
+  data <- data[object$included, ]
+
+  ## Do model.frame first to parse any functions
+  mf <- tryCatch({
+    model.frame(vars, data)
+  },
+  error = function(e) {
+    stop("Could not extract all variables in 'formula' from data")
+  })
+
+  ## Do model.matrix to get functions/interactions/expansions
+  X <- tryCatch({
+    model.matrix(vars, mf)
+  },
+  error = function(e) {
+    stop("Could not extract all variables in 'formula' from data")
+  })
+
+  ## Strip out the "(Intercept) column
+  X <- X[, colnames(X) != "(Intercept)"]
+  A <- model.response(mf)
+
+  before_0 <- colMeans(X[A == 0, ])
+  before_1 <- colMeans(X[A == 1, ])
+  before_sd <- apply(X, 2, sd)
+  before_diff <- before_1 - before_0
+  before_std_diff <- before_diff / before_sd
+
+  if (!is.null(comparison)) {
+    obs.weights <- comparison * (this_K * (1 - A) + A) +
+      (1 - comparison) * (this_K * A + (1 - A))
+  } else {
+    obs.weights <- this_K + 1
+  }
+
+  ## get weighted means of each variable
+  after_0 <- apply(X[A == 0, ], 2, weighted.mean, obs.weights[A == 0])
+  after_1 <- apply(X[A == 1, ], 2, weighted.mean, obs.weights[A == 1])
+  after_diff <- after_1 - after_0
+  after_std_diff <- after_diff / before_sd
+
+  bal_tab <- data.frame(
+    variable = colnames(X),
+    before_0 = before_0, before_1 = before_1,
+    after_0 = after_0, after_1 = after_1,
+    before_sd = before_sd,
+    before_diff = before_diff, before_std_diff,
+    after_diff = after_diff, after_std_diff
+  )
+
+
+  ## Output
+  return(bal_tab)
+}
+
 #' Histograms of matching weights
 #'
 #' @details Provides histograms of the number of times each unit is
@@ -973,5 +1136,263 @@ plotDiag.tmatch <- function(object, stage) {
   abline(v = 1, col = "red", lty = 2, lwd = 2)
 
   invisible()
+
+}
+
+
+#' Initialize an telescope matching CDE estimator
+#'
+#' Initializes the specification of a CDE estimator based on an
+#' telescope matching approach
+#'
+#' @param ... Optional arguments to pass to the telescope matching
+#' estimator. 
+#' @md
+#' @export
+cde_telescope_match <- function(...) {
+  args <- rlang::enquos(...)
+
+  new_cde_estimator(
+    "telescope_match",
+    args = args,    
+    formula = NULL,
+    model_spec = NULL
+  )
+}
+
+
+t_match <- function(object, data) {
+
+  fit_env <- rlang::env()  
+  A <- get_treat_df(object, data)
+  paths <- interaction(A, sep = "_")
+  Y <- get_outcome(object, data)
+  num_treat <- length(object$model_spec)
+  N <- length(Y)
+  
+  ## move backward through blocks
+  block_seq <- rev(seq_len(num_treat))
+
+  
+  out <- list()
+  out$match_out <- make_match_holder(A)
+  L <- unlist(lapply(object$model_spec, function(x) rlang::eval_tidy(x$treat_spec$args$L)))
+  for (j in block_seq) {
+    if (j > 1) {
+      past_fit <- interaction(A[, 1:(j - 1), drop = FALSE], sep = "_")
+      past_splits <- split(seq_len(nrow(A)), past_fit)
+    } else {
+      past_fit <- rep(0, times = nrow(A))
+      past_splits <- list(seq_len(nrow(A)))
+    }
+    M <- length(past_splits)
+
+    ## TODO: add check about overlap?
+    for (m in seq_len(M)) {
+      past_strata_rows <- past_splits[[m]]
+      fit_env$fit_data <- data[past_strata_rows, ]
+      match_out <- match_model(object$model_spec[[j]]$treat_spec, fit_env)
+      match_out$matches <- lapply(
+        match_out$matches,
+        function(x) past_strata_rows[x]
+      )
+      match_out$donors <- lapply(
+        match_out$donors,
+        function(x) past_strata_rows[x]
+      )
+      
+      match_rows <- past_strata_rows[as.numeric(names(match_out$matches))]
+      out$match_out[[j]]$matches[match_rows] <- match_out$matches
+      donor_rows <- past_strata_rows[as.numeric(names(match_out$donors))]
+      out$match_out[[j]]$donors[donor_rows] <- match_out$donors
+      out$match_out[[j]]$L <- match_out$L
+
+    }
+    out$match_out[[j]]$K <- compute_match_weights(object, out$match_out, j)
+  }
+  out$match_out
+}
+
+
+match_model <- function(model, fit_env, ...) {
+
+  fit_env$X <- model.matrix(model$formula, data = fit_env$fit_data)
+  fit_env$X <- fit_env$X[, which(colnames(fit_env$X) != "(Intercept)")]
+  fit_env$tr <- model.response(model.frame(model$formula, fit_env$fit_data))
+  args <- as.list(model$args)
+  args$X <- quote(X)
+  args$Tr <- quote(tr)
+  names(args)[names(args) == "L"] <- "M"
+  args$Weight <- 2
+  args$ties <- FALSE
+  att_call <- rlang::call2("Match", !!!args, estimand = "ATT", .ns = "Matching")
+  atc_call <- rlang::call2("Match", !!!args, estimand = "ATC", .ns = "Matching")
+  tm_att <- rlang::eval_tidy(att_call, env = fit_env)
+  tm_atc <- rlang::eval_tidy(atc_call, env = fit_env)
+
+  ## donation lists: where each unit was used as a match
+  donors_1 <- split(tm_att$index.treated, tm_att$index.control)
+  donors_0 <- split(tm_atc$index.control, tm_atc$index.treated)
+  donors <- c(donors_1, donors_0)
+  donors <- donors[as.character(sort(as.numeric(names(donors))))]
+
+  ## matched sets: matched for each unit
+  matches_1 <- split(tm_att$index.control, tm_att$index.treated)
+  matches_0 <- split(tm_atc$index.treated, tm_atc$index.control)
+  matches <- c(matches_1, matches_0)
+  matches <- matches[as.character(sort(as.numeric(names(matches))))]
+  return(list(donors = donors, matches = matches, L = rlang::eval_tidy(args$M)))
+
+}
+
+compute_match_weights <- function(object, out, j) {
+  num_treat <- length(object$model_spec)
+  N <- length(out[[num_treat]]$matches)
+  a_names <- unlist(lapply(
+    object$model_spec,
+    function(x) rlang::as_label(x$treat)
+  ))
+  path_lengths <- 1:(num_treat - j + 1)
+  paths <- lapply(
+    path_lengths,
+    function(x) combn(j:num_treat, m = x, simplify = FALSE)
+  )
+  paths <- unlist(paths, recursive = FALSE)
+  paths <- paths[unlist(lapply(paths, function(x) x[1] == j))]
+  L <- unlist(lapply(
+    object$model_spec,
+    function(x) rlang::eval_tidy(x$treat_spec$args$L)
+  ))
+  K <- lapply(
+    paths,
+    function(x) find_indirect_matches(out, path = x, N) / prod(L[x])
+  )
+  K_paths <- unlist(
+    lapply(
+      paths,
+      function(x) paste0(a_names[x], collapse = ":")
+    )
+  )
+    
+  names(K) <- unlist(lapply(paths, paste0, collapse = ":"))
+  names(K) <- paste0("K_", names(K))
+  K
+}
+
+make_match_holder <- function(A) {
+  out <- vector("list", ncol(A))
+  for (j in seq_along(out)) {
+    out[[j]]$matches <- vector("list", nrow(A))
+    out[[j]]$donors <- vector("list", nrow(A))
+  }
+  out
+}
+
+compute_telescope_match <- function(j, j_levs, y, treat, out, args, term_name, dfs) {
+  num_treat <- length(out$model_fits)
+  N <- length(treat)
+  j_levs <- sort(j_levs)
+  paths <- colnames(out$model_fits[[j]]$outreg_pred)
+  sp <- strsplit(as.character(paths), "_")
+  templates <- unique(replace_each(sp, j, NA))
+  A <- strsplit(as.character(treat), "_", fixed = TRUE)
+  A <- do.call(rbind, lapply(A, as.numeric))
+  K <- lapply(out$match_out[j:num_treat], function(x) as.data.frame(x$K))
+  K <- do.call(cbind, K)
+  W <- 1 + rowSums(K)
+  sm_part <- W * y
+
+  est_tab <- empty_est_tab()
+  num_fut_strata <- 2 ^ rev(seq(j, num_treat)) - j + 1
+  dfs[j:num_treat] <- dfs[j:num_treat] * num_fut_strata
+  for (k in seq_along(templates)) {
+    base <- templates[[k]]
+    base[j] <- j_levs[1L]
+    
+    base <- paste0(base, collapse = "_")
+    ctr <- as.numeric(treat == base)
+    N_c <- sum(ctr)
+    r_ctr <- get_reg_preds(out, base)
+    A_ctr <- get_path_inds(treat, base)
+    eps_ctr <- cbind(r_ctr[, -1L, drop = FALSE], y) - r_ctr
+    
+    plus <- templates[[k]]
+    plus[j] <- j_levs[2L]
+    plus <- paste0(plus, collapse = "_")
+    trt <- as.numeric(treat == plus)
+    N_t <- sum(trt)
+    r_trt <- get_reg_preds(out, plus)
+    A_trt <- get_path_inds(treat, plus)
+    eps_trt <- cbind(r_trt[, -1L, drop = FALSE], y) - r_trt
+    
+    A_j <- A_trt[, j]
+    if (j > 1) {
+      strata_past <- paste0(templates[[k]][1:(j - 1)], collapse = "_")      
+      past <- apply(A[, 1:(j - 1), drop = FALSE], 1, paste0, collapse = "_")
+      this_past <- as.numeric(past == strata_past)
+    } else {
+      this_past <- rep(1, N)
+    }
+    
+    
+    strata_rows <- as.numeric(treat %in% c(base, plus))
+    N_s <- sum(strata_rows)
+    tau_i1 <- trt * sm_part
+    tau_i0 <- ctr * sm_part
+    tau_i <- tau_i1 - tau_i0
+    tau_raw <- mean(tau_i[this_past == 1L])
+
+    K_term <- strata_rows * rowSums(K) - (1 - strata_rows)
+    B_0 <- A_j * (r_ctr[, j]  + K_term * r_trt[, j])
+    B_0 <- B_0 - (1 - A_j) * (r_trt[, j] + K_term * r_ctr[, j])
+    tau_i <- tau_i - B_0
+
+    dfc_1 <- N_s / (N_s - dfs[num_treat])
+    tau_v <- W ^ 2 * (trt * eps_trt[, num_treat] ^ 2 + ctr * eps_ctr[, num_treat] ^ 2)
+    est_var <- dfc_1 * mean(tau_v[this_past == 1L])
+    if (j == num_treat) {
+      fut <- numeric(0)
+    } else {
+      fut <- (j + 1):num_treat
+    }
+
+    
+    
+    for (s in fut) {
+      A_fut <- A[, s:num_treat, drop = FALSE]
+      A_fut_str <-  apply(A_fut, 1, paste0, collapse = "_")
+      strata_fut <- paste0(templates[[k]][s:num_treat], collapse = "_")
+      D <- as.numeric(A_fut_str == strata_fut)
+
+      fut_patt <- paste0("[", paste0(s:num_treat, collapse = ":"), "]")
+      past_K <- grep(fut_patt, names(K), invert = TRUE)
+      fut_K <- grep(fut_patt, names(K))
+      W_s <- D * (rowSums(K[fut_K])) - (1 - D) * (1 + rowSums(K[past_K]))
+
+      bias_s <- A_j * eps_trt[, s - 1] * W_s - (1 - A_j) * eps_ctr[, s - 1] * W_s
+      tau_i <- tau_i - bias_s
+
+      dfc_s <- sum(D * this_past) / (sum(D * this_past) - sum(dfs[(s - 1):num_treat]))
+      tau_v <- dfc_s * (W - rowSums(K[fut_K])) ^ 2 * (A_j * eps_trt[, s - 1] ^ 2 + (1 - A_j) * eps_ctr[, s - 1] ^ 2)
+      est_var <- est_var + mean(tau_v[this_past == 1L])
+    }
+    
+    est <- mean(tau_i[this_past == 1])
+    dfc_x <- sum(this_past) / (sum(this_past) - sum(dfs) - 1)
+    tau_x <- dfc_x * (r_trt[, j] - r_ctr[, j] - est) ^ 2
+    est_var <- (est_var + mean(tau_x[this_past == 1L])) / sum(this_past)
+
+    this_est <- data.frame(
+      term = term_name,
+      active = plus,
+      control = base,
+      estimate = est,
+      std.error = sqrt(est_var),
+      DF = N_c + N_t
+    )
+    est_tab <- rbind(est_tab, this_est)
+  }
+  rownames(est_tab)
+  est_tab
 
 }
