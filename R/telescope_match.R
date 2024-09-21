@@ -848,7 +848,7 @@ balance.tmatch <- function(object, vars, data, comparison = NULL) {
   ##################
 
   ### Is the class a 'tmatch'
-  if (class(object) != "tmatch") {
+  if (!("tmatch" %in% class(object))) {
     stop("`object` not of class 'tmatch'", call. = FALSE)
   }
 
@@ -1109,7 +1109,7 @@ plotDiag.tmatch <- function(object, stage) {
   ##################
 
   ### Is the class a 'tmatch'
-  if (class(object) != "tmatch") {
+  if (!( "tmatch" %in% class(object))) {
     stop("`object` not of class 'tmatch'", call. = FALSE)
   }
 
