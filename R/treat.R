@@ -1,5 +1,5 @@
-reg_engines <- c("lm", "lasso", "rlasso")
-class_engines <- c("logit", "multinom", "lasso_logit", "rlasso_logit", "lasso_multinom", "ranger")
+reg_engines <- c("lm", "lasso", "rlasso", "ranger_reg")
+class_engines <- c("logit", "multinom", "lasso_logit", "rlasso_logit", "lasso_multinom", "ranger_class")
 match_engines <- c("Matching")
 
 #' Specifiy a treatment variable for a controlled direct effect

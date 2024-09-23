@@ -281,7 +281,7 @@ tidy.cde_estimate <- function(x, conf.int = TRUE, conf.level = 0.95, ...) {
 #' @export 
 summary.cde_estimate <- function(object, ...) {
   
-  est <- tidy(object)
+  est <- broom::tidy(object)
   rownames(est) <- est$term
   est <- est[, colnames(est) != "term"]
   colnames(est) <- c(

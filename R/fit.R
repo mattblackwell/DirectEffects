@@ -1,5 +1,5 @@
 form_engines <- c("lm", "logit", "multinom", "rlasso", "rlasso_logit")
-matrix_engines <- c("lasso", "lasso_logit", "lasso_multinom", "ranger")
+matrix_engines <- c("lasso", "lasso_logit", "lasso_multinom", "ranger_reg", "ranger_class")
 
 ## for now hard code the egnines and the generalize later since its
 ## all under the hood.
@@ -87,9 +87,9 @@ fit_model <- function(model, fit_env) {
     }
   }
 
-  if (model$engine == "ranger") {
+  if (model$engine %in% c("ranger_reg", "ranger_class")) {
     if (requireNamespace("ranger", quietly = TRUE)) {
-      args$probability <- TRUE
+      if (model$engine == "ranger_class") args$probability <- TRUE
       fit_call <- rlang::call2("ranger", !!!args, .ns = "ranger")
     } else {
       rlang::abort("ranger package must be installed for `ranger` engine")
@@ -138,7 +138,7 @@ predict_model <- function(model, fit_env) {
     }
   }
 
-  if (model$engine == "ranger") {
+  if (model$engine %in% c("ranger_reg", "ranger_class")) {
     mf <- model.frame(model$formula[-2L], data = fit_env$pred_data)
     fit_env$`.x` <- model.matrix(attr(mf, "terms"), data = mf)[, -1, drop = FALSE]
     pred_args$data <- quote(`.x`)
@@ -148,11 +148,14 @@ predict_model <- function(model, fit_env) {
   preds <- rlang::eval_tidy(pred_call, env = fit_env)
   if (model$engine == "lasso_multinom") {
     preds <- preds[, , 1L]
-  } else if (model$engine == "ranger") {
+  } else if (model$engine == "ranger_class") {
     preds <- preds$predictions
     colnames(preds) <- fit_env$fit$forest$class.values
     preds <- preds[,sort(colnames(preds))]
+  } else if (model$engine == "ranger_reg") {
+    preds <- preds$predictions
   }
+  
   ## preds for weights should return a matrix of predicted
   ## probabilities for each level of the outcome.
   ## TODO: weights for continuous? 
