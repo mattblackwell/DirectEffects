@@ -63,37 +63,35 @@ the model with bootstrap samples.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An object of type <code class="env">seqgboots</code> which is a matrix with <code class="env">boots</code>
-rows and columns for each coefficient in the <code class="env">seqg</code> model. Use <code class="env">summary</code>
+    <p>An object of type <code>seqgboots</code> which is a matrix with <code>boots</code>
+rows and columns for each coefficient in the <code>seqg</code> model. Use <code>summary</code>
 to provide summary statistics, such as mean and quantiles.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># \donttest{</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ploughs</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">form</span> <span class="op">&lt;-</span> <span class="va">women_politics</span> <span class="op">~</span> <span class="va">plow</span> <span class="op">+</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ploughs</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="sequential_g.html">sequential_g</a></span><span class="op">(</span><span class="va">women_politics</span> <span class="op">~</span> <span class="va">plow</span> <span class="op">+</span></span></span>
 <span class="r-in"><span> <span class="va">agricultural_suitability</span> <span class="op">+</span> <span class="va">tropical_climate</span> <span class="op">+</span> <span class="va">large_animals</span> <span class="op">+</span> <span class="va">rugged</span> <span class="op">|</span></span></span>
 <span class="r-in"><span> <span class="va">years_civil_conflict</span> <span class="op">+</span> <span class="va">years_interstate_conflict</span>  <span class="op">+</span> <span class="va">oil_pc</span> <span class="op">+</span></span></span>
 <span class="r-in"><span> <span class="va">european_descent</span> <span class="op">+</span> <span class="va">communist_dummy</span> <span class="op">+</span> <span class="va">polity2_2000</span> <span class="op">|</span></span></span>
-<span class="r-in"><span> <span class="va">centered_ln_inc</span> <span class="op">+</span> <span class="va">centered_ln_incsq</span></span></span>
-<span class="r-in"><span><span class="va">s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="sequential_g.html">sequential_g</a></span><span class="op">(</span><span class="va">form</span>, <span class="va">ploughs</span><span class="op">)</span></span></span>
+<span class="r-in"><span> <span class="va">centered_ln_inc</span> <span class="op">+</span> <span class="va">centered_ln_incsq</span>, <span class="va">ploughs</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">out.boots</span> <span class="op">&lt;-</span> <span class="fu">boots_g</span><span class="op">(</span><span class="va">s1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">out.boots</span> <span class="op">&lt;-</span> <span class="fu">boots_g</span><span class="op">(</span><span class="va">s1</span>, boots <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">out.boots</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Summary of bootstrapped coefficients: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                          Estimate Std. Err.  t value    2.5 %  97.5 %</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)              13.23802   4.66375  2.83849  4.29674 22.9691</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plow                     -4.42914   1.83211 -2.41750 -8.05517 -0.9433</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agricultural_suitability  4.38532   2.34331  1.87142 -0.35748  8.8871</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> tropical_climate         -2.81405   2.33820 -1.20351 -7.57820  1.9232</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> large_animals            -0.84134   4.20320 -0.20017 -9.40630  7.0397</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rugged                   -0.34581   0.49178 -0.70319 -1.26235  0.5908</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)              14.02959   4.70395  2.98251  5.02279 23.1829</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plow                     -4.04895   1.88171 -2.15174 -7.64853 -0.6127</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agricultural_suitability  4.32654   2.23892  1.93243 -0.28430  8.7664</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> tropical_climate         -2.87187   2.50310 -1.14732 -8.73663  1.3647</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> large_animals            -1.88143   4.26803 -0.44082 -9.83607  7.0296</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rugged                   -0.33396   0.48342 -0.69083 -1.19738  0.6599</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-in"><span><span class="co"># }</span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
