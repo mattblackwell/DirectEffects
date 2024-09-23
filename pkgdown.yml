@@ -1,12 +1,11 @@
-pandoc: 2.7.3
-pkgdown: 2.0.2
+pandoc: 3.1.11
+pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
+  articles/assembly_line: assembly_line.html
   DirectEffects: DirectEffects.html
-  assembly_line: assembly_line.html
-  telescope_matching: telescope_matching.html
-last_built: 2022-03-21T18:26Z
+  articles/telescope_matching: telescope_matching.html
+last_built: 2024-09-23T14:54Z
 urls:
   reference: https://mattblackwell.github.io/DirectEffects/reference
   article: https://mattblackwell.github.io/DirectEffects/articles
-

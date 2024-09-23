@@ -5,7 +5,6 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="description" content="DirectEffects">
 <title>Assmebly Line • DirectEffects</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
@@ -14,75 +13,60 @@
 <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.1.0/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.1.0/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- bootstrap-toc --><script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v1.0.1/dist/bootstrap-toc.min.js"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Assmebly Line">
-<meta property="og:description" content="DirectEffects">
-<meta property="og:image" content="https://mattblackwell.github.io/DirectEffects/logo.png">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Assmebly Line">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
-    
 
-    <nav class="navbar fixed-top navbar-dark navbar-expand-lg bg-primary"><div class="container">
-    
+
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
+
     <a class="navbar-brand me-2" href="../index.html">DirectEffects</a>
 
     <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.9000</small>
 
-    
+
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item">
-  <a class="nav-link" href="../articles/DirectEffects.html">Get started</a>
-</li>
-<li class="nav-item">
-  <a class="nav-link" href="../reference/index.html">Reference</a>
-</li>
+<li class="nav-item"><a class="nav-link" href="../articles/DirectEffects.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item dropdown">
-  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
-  <div class="dropdown-menu" aria-labelledby="dropdown-articles">
-    <a class="dropdown-item" href="../articles/assembly_line.html">Assmebly Line</a>
-    <a class="dropdown-item" href="../articles/telescope_matching.html">Telescope matching</a>
-  </div>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="../articles/assembly_line.html">Assmebly Line</a></li>
+    <li><a class="dropdown-item" href="../articles/telescope_matching.html">Telescope matching</a></li>
+  </ul>
 </li>
       </ul>
-<form class="form-inline my-2 my-lg-0" role="search">
-        <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off">
-</form>
-
-      <ul class="navbar-nav">
-<li class="nav-item">
-  <a class="external-link nav-link" href="https://github.com/mattblackwell/DirectEffects/" aria-label="github">
-    <span class="fab fa fab fa-github fa-lg"></span>
-     
-  </a>
-</li>
+<ul class="navbar-nav">
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/mattblackwell/DirectEffects/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
-    
+
   </div>
 </nav><div class="container template-article">
 
 
 
-<script src="assembly_line_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
-  <main id="main"><div class="page-header">
+
+<div class="row">
+  <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Assmebly Line</h1>
             
-            <h4 data-toc-skip class="date">2022-03-21</h4>
+            <h4 data-toc-skip class="date">2024-09-23</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/mattblackwell/DirectEffects/blob/HEAD/vignettes/articles/assembly_line.Rmd" class="external-link"><code>vignettes/articles/assembly_line.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/mattblackwell/DirectEffects/blob/master/vignettes/articles/assembly_line.Rmd" class="external-link"><code>vignettes/articles/assembly_line.Rmd</code></a></small>
       <div class="d-none name"><code>assembly_line.Rmd</code></div>
     </div>
 
@@ -91,136 +75,209 @@
 <div class="section level2">
 <h2 id="a-new-approach">A new approach<a class="anchor" aria-label="anchor" href="#a-new-approach"></a>
 </h2>
-<p>This vignette introduces a new way to design, specify, and implement various estimators for controlled direct effects using a coding style that we refer to as the “assembly line.” Users can specify the various components of the estimators sequentially and easily swap out implementation details such as what exact estimators are used for the estimation of each nuisance function or what arguments to pass to these functions. A unified structure and output across different research designs and estimators should make comparing estimators very easy. Finally, this implementation is built around the idea of cross-fitting for nuisance function estimation.</p>
-<p>Let’s see how this works in practice. We first load a subset of the <code>jobcorps</code> data from the package:</p>
+<p>This vignette introduces a new way to design, specify, and implement
+various estimators for controlled direct effects using a coding style
+that we refer to as the “assembly line.” Users can specify the various
+components of the estimators sequentially and easily swap out
+implementation details such as what exact estimators are used for the
+estimation of each nuisance function or what arguments to pass to these
+functions. A unified structure and output across different research
+designs and estimators should make comparing estimators very easy.
+Finally, this implementation is built around the idea of cross-fitting
+for nuisance function estimation.</p>
+<p>Let’s see how this works in practice. We first load a subset of the
+<code>jobcorps</code> data from the package:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"jobcorps"</span><span class="op">)</span>
-<span class="va">jc</span> <span class="op">&lt;-</span> <span class="va">jobcorps</span><span class="op">[</span>
-  <span class="fl">1</span><span class="op">:</span><span class="fl">200</span>,
-  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"treat"</span>, <span class="st">"female"</span>, <span class="st">"age_cat"</span>, <span class="st">"work2year2q"</span>, <span class="st">"pemplq4"</span>, <span class="st">"emplq4"</span>, <span class="st">"exhealth30"</span><span class="op">)</span>
-<span class="op">]</span></code></pre></div>
-<p>This is the Job Corps experiment data used in <span class="citation">Huber (<a href="#ref-Hub14" role="doc-biblioref">2014</a>)</span> to estimate the effect of a randomized job training program on self-assessed health holding constant the intermediate outcome of employment. We use a subset of the variables from their study, but the basic variable we use here:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"jobcorps"</span><span class="op">)</span></span>
+<span><span class="va">jc</span> <span class="op">&lt;-</span> <span class="va">jobcorps</span><span class="op">[</span></span>
+<span>  <span class="fl">1</span><span class="op">:</span><span class="fl">200</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"treat"</span>, <span class="st">"female"</span>, <span class="st">"age_cat"</span>, <span class="st">"work2year2q"</span>, <span class="st">"pemplq4"</span>, <span class="st">"emplq4"</span>, <span class="st">"exhealth30"</span><span class="op">)</span></span>
+<span><span class="op">]</span></span></code></pre></div>
+<p>This is the Job Corps experiment data used in <span class="citation">Huber (<a href="#ref-Hub14">2014</a>)</span> to
+estimate the effect of a randomized job training program on
+self-assessed health holding constant the intermediate outcome of
+employment. We use a subset of the variables from their study, but the
+basic variable we use here:</p>
 <ul>
 <li>
-<span class="math inline">\(Y_i\)</span> is an indicator for whether participants reported “very good” health after 2.5 years out after randomization (<code>exhealth30</code>)</li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Y</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Y_i</annotation></semantics></math>
+is an indicator for whether participants reported “very good” health
+after 2.5 years out after randomization (<code>exhealth30</code>)</li>
 <li>
-<span class="math inline">\(A_i\)</span> is an indicator for assignment to the job training program (<code>treat</code>)</li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>A</mi><mi>i</mi></msub><annotation encoding="application/x-tex">A_i</annotation></semantics></math>
+is an indicator for assignment to the job training program
+(<code>treat</code>)</li>
 <li>
-<span class="math inline">\(M_i\)</span> is an indicator for employment 1 to 1.5 years after assignment (<code>work2year2q</code>)</li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>M</mi><mi>i</mi></msub><annotation encoding="application/x-tex">M_i</annotation></semantics></math>
+is an indicator for employment 1 to 1.5 years after assignment
+(<code>work2year2q</code>)</li>
 <li>
-<span class="math inline">\(Z_i\)</span> are the post-treatment, pre-mediator intermediate confounders (<code>emplq4</code>, <code>pemplq4</code>)</li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Z_i</annotation></semantics></math>
+are the post-treatment, pre-mediator intermediate confounders
+(<code>emplq4</code>, <code>pemplq4</code>)</li>
 <li>
-<span class="math inline">\(X_i\)</span> are the pre-treatment characteristics (<code>female</code>, <code>age_cat</code>)</li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>X</mi><mi>i</mi></msub><annotation encoding="application/x-tex">X_i</annotation></semantics></math>
+are the pre-treatment characteristics (<code>female</code>,
+<code>age_cat</code>)</li>
 </ul>
-<p>In context of our CDE estimators, we refer to be <span class="math inline">\(A_i\)</span> (the treatment) and <span class="math inline">\(M_i\)</span> (the mediator) as <em>treatment variables</em> because we are interested in causal effects that contrast different combinations of these two variables.</p>
-<p>The first step in our assembly line is to choose the type of CDE estimator (or really estimation strategy) that we want to pursue. These choices include IPW (<code><a href="../reference/cde_ipw.html">cde_ipw()</a></code>), regression imputation (<code><a href="../reference/cde_reg_impute.html">cde_reg_impute()</a></code>), and augmented IPW (<code><a href="../reference/cde_aipw.html">cde_aipw()</a></code>) among others. Some of these different functions will take different arguments to specify different aspects of the estimator. The AIPW estimator is useful to demonstrate because it uses many of the features of the assembly line approach.</p>
+<p>In context of our CDE estimators, we refer to be
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>A</mi><mi>i</mi></msub><annotation encoding="application/x-tex">A_i</annotation></semantics></math>
+(the treatment) and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>M</mi><mi>i</mi></msub><annotation encoding="application/x-tex">M_i</annotation></semantics></math>
+(the mediator) as <em>treatment variables</em> because we are interested
+in causal effects that contrast different combinations of these two
+variables.</p>
+<p>The first step in our assembly line is to choose the type of CDE
+estimator (or really estimation strategy) that we want to pursue. These
+choices include IPW (<code><a href="../reference/cde_ipw.html">cde_ipw()</a></code>), regression imputation
+(<code><a href="../reference/cde_reg_impute.html">cde_reg_impute()</a></code>), and augmented IPW
+(<code><a href="../reference/cde_aipw.html">cde_aipw()</a></code>) among others. Some of these different
+functions will take different arguments to specify different aspects of
+the estimator. The AIPW estimator is useful to demonstrate because it
+uses many of the features of the assembly line approach.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">my_aipw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cde_aipw.html">cde_aipw</a></span><span class="op">(</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">treat</span>, <span class="op">~</span> <span class="va">female</span> <span class="op">+</span> <span class="va">age_cat</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"logit"</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">work2year2q</span>, <span class="op">~</span> <span class="va">emplq4</span> <span class="op">+</span> <span class="va">pemplq4</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"logit"</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/estimate.html">estimate</a></span><span class="op">(</span><span class="va">exhealth30</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">work2year2q</span>, data <span class="op">=</span> <span class="va">jobcorps</span><span class="op">)</span></code></pre></div>
-<p>The call here consists of several steps connected by R’s pipe operator. The first call <code><a href="../reference/cde_aipw.html">cde_aipw()</a></code> simply initializes the estimator as taking the AIPW form, meaning that it will use both propensity score models and outcome regressions to estimate the causal effects.</p>
-<p>Following this we have two blocks of 3 lines each that look similar with a few differences. These “treatment blocks” specify the causal variables of interest <strong>in their causal ordering</strong>. In <code><a href="../reference/set_treatment.html">set_treatment()</a></code> we set the name of the treatment variable and give a formula describing the pre-treatment covariates for this treatment. This formula, unless overridden by the next two functions, will be used in the fitting of the propensity score and outcome regression models. <code><a href="../reference/treat_model.html">treat_model()</a></code> allows the user to specify how to fit the propensity score model for this treatment with a choice of engine and optional arguments to pass to each engine. <code><a href="../reference/outreg_model.html">outreg_model()</a></code> does the same for the outcome regression. We repeat this specification for the mediator.</p>
-<p>The <code><a href="../reference/estimate.html">estimate()</a></code> function finally implements the specifications given in the previous commands. Users use a formula to set the outcome and which of the treatment variables we want effects for and indicate the data frame where all of these variables can be found. By default, the nuisance functions (the propensity score model and the outcome regression) are fit using cross-fitting.</p>
-<p>We can either use the <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> or <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code> functions to get a summary of the different effects being estimated:</p>
+<code class="sourceCode R"><span><span class="va">my_aipw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cde_aipw.html">cde_aipw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">treat</span>, <span class="op">~</span> <span class="va">female</span> <span class="op">+</span> <span class="va">age_cat</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"logit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">work2year2q</span>, <span class="op">~</span> <span class="va">emplq4</span> <span class="op">+</span> <span class="va">pemplq4</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"logit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/estimate.html">estimate</a></span><span class="op">(</span><span class="va">exhealth30</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">work2year2q</span>, data <span class="op">=</span> <span class="va">jobcorps</span><span class="op">)</span></span></code></pre></div>
+<p>The call here consists of several steps connected by R’s pipe
+operator. The first call <code><a href="../reference/cde_aipw.html">cde_aipw()</a></code> simply initializes the
+estimator as taking the AIPW form, meaning that it will use both
+propensity score models and outcome regressions to estimate the causal
+effects.</p>
+<p>Following this we have two blocks of 3 lines each that look similar
+with a few differences. These “treatment blocks” specify the causal
+variables of interest <strong>in their causal ordering</strong>. In
+<code><a href="../reference/set_treatment.html">set_treatment()</a></code> we set the name of the treatment variable
+and give a formula describing the pre-treatment covariates for this
+treatment. This formula, unless overridden by the next two functions,
+will be used in the fitting of the propensity score and outcome
+regression models. <code><a href="../reference/treat_model.html">treat_model()</a></code> allows the user to specify
+how to fit the propensity score model for this treatment with a choice
+of engine and optional arguments to pass to each engine.
+<code><a href="../reference/outreg_model.html">outreg_model()</a></code> does the same for the outcome regression. We
+repeat this specification for the mediator.</p>
+<p>The <code><a href="../reference/estimate.html">estimate()</a></code> function finally implements the
+specifications given in the previous commands. Users use a formula to
+set the outcome and which of the treatment variables we want effects for
+and indicate the data frame where all of these variables can be found.
+By default, the nuisance functions (the propensity score model and the
+outcome regression) are fit using cross-fitting.</p>
+<p>We can either use the <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> or <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>
+functions to get a summary of the different effects being estimated:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">my_aipw</span><span class="op">)</span></code></pre></div>
-<pre><code><span class="co">## </span>
-<span class="co">##  aipw CDE Estimator</span>
-<span class="co">## ---------------------------</span>
-<span class="co">## Causal variable: treat </span>
-<span class="co">## </span>
-<span class="co">## Treatment model: treat ~ female + age_cat </span>
-<span class="co">## Treatment engine: logit </span>
-<span class="co">## </span>
-<span class="co">## Outcome model: ~female + age_cat </span>
-<span class="co">## Outcome engine: lm </span>
-<span class="co">## ---------------------------</span>
-<span class="co">## Causal variable: work2year2q </span>
-<span class="co">## </span>
-<span class="co">## Treatment model: work2year2q ~ emplq4 + pemplq4 + female + age_cat </span>
-<span class="co">## Treatment engine: logit </span>
-<span class="co">## </span>
-<span class="co">## Outcome model: ~emplq4 + pemplq4 + female + age_cat </span>
-<span class="co">## Outcome engine: lm </span>
-<span class="co">## ---------------------------</span>
-<span class="co">## Cross-fit: TRUE </span>
-<span class="co">## Number of folds: 5 </span>
-<span class="co">## </span>
-<span class="co">## Estimated Effects:</span>
-<span class="co">##                                  Estimate Std. Error  t value Pr(&gt;|t|)</span>
-<span class="co">## treat [(1, 0) vs. (0, 0)]        0.032042    0.02250  1.42395  0.15454</span>
-<span class="co">## treat [(1, 1) vs. (0, 1)]        0.030775    0.01397  2.20285  0.02764</span>
-<span class="co">## work2year2q [(0, 1) vs. (0, 0)]  0.001804    0.02058  0.08765  0.93016</span>
-<span class="co">## work2year2q [(1, 1) vs. (1, 0)] -0.001721    0.01667 -0.10324  0.91778</span>
-<span class="co">##                                  CI Lower CI Upper   DF</span>
-<span class="co">## treat [(1, 0) vs. (0, 0)]       -0.012075  0.07616 3818</span>
-<span class="co">## treat [(1, 1) vs. (0, 1)]        0.003388  0.05816 6207</span>
-<span class="co">## work2year2q [(0, 1) vs. (0, 0)] -0.038554  0.04216 3991</span>
-<span class="co">## work2year2q [(1, 1) vs. (1, 0)] -0.034399  0.03096 6034</span></code></pre>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">my_aipw</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## </span></span>
+<span><span class="co">##  aipw CDE Estimator</span></span>
+<span><span class="co">## ---------------------------</span></span>
+<span><span class="co">## Causal variable: treat </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Treatment model: treat ~ female + age_cat </span></span>
+<span><span class="co">## Treatment engine: logit </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Outcome model: ~female + age_cat </span></span>
+<span><span class="co">## Outcome engine: lm </span></span>
+<span><span class="co">## ---------------------------</span></span>
+<span><span class="co">## Causal variable: work2year2q </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Treatment model: work2year2q ~ emplq4 + pemplq4 + female + age_cat </span></span>
+<span><span class="co">## Treatment engine: logit </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Outcome model: ~emplq4 + pemplq4 + female + age_cat </span></span>
+<span><span class="co">## Outcome engine: lm </span></span>
+<span><span class="co">## ---------------------------</span></span>
+<span><span class="co">## Cross-fit: TRUE </span></span>
+<span><span class="co">## Number of folds: 5 </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Estimated Effects:</span></span>
+<span><span class="co">##                                  Estimate Std. Error t value Pr(&gt;|t|)  CI Lower</span></span>
+<span><span class="co">## treat [(1, 0) vs. (0, 0)]        0.035713    0.02243  1.5923  0.11141 -0.008261</span></span>
+<span><span class="co">## treat [(1, 1) vs. (0, 1)]        0.029432    0.01397  2.1068  0.03517  0.002046</span></span>
+<span><span class="co">## work2year2q [(0, 1) vs. (0, 0)]  0.005647    0.02056  0.2747  0.78354 -0.034653</span></span>
+<span><span class="co">## work2year2q [(1, 1) vs. (1, 0)] -0.002415    0.01661 -0.1454  0.88440 -0.034975</span></span>
+<span><span class="co">##                                 CI Upper   DF</span></span>
+<span><span class="co">## treat [(1, 0) vs. (0, 0)]        0.07969 3818</span></span>
+<span><span class="co">## treat [(1, 1) vs. (0, 1)]        0.05682 6207</span></span>
+<span><span class="co">## work2year2q [(0, 1) vs. (0, 0)]  0.04595 3991</span></span>
+<span><span class="co">## work2year2q [(1, 1) vs. (1, 0)]  0.03015 6034</span></span></code></pre>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">my_aipw</span><span class="op">)</span></code></pre></div>
-<pre><code><span class="co">##                                            term     estimate  std.error</span>
-<span class="co">## treat_1_0             treat [(1, 0) vs. (0, 0)]  0.032042203 0.02250226</span>
-<span class="co">## treat_1_1             treat [(1, 1) vs. (0, 1)]  0.030774747 0.01397043</span>
-<span class="co">## work2year2q_0_1 work2year2q [(0, 1) vs. (0, 0)]  0.001804211 0.02058485</span>
-<span class="co">## work2year2q_1_1 work2year2q [(1, 1) vs. (1, 0)] -0.001720936 0.01666937</span>
-<span class="co">##                  statistic    p.value     conf.low  conf.high   df</span>
-<span class="co">## treat_1_0        1.4239549 0.15454126 -0.012075402 0.07615981 3818</span>
-<span class="co">## treat_1_1        2.2028488 0.02764203  0.003387865 0.05816163 6207</span>
-<span class="co">## work2year2q_0_1  0.0876475 0.93016125 -0.038553597 0.04216202 3991</span>
-<span class="co">## work2year2q_1_1 -0.1032394 0.91777636 -0.034398851 0.03095698 6034</span></code></pre>
-<p>Because the <code><a href="../reference/estimate.html">estimate()</a></code> function included both <code>treat</code> and <code>work2year2q</code> in the formula, the output includes both the controlled direct effects of the treatment and the conditional average treatment effect of the mediator. Furthermore, by default, the output contains estimates for an effect for each combination of other treatment variables. This can be changed by setting the <code>eval_vals</code> argument in the relevant <code><a href="../reference/set_treatment.html">set_treatment()</a></code> call.</p>
-<p>The modular structure of the call allow users to easily swap out parts of the models. For example, we could easily alter the above call to use lasso versions of the regression and logit model.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">my_aipw</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##                                            term     estimate  std.error</span></span>
+<span><span class="co">## treat_1_0             treat [(1, 0) vs. (0, 0)]  0.035713274 0.02242931</span></span>
+<span><span class="co">## treat_1_1             treat [(1, 1) vs. (0, 1)]  0.029432067 0.01396992</span></span>
+<span><span class="co">## work2year2q_0_1 work2year2q [(0, 1) vs. (0, 0)]  0.005647071 0.02055532</span></span>
+<span><span class="co">## work2year2q_1_1 work2year2q [(1, 1) vs. (1, 0)] -0.002414928 0.01660949</span></span>
+<span><span class="co">##                  statistic    p.value     conf.low  conf.high   df</span></span>
+<span><span class="co">## treat_1_0        1.5922593 0.11140923 -0.008261301 0.07968785 3818</span></span>
+<span><span class="co">## treat_1_1        2.1068168 0.03517349  0.002046182 0.05681795 6207</span></span>
+<span><span class="co">## work2year2q_0_1  0.2747256 0.78354131 -0.034652831 0.04594697 3991</span></span>
+<span><span class="co">## work2year2q_1_1 -0.1453945 0.88440430 -0.034975457 0.03014560 6034</span></span></code></pre>
+<p>Because the <code><a href="../reference/estimate.html">estimate()</a></code> function included both
+<code>treat</code> and <code>work2year2q</code> in the formula, the
+output includes both the controlled direct effects of the treatment and
+the conditional average treatment effect of the mediator. Furthermore,
+by default, the output contains estimates for an effect for each
+combination of other treatment variables. This can be changed by setting
+the <code>eval_vals</code> argument in the relevant
+<code><a href="../reference/set_treatment.html">set_treatment()</a></code> call.</p>
+<p>The modular structure of the call allow users to easily swap out
+parts of the models. For example, we could easily alter the above call
+to use lasso versions of the regression and logit model.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">my_aipw_lasso</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cde_aipw.html">cde_aipw</a></span><span class="op">(</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">treat</span>, <span class="op">~</span> <span class="va">female</span> <span class="op">+</span> <span class="va">age_cat</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso_logit"</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso"</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">work2year2q</span>, <span class="op">~</span> <span class="va">emplq4</span> <span class="op">+</span> <span class="va">pemplq4</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso_logit"</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso"</span><span class="op">)</span> |&gt;
-  <span class="fu"><a href="../reference/estimate.html">estimate</a></span><span class="op">(</span><span class="va">exhealth30</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">work2year2q</span>, data <span class="op">=</span> <span class="va">jobcorps</span><span class="op">)</span></code></pre></div>
-<p>Here we use a “rigorous” version of the lasso from the <code>hdm</code> package to speed up computation. There are a number of different engines for different outcome and treatment types including:</p>
+<code class="sourceCode R"><span><span class="va">my_aipw_lasso</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cde_aipw.html">cde_aipw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">treat</span>, <span class="op">~</span> <span class="va">female</span> <span class="op">+</span> <span class="va">age_cat</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso_logit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">work2year2q</span>, <span class="op">~</span> <span class="va">emplq4</span> <span class="op">+</span> <span class="va">pemplq4</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso_logit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/estimate.html">estimate</a></span><span class="op">(</span><span class="va">exhealth30</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">work2year2q</span>, data <span class="op">=</span> <span class="va">jobcorps</span><span class="op">)</span></span></code></pre></div>
+<p>Here we use a “rigorous” version of the lasso from the
+<code>hdm</code> package to speed up computation. There are a number of
+different engines for different outcome and treatment types
+including:</p>
 <ul>
-<li>GLMs: <code>lm</code> (OLS), <code>logit</code> (logistic regression), <code>multinom</code> (mulitnomial logit)</li>
-<li>LASSO estimators (from <code>glmnet</code>): <code>lasso</code>, <code>lasso_logit</code>, <code>lasso_multinom</code>
+<li>GLMs: <code>lm</code> (OLS), <code>logit</code> (logistic
+regression), <code>multinom</code> (mulitnomial logit)</li>
+<li>LASSO estimators (from <code>glmnet</code>): <code>lasso</code>,
+<code>lasso_logit</code>, <code>lasso_multinom</code>
 </li>
-<li>Rigorous LASSO estimator (from <code>hdm</code>): <code>rlasso</code>, <code>rlasso_logit</code>
+<li>Rigorous LASSO estimator (from <code>hdm</code>):
+<code>rlasso</code>, <code>rlasso_logit</code>
 </li>
 </ul>
-<div id="refs" class="references">
-<div id="ref-Hub14">
-<p>Huber, Martin. 2014. “Identifying Causal Mechanisms (Primarily) Based on Inverse Probability Weighting.” <em>Journal of Applied Econometrics</em> 29 (6): 920–43.</p>
+<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="ref-Hub14" class="csl-entry">
+Huber, Martin. 2014. <span>“Identifying Causal Mechanisms (Primarily)
+Based on Inverse Probability Weighting.”</span> <em>Journal of Applied
+Econometrics</em> 29 (6): 920–43.
 </div>
 </div>
 </div>
-  </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
 
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p>
-<p>Developed by Matthew Blackwell, Avidit Acharya, Maya Sen, Shiro Kuriwaki, Jacob Brown, Anton Strezhnev.</p>
+  <p>Developed by Matthew Blackwell, Avidit Acharya, Maya Sen, Shiro Kuriwaki, Jacob Brown, Anton Strezhnev.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
     </footer>
 </div>
 
-  
 
-  
+
+
 
   </body>
 </html>
