@@ -26,6 +26,7 @@ cde_aipw <- function(trim = c(0.01, 0.99), aipw_blip = TRUE) {
   )
 }
 
+#' @exportS3Method base::print 
 print.aipw <- function(x, ...) {
   cat("Augmented Inverse Probability Weighting Estimator\n\n")
 

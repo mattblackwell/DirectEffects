@@ -56,7 +56,7 @@ below for more information.}
 
 \item{verbose}{logical indicating whether to suppress progress bar. Default is FALSE.}
 
-\item{...}{additional arguments to be passed to the low level
+\item{...}{For \code{lm()}: additional arguments to be passed to the low level
     regression fitting functions (see below).}
 }
 \value{
