@@ -1,5 +1,6 @@
 README\.md
 ^README\.Rmd$
+^README\.html$
 \.git
 \.gitignore
 \.DS_Store
