@@ -40,7 +40,8 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/assembly_line.html">Assmebly Line</a></li>
+<li><a class="dropdown-item" href="../articles/did_cde.html">Difference-in-differences Designs</a></li>
+    <li><a class="dropdown-item" href="../articles/sequential_g.html">Sequential g-estimation</a></li>
     <li><a class="dropdown-item" href="../articles/telescope_matching.html">Telescope matching</a></li>
   </ul>
 </li>
@@ -64,7 +65,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Estimating controlled direct effects</h1>
             
-            <h4 data-toc-skip class="date">2024-09-23</h4>
+            <h4 data-toc-skip class="date">2024-10-01</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/mattblackwell/DirectEffects/blob/master/vignettes/DirectEffects.Rmd" class="external-link"><code>vignettes/DirectEffects.Rmd</code></a></small>
       <div class="d-none name"><code>DirectEffects.Rmd</code></div>
@@ -94,7 +95,9 @@ estimating direct effects. The main quantity of interest is the average
 controlled direct effect or ACDE. This can be illustrated from the
 following causal structure <span class="citation">(<a href="#ref-AchBlaSen16">Acharya, Blackwell, and Sen 2016, fig.
 3</a>)</span>:</p>
-<p><img src="figures%2FABS_fig3.png" width="600px" style="display: block; margin: auto;"></p>
+<div class="float">
+<img src="figures%2FABS_fig3.png" width="600" alt="DAG with direct effects structure"><div class="figcaption">DAG with direct effects structure</div>
+</div>
 <p>The average controlled direct effect defined for a given treatment
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>A</mi><mi>i</mi></msub><mo>=</mo><mi>a</mi></mrow><annotation encoding="application/x-tex">A_i = a</annotation></semantics></math>
 vs. <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>A</mi><mi>i</mi></msub><mo>=</mo><msup><mi>a</mi><mi>′</mi></msup></mrow><annotation encoding="application/x-tex">A_i = a^\prime</annotation></semantics></math>)
@@ -106,7 +109,7 @@ and is the total of the dashed lines in the figure above. Thus, we hold
 the mediator constant when comparing the outcome under each treatment.
 The ACDE is useful for discriminating between causal mechanisms, because
 the average total effect of treatment,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo>,</mo><msup><mi>a</mi><mi>′</mi></msup><mo stretchy="true" form="postfix">)</mo></mrow><mo>≡</mo><mi>E</mi><mrow><mo stretchy="true" form="prefix">[</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>Y</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><msub><mi>Y</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>a</mi><mi>′</mi></msup><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo>,</mo><msup><mi>a</mi><mi>′</mi></msup><mo stretchy="true" form="postfix">)</mo></mrow><mo>≡</mo><mi>E</mi><mrow><mo stretchy="true" form="prefix">[</mo><msub><mi>Y</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><msub><mi>Y</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>a</mi><mi>′</mi></msup><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">\tau(a, a^\prime) \equiv E[Y_i(a) - Y_i(a^\prime)]</annotation></semantics></math>,
 can be decomposed as the sum of three quantities: (1) the ACDE, (2) the
 average natural indirect effect, and (3) a reference interaction that
 measures of how much the direct effect of
@@ -121,339 +124,183 @@ We illustrate this with an empirical example. For more information on
 this, see <span class="citation">Acharya, Blackwell, and Sen (<a href="#ref-AchBlaSen16">2016</a>)</span>.</p>
 </div>
 <div class="section level2">
-<h2 id="estimation-by-sequential-g-estimation">Estimation by sequential g-estimation<a class="anchor" aria-label="anchor" href="#estimation-by-sequential-g-estimation"></a>
+<h2 id="implementation">Implementation<a class="anchor" aria-label="anchor" href="#implementation"></a>
 </h2>
-<p>One way to estimate the ACDE with linear models is by sequential
-g-estimation, a type of structural nested mean model. The key logic of
-sequential g-estimation is that, under the sequential unconfoundedness
-assumption, the ACDE can be identified as follows:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mrow><mo stretchy="true" form="prefix">[</mo><msub><mi>Y</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo>,</mo><mn>0</mn><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><msub><mi>Y</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>X</mi><mi>i</mi></msub><mo>=</mo><mi>x</mi><mo stretchy="true" form="postfix">]</mo></mrow><mo>=</mo><mi>E</mi><mrow><mo stretchy="true" form="prefix">[</mo><msub><mi>Y</mi><mi>i</mi></msub><mo>−</mo><mi>γ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo>,</mo><msub><mi>M</mi><mi>i</mi></msub><mo>,</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>A</mi><mi>i</mi></msub><mo>=</mo><mi>a</mi><mo>,</mo><mi>x</mi><mo stretchy="true" form="postfix">]</mo></mrow><mo>−</mo><mi>E</mi><mrow><mo stretchy="true" form="prefix">[</mo><msub><mi>Y</mi><mi>i</mi></msub><mo>−</mo><mi>γ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><msub><mi>M</mi><mi>i</mi></msub><mo>,</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>A</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn><mo>,</mo><mi>x</mi><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">E[Y_i(a, 0) - Y_i(0,0)|X_i = x] = E[Y_i - \gamma(a, M_i, x) | A_i = a, x] - E[Y_i - \gamma(0, M_i, x) | A_i = 0, x]</annotation></semantics></math></p>
-<p>The function
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
-above is called the “demediation function” (or “blip-down function”) and
-is defined as follows:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>m</mi><mo>,</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>E</mi><mrow><mo stretchy="true" form="prefix">[</mo><msub><mi>Y</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>m</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><msub><mi>Y</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo>,</mo><mn>0</mn><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>X</mi><mi>i</mi></msub><mo>=</mo><mi>x</mi><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">\gamma(a, m, x) = E[Y_i(a, m) - Y_i(a, 0) | X_i = x]</annotation></semantics></math></p>
-<p>This function is the effect of switching from some level of the
-mediator to 0, and thus is an estimate of the causal effect of the
-mediator for a fixed value of the treatment
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>a</mi><annotation encoding="application/x-tex">a</annotation></semantics></math>
-and within levels of the covariates. Subtracting its estimates
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>A</mi><mi>i</mi></msub><mo>,</mo><msub><mi>M</mi><mi>i</mi></msub><mo>,</mo><msub><mi>X</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\gamma(A_i, M_i, X_i)</annotation></semantics></math>
-from the outcome
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Y</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Y_i</annotation></semantics></math>
-will effectively remove the variation due to the mediator from the
-outcome, or what <span class="citation">Acharya, Blackwell, and Sen (<a href="#ref-AchBlaSen16">2016</a>)</span> call “demediation.”</p>
-<p>The identification of the ACDE hold under the sequential
-unconfoundedness condition, using the definitions by <span class="citation">Acharya, Blackwell, and Sen (<a href="#ref-AchBlaSen16">2016</a>)</span>.</p>
-<p><strong>Assumption 1 (Sequential Unconfoundedness)</strong></p>
-<blockquote>
-<p>First, no omitted variables for the effect of treatment
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>A</mi><mi>i</mi></msub><annotation encoding="application/x-tex">A_i</annotation></semantics></math>)
-on the outcome
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Y</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Y_i</annotation></semantics></math>),
-conditional on the pretreatment confounders
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>X</mi><mi>i</mi></msub><annotation encoding="application/x-tex">X_i</annotation></semantics></math>).
-Second, no omitted variables for the effect of the mediator on the
-outcome, conditional on the treatment, pretreatment confounders, and
-intermediate confounders
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Z_i</annotation></semantics></math>).</p>
-</blockquote>
-<p>While the ACDE is estimated nonparametrically with just this
-assumption, we need to make a further assumption to be able to use
-sequential g-estimation.</p>
-<p><strong>Assumption 2 (No intermediate interactions)</strong></p>
-<blockquote>
-<p>The effect of the mediator
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>M</mi><mi>i</mi></msub><annotation encoding="application/x-tex">M_i</annotation></semantics></math>)
-on the outcome
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Y</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Y_i</annotation></semantics></math>)
-is independent of the intermediate confounders
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Z_i</annotation></semantics></math>).</p>
-</blockquote>
-<p>Without this assumption, we would have to model the multivariate
-distribution of the intermediate confounders in order to estimate the
-ACDE.</p>
-<div class="section level3">
-<h3 id="estimating-the-demediation-function">Estimating the demediation function<a class="anchor" aria-label="anchor" href="#estimating-the-demediation-function"></a>
-</h3>
-<p>Under the assumption of sequential unconcoundedness, the demediation
-function can be estimated by a regression of the outcome on the
-variables in the demediation function
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>M</mi><mi>i</mi></msub><annotation encoding="application/x-tex">M_i</annotation></semantics></math>)
-plus the intermediate confounders
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Z_i</annotation></semantics></math>),
-treatment
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>A</mi><mi>i</mi></msub><annotation encoding="application/x-tex">A_i</annotation></semantics></math>),
-and baseline confounders
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>X</mi><mi>i</mi></msub><annotation encoding="application/x-tex">X_i</annotation></semantics></math>).
-If this regression model is correctly specified, the coefficients on the
-variables in the demediation function are unbiased for the parameters of
-the demediation function. For example, when there are no interactions
-between the mediator and the treatment, nor between the mediator and the
-pretreatment confounders, the demediation function is straightforward to
-estimate. In this case, the demediation function is
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>m</mi><mo>,</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>α</mi><mo>×</mo><mi>m</mi></mrow><annotation encoding="application/x-tex">\gamma(a, m, x) = \alpha \times m</annotation></semantics></math>
-and the OLS coefficient on the mediator is an the estimate of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>.</p>
-</div>
-<div class="section level3">
-<h3 id="using-the-demediation-function-to-estimate-acde">Using the demediation function to estimate ACDE<a class="anchor" aria-label="anchor" href="#using-the-demediation-function-to-estimate-acde"></a>
-</h3>
-<p>The second stage of sequential g-estimation uses the demediated
-outcome
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>Y</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>Y</mi><mi>i</mi></msub><mo>−</mo><mover><mi>γ</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>A</mi><mi>i</mi></msub><mo>,</mo><msub><mi>M</mi><mi>i</mi></msub><mo>,</mo><msub><mi>X</mi><mi>i</mi></msub><mo>;</mo><mover><mi>α</mi><mo accent="true">̂</mo></mover><mo stretchy="true" form="postfix">)</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\tilde{Y}_i = Y_i - \widehat{\gamma}(A_i, M_i, X_i; \widehat{\alpha}).</annotation></semantics></math>
-If there are no interactions or nonlinearities in the demediation
-function, then this becomes
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>Y</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>Y</mi><mi>i</mi></msub><mo>−</mo><mover><mi>α</mi><mo accent="true">̂</mo></mover><msub><mi>M</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\tilde{Y}_i = Y_i - \widehat{\alpha}M_i</annotation></semantics></math>.
-With this demediated outcome in hand, we can estimate the ACDE by
-regressing this outcome on the treatment and pre-treatment covariates:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mrow><mo stretchy="true" form="prefix">[</mo><msub><mover><mi>Y</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo><msub><mi>A</mi><mi>i</mi></msub><mo>,</mo><msub><mi>X</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">]</mo></mrow><mo>=</mo><msub><mi>β</mi><mn>0</mn></msub><mo>+</mo><msub><mi>β</mi><mn>1</mn></msub><msub><mi>A</mi><mi>i</mi></msub><mo>+</mo><msubsup><mi>X</mi><mi>i</mi><mi>T</mi></msubsup><msub><mi>β</mi><mn>2</mn></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">E[\tilde{Y}_i | A_i, X_i] = \beta_0 + \beta_1A_i + X_i^T\beta_2.</annotation></semantics></math>
-Under the above assumptions and assuming this regression is correctly
-specified, the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̂</mo></mover><mn>1</mn></msub><annotation encoding="application/x-tex">\widehat{\beta}_1</annotation></semantics></math>
-is an unbiased estimate of the ACDE. The <code>sequential_g</code>
-function that we demonstrate below will complete both the estimation of
-the demediation function and the estimation of the ACDE. For more
-technical details on sequential g-estimation, see <span class="citation">Acharya, Blackwell, and Sen (<a href="#ref-AchBlaSen16">2016</a>)</span>.</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="illustrative-example-of-sequential-g-estimation">Illustrative example of sequential g-estimation<a class="anchor" aria-label="anchor" href="#illustrative-example-of-sequential-g-estimation"></a>
-</h2>
-<p>We now work through one example of using <code>sequential_g</code> to
-estimate the ACDE. The data comes from <span class="citation">Alesina,
-Giuliano, and Nunn (<a href="#ref-AleGiuNun13">2013</a>)</span>. The
-dataset comes with the package:</p>
+<p>This vignette introduces a new way to design, specify, and implement
+various estimators for controlled direct effects using a coding style
+that we refer to as the “assembly line.” Users can specify the various
+components of the estimators sequentially and easily swap out
+implementation details such as what exact estimators are used for the
+estimation of each nuisance function or what arguments to pass to these
+functions. A unified structure and output across different research
+designs and estimators should make comparing estimators very easy.
+Finally, this implementation is built around the idea of cross-fitting
+for nuisance function estimation.</p>
+<p>Let’s see how this works in practice. We first load a subset of the
+<code>jobcorps</code> data from the package:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ploughs</span><span class="op">)</span></span></code></pre></div>
-<p>The paper’s main argument is that the advent of the capital-intensive
-agricultural practice of the plow favored men over women participating
-in agriculture, which have affected gender inequality in modern
-societies. These authors find that strong effects of plow-based
-agriculture on female labor-force participation, but not on share of
-political positions held by women. The authors speculate that this might
-be due to the (positive) effects of the plow on modern-day income
-levels, which could offset the direct effects of the plow. The authors
-control for income and show that a significant effect of the plow
-appears. We evaluate this approach and try to estimate the ACDE more
-formally. Thus, in this case, we have the following variables, where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>
-indexes countries:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"jobcorps"</span><span class="op">)</span></span>
+<span><span class="va">jc</span> <span class="op">&lt;-</span> <span class="va">jobcorps</span><span class="op">[</span></span>
+<span>  <span class="fl">1</span><span class="op">:</span><span class="fl">200</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"treat"</span>, <span class="st">"female"</span>, <span class="st">"age_cat"</span>, <span class="st">"work2year2q"</span>, <span class="st">"pemplq4"</span>, <span class="st">"emplq4"</span>, <span class="st">"exhealth30"</span><span class="op">)</span></span>
+<span><span class="op">]</span></span></code></pre></div>
+<p>This is the Job Corps experiment data used in <span class="citation">Huber (<a href="#ref-Hub14">2014</a>)</span> to
+estimate the effect of a randomized job training program on
+self-assessed health holding constant the intermediate outcome of
+employment. We use a subset of the variables from their study, but the
+basic variable we use here:</p>
 <ul>
 <li>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Y</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Y_i</annotation></semantics></math>
-is the share of political positions held by women in 2000
-(<code>women_politics</code>)</li>
+is an indicator for whether participants reported “very good” health
+after 2.5 years out after randomization (<code>exhealth30</code>)</li>
 <li>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>A</mi><mi>i</mi></msub><annotation encoding="application/x-tex">A_i</annotation></semantics></math>
-is the relative proportion of ethnic groups that traditionally used the
-plow within a country (<code>plow</code>)</li>
+is an indicator for assignment to the job training program
+(<code>treat</code>)</li>
 <li>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>M</mi><mi>i</mi></msub><annotation encoding="application/x-tex">M_i</annotation></semantics></math>
-is the log GDP per capita in 2000, mean-centered
-(<code>centered_ln_inc</code>)</li>
+is an indicator for employment 1 to 1.5 years after assignment
+(<code>work2year2q</code>)</li>
 <li>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Z_i</annotation></semantics></math>
 are the post-treatment, pre-mediator intermediate confounders
-(<code>years_civil_conflict</code>,
-<code>years_interstate_conflict</code>, <code>oil_pc</code>,
-<code>european_descent</code>, <code>communist_dummy</code>,
-<code>polity2_2000</code>, <code>serv_va_gdp2000</code>)</li>
+(<code>emplq4</code>, <code>pemplq4</code>)</li>
 <li>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>X</mi><mi>i</mi></msub><annotation encoding="application/x-tex">X_i</annotation></semantics></math>
-is the pre-treatment characteristics of the country, which are mostly
-geographic. (<code>tropical_climate</code>,
-<code>agricultural_suitability</code>, <code>large_animals</code>,
-<code>political_hierarchies</code>, <code>economic_complexity</code>,
-and <code>rugged</code>)</li>
+are the pre-treatment characteristics (<code>female</code>,
+<code>age_cat</code>)</li>
 </ul>
-<p>As a baseline, we first regress
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Y</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Y_i</annotation></semantics></math>
-on
+<p>In context of our CDE estimators, we refer to be
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>A</mi><mi>i</mi></msub><annotation encoding="application/x-tex">A_i</annotation></semantics></math>
-controlling for the pre-treatment variables
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>X</mi><mi>i</mi></msub><annotation encoding="application/x-tex">X_i</annotation></semantics></math>.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ate.mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">women_politics</span> <span class="op">~</span> <span class="va">plow</span> <span class="op">+</span> <span class="va">agricultural_suitability</span> <span class="op">+</span></span>
-<span>                <span class="va">tropical_climate</span> <span class="op">+</span>  <span class="va">large_animals</span> <span class="op">+</span> <span class="va">political_hierarchies</span> <span class="op">+</span></span>
-<span>                <span class="va">economic_complexity</span> <span class="op">+</span> <span class="va">rugged</span>, data <span class="op">=</span> <span class="va">ploughs</span><span class="op">)</span></span></code></pre></div>
-<p>Notice that the effect of the plow is negative and insignificant.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ate.mod</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## </span></span>
-<span><span class="co">## Call:</span></span>
-<span><span class="co">## lm(formula = women_politics ~ plow + agricultural_suitability + </span></span>
-<span><span class="co">##     tropical_climate + large_animals + political_hierarchies + </span></span>
-<span><span class="co">##     economic_complexity + rugged, data = ploughs)</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Residuals:</span></span>
-<span><span class="co">##     Min      1Q  Median      3Q     Max </span></span>
-<span><span class="co">## -15.060  -5.292  -2.000   3.752  25.923 </span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Coefficients:</span></span>
-<span><span class="co">##                          Estimate Std. Error t value Pr(&gt;|t|)    </span></span>
-<span><span class="co">## (Intercept)               17.5604     4.9038   3.581 0.000466 ***</span></span>
-<span><span class="co">## plow                      -2.1032     2.1270  -0.989 0.324422    </span></span>
-<span><span class="co">## agricultural_suitability   0.9712     2.5761   0.377 0.706721    </span></span>
-<span><span class="co">## tropical_climate          -7.5137     1.9621  -3.830 0.000191 ***</span></span>
-<span><span class="co">## large_animals             -8.7104     4.0510  -2.150 0.033201 *  </span></span>
-<span><span class="co">## political_hierarchies      0.9359     0.9722   0.963 0.337344    </span></span>
-<span><span class="co">## economic_complexity        1.0284     0.5430   1.894 0.060202 .  </span></span>
-<span><span class="co">## rugged                    -0.6370     0.4961  -1.284 0.201137    </span></span>
-<span><span class="co">## ---</span></span>
-<span><span class="co">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Residual standard error: 8.372 on 145 degrees of freedom</span></span>
-<span><span class="co">##   (81 observations deleted due to missingness)</span></span>
-<span><span class="co">## Multiple R-squared:  0.1831, Adjusted R-squared:  0.1436 </span></span>
-<span><span class="co">## F-statistic: 4.642 on 7 and 145 DF,  p-value: 0.0001028</span></span></code></pre>
-<div class="section level4">
-<h4 id="implementation">Implementation<a class="anchor" aria-label="anchor" href="#implementation"></a>
-</h4>
-<p>In this example, we would like to estimate the controlled direct
-effect of plows fixing the value of the mediator, current national
-income. To do so, we must choose a value at which to fix this mediator.
-The standard sequential g-estimation approach will fix the value to 0,
-which is often not a substantively interesting value—it certainly is not
-for income or logged income. To avoid this problem, we use the
-mean-centered version of our logged income,
-<code>centered_ln_inc</code>, so that when we demediate with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">m = 0</annotation></semantics></math>,
-it will be equivalent to demediation with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
-set to the mean of logged national income. Furthermore, we also use a
-squared term of this centered mediator, <code>centered_ln_incsq</code>,
-so that we can include it in the demediation function to account for
-nonlinear effects of logged income.</p>
-<p>Next, we specify the main formula that contains a left-hand side that
-specifies the dependent variable, and a right-hand side that
-distinguishes between the baseline variables, the intermediate
-variables, and the variables in the demediation function. Each of these
-sets of variables on the left-hand side is separated by the vertical bar
-<code>|</code>. Thus, the formula will have the form
-<code>yvar ~ treat + xvars | zvars | mvars</code>. . For example, here
-we specify that the demediation variables are
+(the treatment) and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>M</mi><mi>i</mi></msub><annotation encoding="application/x-tex">M_i</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>M</mi><mi>i</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">M_i^2</annotation></semantics></math>:</p>
+(the mediator) as <em>treatment variables</em> because we are interested
+in causal effects that contrast different combinations of these two
+variables.</p>
+<p>The first step in our assembly line is to choose the type of CDE
+estimator (or really estimation strategy) that we want to pursue. These
+choices include IPW (<code><a href="../reference/cde_ipw.html">cde_ipw()</a></code>), regression imputation
+(<code><a href="../reference/cde_reg_impute.html">cde_reg_impute()</a></code>), and augmented IPW
+(<code><a href="../reference/cde_aipw.html">cde_aipw()</a></code>) among others. Some of these different
+functions will take different arguments to specify different aspects of
+the estimator. The AIPW estimator is useful to demonstrate because it
+uses many of the features of the assembly line approach.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my_aipw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cde_aipw.html">cde_aipw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">treat</span>, <span class="op">~</span> <span class="va">female</span> <span class="op">+</span> <span class="va">age_cat</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"logit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">work2year2q</span>, <span class="op">~</span> <span class="va">emplq4</span> <span class="op">+</span> <span class="va">pemplq4</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"logit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/estimate.html">estimate</a></span><span class="op">(</span><span class="va">exhealth30</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">work2year2q</span>, data <span class="op">=</span> <span class="va">jobcorps</span><span class="op">)</span></span></code></pre></div>
+<p>The call here consists of several steps connected by R’s pipe
+operator. The first call <code><a href="../reference/cde_aipw.html">cde_aipw()</a></code> simply initializes the
+estimator as taking the AIPW form, meaning that it will use both
+propensity score models and outcome regressions to estimate the causal
+effects.</p>
+<p>Following this we have two blocks of 3 lines each that look similar
+with a few differences. These “treatment blocks” specify the causal
+variables of interest <strong>in their causal ordering</strong>. In
+<code><a href="../reference/set_treatment.html">set_treatment()</a></code> we set the name of the treatment variable
+and give a formula describing the pre-treatment covariates for this
+treatment. This formula, unless overridden by the next two functions,
+will be used in the fitting of the propensity score and outcome
+regression models. <code><a href="../reference/treat_model.html">treat_model()</a></code> allows the user to specify
+how to fit the propensity score model for this treatment with a choice
+of engine and optional arguments to pass to each engine.
+<code><a href="../reference/outreg_model.html">outreg_model()</a></code> does the same for the outcome regression. We
+repeat this specification for the mediator.</p>
+<p>The <code><a href="../reference/estimate.html">estimate()</a></code> function finally implements the
+specifications given in the previous commands. Users use a formula to
+set the outcome and which of the treatment variables we want effects for
+and indicate the data frame where all of these variables can be found.
+By default, the nuisance functions (the propensity score model and the
+outcome regression) are fit using cross-fitting.</p>
+<p>We can either use the <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> or <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>
+functions to get a summary of the different effects being estimated:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">my_aipw</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## </span></span>
+<span><span class="co">##  aipw CDE Estimator</span></span>
+<span><span class="co">## ---------------------------</span></span>
+<span><span class="co">## Causal variable: treat </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Treatment model: treat ~ female + age_cat </span></span>
+<span><span class="co">## Treatment engine: logit </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Outcome model: ~female + age_cat </span></span>
+<span><span class="co">## Outcome engine: lm </span></span>
+<span><span class="co">## ---------------------------</span></span>
+<span><span class="co">## Causal variable: work2year2q </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Treatment model: work2year2q ~ emplq4 + pemplq4 + female + age_cat </span></span>
+<span><span class="co">## Treatment engine: logit </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Outcome model: ~emplq4 + pemplq4 + female + age_cat </span></span>
+<span><span class="co">## Outcome engine: lm </span></span>
+<span><span class="co">## ---------------------------</span></span>
+<span><span class="co">## Cross-fit: TRUE </span></span>
+<span><span class="co">## Number of folds: 5 </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Estimated Effects:</span></span>
+<span><span class="co">##                                  Estimate Std. Error t value Pr(&gt;|t|)  CI Lower</span></span>
+<span><span class="co">## treat [(1, 0) vs. (0, 0)]        0.035713    0.02243  1.5923  0.11141 -0.008261</span></span>
+<span><span class="co">## treat [(1, 1) vs. (0, 1)]        0.029432    0.01397  2.1068  0.03517  0.002046</span></span>
+<span><span class="co">## work2year2q [(0, 1) vs. (0, 0)]  0.005647    0.02056  0.2747  0.78354 -0.034653</span></span>
+<span><span class="co">## work2year2q [(1, 1) vs. (1, 0)] -0.002415    0.01661 -0.1454  0.88440 -0.034975</span></span>
+<span><span class="co">##                                 CI Upper   DF</span></span>
+<span><span class="co">## treat [(1, 0) vs. (0, 0)]        0.07969 3818</span></span>
+<span><span class="co">## treat [(1, 1) vs. (0, 1)]        0.05682 6207</span></span>
+<span><span class="co">## work2year2q [(0, 1) vs. (0, 0)]  0.04595 3991</span></span>
+<span><span class="co">## work2year2q [(1, 1) vs. (1, 0)]  0.03015 6034</span></span></code></pre>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">form_main</span> <span class="op">&lt;-</span> <span class="va">women_politics</span> <span class="op">~</span> <span class="va">plow</span> <span class="op">+</span> <span class="va">agricultural_suitability</span> <span class="op">+</span> <span class="va">tropical_climate</span> <span class="op">+</span></span>
-<span>  <span class="va">large_animals</span> <span class="op">+</span> <span class="va">political_hierarchies</span> <span class="op">+</span> <span class="va">economic_complexity</span> <span class="op">+</span> <span class="va">rugged</span> <span class="op">|</span></span>
-<span>  <span class="va">years_civil_conflict</span> <span class="op">+</span> <span class="va">years_interstate_conflict</span>  <span class="op">+</span> <span class="va">oil_pc</span> <span class="op">+</span> <span class="va">european_descent</span> <span class="op">+</span></span>
-<span>  <span class="va">communist_dummy</span> <span class="op">+</span> <span class="va">polity2_2000</span> <span class="op">+</span> <span class="va">serv_va_gdp2000</span> <span class="op">|</span></span>
-<span>  <span class="va">centered_ln_inc</span> <span class="op">+</span> <span class="va">centered_ln_incsq</span></span></code></pre></div>
-<p><code><a href="../reference/sequential_g.html">sequential_g()</a></code>, implements sequential g-estimation in
-the way outlined in the previous section. Specifically, it runs the
-first stage model, constructs the demediator function, and passes it to
-the second-stage model. At its simplest, it takes in the formula and a
-data frame:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">direct</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sequential_g.html">sequential_g</a></span><span class="op">(</span><span class="va">form_main</span>, data <span class="op">=</span> <span class="va">ploughs</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="output">Output<a class="anchor" aria-label="anchor" href="#output"></a>
-</h3>
-<p>As usual, we can use the <code>summary</code> function to the output
-of the <code>sequential_g</code> function:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">my_aipw</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##                                            term     estimate  std.error</span></span>
+<span><span class="co">## treat_1_0             treat [(1, 0) vs. (0, 0)]  0.035713274 0.02242931</span></span>
+<span><span class="co">## treat_1_1             treat [(1, 1) vs. (0, 1)]  0.029432067 0.01396992</span></span>
+<span><span class="co">## work2year2q_0_1 work2year2q [(0, 1) vs. (0, 0)]  0.005647071 0.02055532</span></span>
+<span><span class="co">## work2year2q_1_1 work2year2q [(1, 1) vs. (1, 0)] -0.002414928 0.01660949</span></span>
+<span><span class="co">##                  statistic    p.value     conf.low  conf.high   df</span></span>
+<span><span class="co">## treat_1_0        1.5922593 0.11140923 -0.008261301 0.07968785 3818</span></span>
+<span><span class="co">## treat_1_1        2.1068168 0.03517349  0.002046182 0.05681795 6207</span></span>
+<span><span class="co">## work2year2q_0_1  0.2747256 0.78354131 -0.034652831 0.04594697 3991</span></span>
+<span><span class="co">## work2year2q_1_1 -0.1453945 0.88440430 -0.034975457 0.03014560 6034</span></span></code></pre>
+<p>Because the <code><a href="../reference/estimate.html">estimate()</a></code> function included both
+<code>treat</code> and <code>work2year2q</code> in the formula, the
+output includes both the controlled direct effects of the treatment and
+the conditional average treatment effect of the mediator. Furthermore,
+by default, the output contains estimates for an effect for each
+combination of other treatment variables. This can be changed by setting
+the <code>eval_vals</code> argument in the relevant
+<code><a href="../reference/set_treatment.html">set_treatment()</a></code> call.</p>
+<p>The modular structure of the call allow users to easily swap out
+parts of the models. For example, we could easily alter the above call
+to use lasso versions of the regression and logit model.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">direct</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## </span></span>
-<span><span class="co">## t test of coefficients: </span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##                          Estimate Std. Err. t value Pr(&gt;|t|)   </span></span>
-<span><span class="co">## (Intercept)              12.18450   3.64442  3.3433 0.001121 **</span></span>
-<span><span class="co">## plow                     -4.83879   2.34467 -2.0637 0.041312 * </span></span>
-<span><span class="co">## agricultural_suitability  4.57388   3.10477  1.4732 0.143458   </span></span>
-<span><span class="co">## tropical_climate         -2.18919   2.10505 -1.0400 0.300554   </span></span>
-<span><span class="co">## large_animals            -1.33001   3.40008 -0.3912 0.696401   </span></span>
-<span><span class="co">## political_hierarchies     0.49575   1.09060  0.4546 0.650283   </span></span>
-<span><span class="co">## economic_complexity      -0.10521   0.42973 -0.2448 0.807029   </span></span>
-<span><span class="co">## rugged                   -0.30869   0.47821 -0.6455 0.519888   </span></span>
-<span><span class="co">## ---</span></span>
-<span><span class="co">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre>
-<p>The standard errors here are based on the asymptotic variance derived
-in <span class="citation">Acharya, Blackwell, and Sen (<a href="#ref-AchBlaSen16">2016</a>)</span>, but it is also possible to use
-the <code>boots_g</code> function to compute standard errors by a simple
-bootstrap:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">out.boots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/boots_g.html">boots_g</a></span><span class="op">(</span><span class="va">direct</span>, boots <span class="op">=</span> <span class="fl">250</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">out.boots</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## </span></span>
-<span><span class="co">## Summary of bootstrapped coefficients: </span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##                           Estimate Std. Err.   t value     2.5 %  97.5 %</span></span>
-<span><span class="co">## (Intercept)               12.89400   4.40575   2.92663   5.13182 20.7075</span></span>
-<span><span class="co">## plow                      -4.84306   2.71915  -1.78109 -10.48374 -0.1912</span></span>
-<span><span class="co">## agricultural_suitability   4.73279   3.33064   1.42098  -0.78854 12.2190</span></span>
-<span><span class="co">## tropical_climate          -2.07431   2.27446  -0.91200  -6.21752  2.5859</span></span>
-<span><span class="co">## large_animals             -1.05959   4.71610  -0.22467 -11.79015  6.7012</span></span>
-<span><span class="co">## political_hierarchies      0.36607   1.19504   0.30633  -2.21079  2.6765</span></span>
-<span><span class="co">## economic_complexity       -0.19011   0.53036  -0.35846  -1.16760  0.7744</span></span>
-<span><span class="co">## rugged                    -0.35215   0.53592  -0.65709  -1.38329  0.7083</span></span></code></pre>
-<p>The coefficient on the treatment variable (here, <code>plow</code>),
-is the estimate of the ACDE. The results show a negative ACDE of
-plows—in other words, the effect of the plough is negative for fixed
-income levels. This controlled direct effect is larger in magnitude than
-the estimated the total effect:</p>
-<p><img src="DirectEffects_files/figure-html/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;"></p>
-</div>
-<div class="section level3">
-<h3 id="output-attributes">Output attributes<a class="anchor" aria-label="anchor" href="#output-attributes"></a>
-</h3>
-<p>There are various quantities and output objects available from the
-<code>sequential_g</code> function. As usual, the coefficient estimates
-from the second stage can be accessed using the <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>
-function:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">direct</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##              (Intercept)                     plow agricultural_suitability </span></span>
-<span><span class="co">##               12.1845047               -4.8387928                4.5738843 </span></span>
-<span><span class="co">##         tropical_climate            large_animals    political_hierarchies </span></span>
-<span><span class="co">##               -2.1891894               -1.3300131                0.4957518 </span></span>
-<span><span class="co">##      economic_complexity                   rugged </span></span>
-<span><span class="co">##               -0.1052101               -0.3086924</span></span></code></pre>
-<p>One can access confidence intervals for the coefficients using the
-usual <code>confint</code> function:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">direct</span>, <span class="st">"plow"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##          2.5 %     97.5 %</span></span>
-<span><span class="co">## plow -9.434262 -0.2433234</span></span></code></pre>
-<p>The <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> function returns the variance
-covariance-matrix that accounts for the first stage estimation,</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">direct</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span></span></code></pre></div>
-<pre><code><span><span class="co">##                          (Intercept)       plow agricultural_suitability</span></span>
-<span><span class="co">## (Intercept)               13.2818030 -0.5383896                0.1744604</span></span>
-<span><span class="co">## plow                      -0.5383896  5.4974789                1.2047839</span></span>
-<span><span class="co">## agricultural_suitability   0.1744604  1.2047839                9.6395922</span></span></code></pre>
-</div>
-<div class="section level3">
-<h3 id="sensitivity">Sensitivity<a class="anchor" aria-label="anchor" href="#sensitivity"></a>
-</h3>
-<p>The <code>cdesens</code> function can perform a sensitivity analysis
-to evaluate how the estimated ACDE changes for various levels of
-post-treatment confounding of the mediator-outcome relationship.
-Currently, this function only supports a model with only one
-mediator.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># update with only one mediator</span></span>
-<span><span class="va">direct1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sequential_g.html">sequential_g</a></span><span class="op">(</span><span class="va">women_politics</span> <span class="op">~</span> <span class="va">plow</span> <span class="op">+</span> <span class="va">agricultural_suitability</span> <span class="op">+</span> <span class="va">tropical_climate</span> <span class="op">+</span></span>
-<span>  <span class="va">large_animals</span> <span class="op">+</span> <span class="va">political_hierarchies</span> <span class="op">+</span> <span class="va">economic_complexity</span> <span class="op">+</span> <span class="va">rugged</span> <span class="op">|</span></span>
-<span>  <span class="va">years_civil_conflict</span> <span class="op">+</span> <span class="va">years_interstate_conflict</span>  <span class="op">+</span> <span class="va">oil_pc</span> <span class="op">+</span> <span class="va">european_descent</span> <span class="op">+</span></span>
-<span>  <span class="va">communist_dummy</span> <span class="op">+</span> <span class="va">polity2_2000</span> <span class="op">+</span> <span class="va">serv_va_gdp2000</span> <span class="op">|</span></span>
-<span>  <span class="va">centered_ln_inc</span>,</span>
-<span>  <span class="va">ploughs</span><span class="op">)</span></span>
-<span><span class="va">out_sens</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cdesens.html">cdesens</a></span><span class="op">(</span><span class="va">direct1</span>, var <span class="op">=</span> <span class="st">"plow"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">out_sens</span><span class="op">)</span></span></code></pre></div>
-<p><img src="DirectEffects_files/figure-html/unnamed-chunk-13-1.png" width="480" style="display: block; margin: auto;"></p>
-<p>The black line shows how the estimated ACDE would be at various
-levels of correlation between the mediator and outcome errors, while the
-gray bands show the 95% confidence intervals. Note that when this
-correlation is 0, we recover the estimated effect from
-<code>sequential_g</code>. See <span class="citation">Acharya,
-Blackwell, and Sen (<a href="#ref-AchBlaSen16">2016</a>)</span> for more
-information.</p>
-</div>
+<code class="sourceCode R"><span><span class="va">my_aipw_lasso</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cde_aipw.html">cde_aipw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">treat</span>, <span class="op">~</span> <span class="va">female</span> <span class="op">+</span> <span class="va">age_cat</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso_logit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">work2year2q</span>, <span class="op">~</span> <span class="va">emplq4</span> <span class="op">+</span> <span class="va">pemplq4</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso_logit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"rlasso"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/estimate.html">estimate</a></span><span class="op">(</span><span class="va">exhealth30</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">work2year2q</span>, data <span class="op">=</span> <span class="va">jobcorps</span><span class="op">)</span></span></code></pre></div>
+<p>Here we use a “rigorous” version of the lasso from the
+<code>hdm</code> package to speed up computation. There are a number of
+different engines for different outcome and treatment types
+including:</p>
+<ul>
+<li>GLMs: <code>lm</code> (OLS), <code>logit</code> (logistic
+regression), <code>multinom</code> (mulitnomial logit)</li>
+<li>LASSO estimators (from <code>glmnet</code>): <code>lasso</code>,
+<code>lasso_logit</code>, <code>lasso_multinom</code>
+</li>
+<li>Rigorous LASSO estimator (from <code>hdm</code>):
+<code>rlasso</code>, <code>rlasso_logit</code>
+</li>
+</ul>
 </div>
 <div class="section level2 unnumbered">
 <h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
@@ -465,10 +312,10 @@ Acharya, Avidit, Matthew Blackwell, and Maya Sen. 2016.
 Direct Effects.”</span> <em>American Political Science Review</em> 110
 (3): 512–29. <a href="https://doi.org/10.1017/S0003055416000216" class="external-link">https://doi.org/10.1017/S0003055416000216</a>.
 </div>
-<div id="ref-AleGiuNun13" class="csl-entry">
-Alesina, Alberto, Paola Giuliano, and Nathan Nunn. 2013. <span>“On the
-Origins of Gender Roles: Women and the Plough.”</span> <em>Quarterly
-Journal of Economics</em> 128 (2): 469–530. <a href="https://doi.org/10.1093/qje/qjt005" class="external-link">https://doi.org/10.1093/qje/qjt005</a>.
+<div id="ref-Hub14" class="csl-entry">
+Huber, Martin. 2014. <span>“Identifying Causal Mechanisms (Primarily)
+Based on Inverse Probability Weighting.”</span> <em>Journal of Applied
+Econometrics</em> 29 (6): 920–43.
 </div>
 </div>
 </div>
