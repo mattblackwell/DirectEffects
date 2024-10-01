@@ -11,7 +11,7 @@ output: github_document
 ## Overview
 
 
-DirectEffects is an R package to estimate controlled direct effects (CDEs), which are the effect of a treatment fixing a set of downstream mediators to particular values. As of now, the package supports sequential g-estimation and a two-stage matching approach called telescope matching. For more information on how CDEs can be useful for applied research and a brief introduction to sequential g-estimation, see [Acharya, Blackwell, and Sen (2016)][de-paper]. For more on the telescope matching procedure, see  [Blackwell and Strezhnev (2022)][tm-paper]. 
+DirectEffects is an R package to estimate controlled direct effects (CDEs), which are the effect of a treatment fixing a set of downstream mediators to particular values. As of now, the package supports general doubly robust estimation of CDEs under both selection-on-observables and difference-in-differences assumptions. sequential g-estimation and a two-stage matching approach called telescope matching. For more information on how CDEs can be useful for applied research and a brief introduction to sequential g-estimation, see [Acharya, Blackwell, and Sen (2016)][de-paper]. For more on the telescope matching procedure, see  [Blackwell and Strezhnev (2022)][tm-paper]. For more on the difference-in-differences approach, see [Blackwell, Glynn, Hilbig, and Phillips (2024)][did-paper].
 
 
 ## Installation
@@ -29,12 +29,38 @@ devtools::install_github("mattblackwell/DirectEffects", build_vignettes = TRUE)
 
 ## Usage
 
-The main functions for estimating CDEs in DirectEffects are:
 
-- [`sequential_g()`](https://mattblackwell.github.io/DirectEffects/articles/DirectEffects.html): estimate controlled direct effects using two-stage linear models. 
+DirectEffects uses a modular approach to specifying the models and estimators used to estimate the average controlled direct effect (ACDE). You can specify a propensity score and outcome regression model for each treatment variable (that is, each causal variable of interest), along with a set of parametric and machine learning estimators for these nuisance functions. The package has a workflow for [models that assume the selection-on-observables](https://mattblackwell.github.io/DirectEffects/articles/DirectEffects.html) and for models that utilize a [difference-in-differences approach](https://mattblackwell.github.io/DirectEffects/articles/did_cde.html). 
+
+
+```{r}
+library(DirectEffects)
+
+data(jobcorps)
+my_aipw <- cde_aipw() |>
+  set_treatment(treat, ~ female + age_cat) |>
+  treat_model(engine = "logit") |>
+  outreg_model(engine = "lm") |>
+  set_treatment(work2year2q, ~ emplq4 + pemplq4) |>
+  treat_model(engine = "logit") |>
+  outreg_model(engine = "lm") |>
+  estimate(exhealth30 ~ treat + work2year2q, data = jobcorps)
+
+broom::tidy(my_aipw)
+```
+
+
+
+
+## Specific estimator implementations
+
+DirectEffects also implements a number of specific estimators outside the modular framework. These are often specific estimators proposed in the literature:
+
+- [`sequential_g()`](https://mattblackwell.github.io/DirectEffects/articles/sequential_g.html): estimate controlled direct effects using two-stage linear models. 
 - [`telescope_match()`](https://mattblackwell.github.io/DirectEffects/articles/telescope_matching.html): estimated controlled direct effects using a two-stage matching procedure with bias correction. 
 
 DirectEffects also provides diagnostics for these two approaches, including sensitivity analyses and balance checks. 
 
 [de-paper]: http://www.mattblackwell.org/files/papers/direct-effects.pdf
 [tm-paper]: https://www.mattblackwell.org/files/papers/telescope_matching.pdf
+[did-paper]: https://www.mattblackwell.org/files/papers/did_cde.pdf

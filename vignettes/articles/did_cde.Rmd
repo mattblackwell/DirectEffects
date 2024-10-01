@@ -13,22 +13,25 @@ vignette: >
 
 # Difference-in-differences Designs
 
-When researchers have pretreatment measurements of the outcome and the mediator, they can use the difference-in-differences (DID) approach to estimating controlled direct effects of DID-CDEciteTKTK. This approach can take full advantage of doubly robust estimation as with other models. 
+When researchers have pretreatment measurements of the outcome and the mediator, they can use the difference-in-differences (DID) approach to estimating controlled direct effects of @BlaGlyHil24. This approach can take full advantage of doubly robust estimation as with other models. 
 
 Generally speaking, the DID approach and the selection-on-observable approach are very similar, with a few differences. First, the outcome should represent a difference between the pretreatment and posttreatment measurements of the outcome. Second, one must specify the name of the variable measuring the pretreatment values of the mediator since the estimates will be conditional on this variable. Third, there are two different quantities of interest in this setting that can be estimated, depending on what one wants to condition on and what assumptions one wants to make. 
 
 
-In this article, we demonstrate the estimation of CDEs in the DID setting using data from the field experiment of BKciteTKTK. This experiment consisted of one baseline survey (`t0`) and four posttreatment surveys (`t1` through `t4`). In the experiment, the authors randomly assigned an door-to-door intervention to either engage in a conversation promoting transgender rights (`treated == 1`) or a control conversation about recycling (`treated == 0`). Our goal is to estimate the direct effect of this treatment fixing values of posttreatment subjective feelings about transgender people (`therm_trans_t2`, measured in wave 2). The outcome of interest is support for a transgender nondiscrimination law (`nondiscrim_law_t3`, measured in wave 3). Baseline covariates consist of several survey measures (labeled with `t0`) and several variables from the matched voter file (labeled `vf`). These baseline measures include pretreatment measurements of the mediator (`therm_trans_t0`) and the outcome (`nondiscrim_law_t0`). For purposes of estimation, we will use the difference between the pre and posttreatment outcomes (`nondiscrim_law_diff`) as the outcome in the models below.  We measure intermediate confounders at from wave 1 (`t1`). 
+In this article, we demonstrate the estimation of CDEs in the DID setting using data from the field experiment of @BroKal16. This experiment consisted of one baseline survey (`t0`) and four posttreatment surveys (`t1` through `t4`). In the experiment, the authors randomly assigned an door-to-door intervention to either engage in a conversation promoting transgender rights (`treated == 1`) or a control conversation about recycling (`treated == 0`). Our goal is to estimate the direct effect of this treatment fixing values of posttreatment subjective feelings about transgender people (`therm_trans_t2`, measured in wave 2). The outcome of interest is support for a transgender nondiscrimination law (`nondiscrim_law_t3`, measured in wave 3). Baseline covariates consist of several survey measures (labeled with `t0`) and several variables from the matched voter file (labeled `vf`). These baseline measures include pretreatment measurements of the mediator (`therm_trans_t0`) and the outcome (`nondiscrim_law_t0`). For purposes of estimation, we will use the difference between the pre and posttreatment outcomes (`nondiscrim_law_diff`) as the outcome in the models below.  We measure intermediate confounders at from wave 1 (`t1`). 
 
 We can see a brief view of the data below:
 
-```{r}
+```{r loadpkg, echo = FALSE, include = FALSE}
 library(tidyverse)
 library(DirectEffects)
 data(transphobia)
-transphobia
 ```
 
+
+```{r}
+transphobia
+```
 
 ## Specifying conditioning sets 
 
@@ -82,7 +85,7 @@ out_dr_ml <- cde_did_aipw(base_mediator = therm_trans_t0, trim = c(0.01, 0.99)) 
 Notice that we have set `include_past` to `FALSE` for the mediator models because we have explicitly included those covariates in our model specifications. In addition, we use the difference between posttreatment and pretreatment outcomes as the depedent variable in this specification. 
 
 
-Using the default `on_treated == FALSE` implies that we are estimating what DIDCDEciteTKTK calls the *baseline conditional* ACDE or ACDE-BC. We can view the output from these, with all of the ACDE-BCs using `summary()`. This also displays the marginalized ACDE-BC that averages the conditional effects over the distribution of the baseline mediator. 
+Using the default `on_treated == FALSE` implies that we are estimating what @BlaGlyHil24 calls the *baseline conditional* ACDE or ACDE-BC. We can view the output from these, with all of the ACDE-BCs using `summary()`. This also displays the marginalized ACDE-BC that averages the conditional effects over the distribution of the baseline mediator. 
 
 ```{r}
 summary(out_dr_ml)
@@ -124,3 +127,4 @@ summary(out_dr_ml_pc)
 
 
 
+## References
