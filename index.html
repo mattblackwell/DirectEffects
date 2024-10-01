@@ -72,7 +72,7 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>DirectEffects is an R package to estimate controlled direct effects (CDEs), which are the effect of a treatment fixing a set of downstream mediators to particular values. As of now, the package supports sequential g-estimation and a two-stage matching approach called telescope matching. For more information on how CDEs can be useful for applied research and a brief introduction to sequential g-estimation, see <a href="http://www.mattblackwell.org/files/papers/direct-effects.pdf" class="external-link">Acharya, Blackwell, and Sen (2016)</a>. For more on the telescope matching procedure, see <a href="https://www.mattblackwell.org/files/papers/telescope_matching.pdf" class="external-link">Blackwell and Strezhnev (2022)</a>.</p>
+<p>DirectEffects is an R package to estimate controlled direct effects (CDEs), which are the effect of a treatment fixing a set of downstream mediators to particular values. As of now, the package supports general doubly robust estimation of CDEs under both selection-on-observables and difference-in-differences assumptions. sequential g-estimation and a two-stage matching approach called telescope matching. For more information on how CDEs can be useful for applied research and a brief introduction to sequential g-estimation, see <a href="http://www.mattblackwell.org/files/papers/direct-effects.pdf" class="external-link">Acharya, Blackwell, and Sen (2016)</a>. For more on the telescope matching procedure, see <a href="https://www.mattblackwell.org/files/papers/telescope_matching.pdf" class="external-link">Blackwell and Strezhnev (2022)</a>. For more on the difference-in-differences approach, see <a href="https://www.mattblackwell.org/files/papers/did_cde.pdf" class="external-link">Blackwell, Glynn, Hilbig, and Phillips (2024)</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -89,10 +89,39 @@
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>The main functions for estimating CDEs in DirectEffects are:</p>
+<p>DirectEffects uses a modular approach to specifying the models and estimators used to estimate the average controlled direct effect (ACDE). You can specify a propensity score and outcome regression model for each treatment variable (that is, each causal variable of interest), along with a set of parametric and machine learning estimators for these nuisance functions. The package has a workflow for <a href="https://mattblackwell.github.io/DirectEffects/articles/DirectEffects.html">models that assume the selection-on-observables</a> and for models that utilize a <a href="https://mattblackwell.github.io/DirectEffects/articles/did_cde.html">difference-in-differences approach</a>.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mattblackwell.github.io/DirectEffects/">DirectEffects</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">jobcorps</span><span class="op">)</span></span>
+<span><span class="va">my_aipw</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cde_aipw.html">cde_aipw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">treat</span>, <span class="op">~</span> <span class="va">female</span> <span class="op">+</span> <span class="va">age_cat</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"logit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">work2year2q</span>, <span class="op">~</span> <span class="va">emplq4</span> <span class="op">+</span> <span class="va">pemplq4</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"logit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/outreg_model.html">outreg_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/estimate.html">estimate</a></span><span class="op">(</span><span class="va">exhealth30</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">work2year2q</span>, data <span class="op">=</span> <span class="va">jobcorps</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">broom</span><span class="fu">::</span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">my_aipw</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="do">##                                            term      estimate  std.error</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="do">## treat_1_0             treat [(1, 0) vs. (0, 0)]  0.0324855302 0.02248379</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="do">## treat_1_1             treat [(1, 1) vs. (0, 1)]  0.0301271316 0.01394355</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="do">## work2year2q_0_1 work2year2q [(0, 1) vs. (0, 0)]  0.0038019794 0.02057364</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="do">## work2year2q_1_1 work2year2q [(1, 1) vs. (1, 0)] -0.0006775739 0.01663843</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="do">##                   statistic    p.value     conf.low  conf.high   df</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="do">## treat_1_0        1.44484233 0.14858424 -0.011595861 0.07656692 3818</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="do">## treat_1_1        2.16064973 0.03076055  0.002792942 0.05746132 6207</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="do">## work2year2q_0_1  0.18479854 0.85339644 -0.036533854 0.04413781 3991</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="do">## work2year2q_1_1 -0.04072342 0.96751774 -0.033294846 0.03193970 6034</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="specific-estimator-implementations">Specific estimator implementations<a class="anchor" aria-label="anchor" href="#specific-estimator-implementations"></a>
+</h2>
+<p>DirectEffects also implements a number of specific estimators outside the modular framework. These are often specific estimators proposed in the literature:</p>
 <ul>
 <li>
-<a href="https://mattblackwell.github.io/DirectEffects/articles/DirectEffects.html"><code>sequential_g()</code></a>: estimate controlled direct effects using two-stage linear models.</li>
+<a href="https://mattblackwell.github.io/DirectEffects/articles/sequential_g.html"><code>sequential_g()</code></a>: estimate controlled direct effects using two-stage linear models.</li>
 <li>
 <a href="https://mattblackwell.github.io/DirectEffects/articles/telescope_matching.html"><code>telescope_match()</code></a>: estimated controlled direct effects using a two-stage matching procedure with bias correction.</li>
 </ul>

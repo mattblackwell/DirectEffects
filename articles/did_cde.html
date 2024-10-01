@@ -78,9 +78,8 @@
 </h2>
 <p>When researchers have pretreatment measurements of the outcome and
 the mediator, they can use the difference-in-differences (DID) approach
-to estimating controlled direct effects of DID-CDEciteTKTK. This
-approach can take full advantage of doubly robust estimation as with
-other models.</p>
+to estimating controlled direct effects of <span class="citation">Blackwell et al. (<a href="#ref-BlaGlyHil24">2024</a>)</span>. This approach can take full
+advantage of doubly robust estimation as with other models.</p>
 <p>Generally speaking, the DID approach and the selection-on-observable
 approach are very similar, with a few differences. First, the outcome
 should represent a difference between the pretreatment and posttreatment
@@ -91,11 +90,11 @@ different quantities of interest in this setting that can be estimated,
 depending on what one wants to condition on and what assumptions one
 wants to make.</p>
 <p>In this article, we demonstrate the estimation of CDEs in the DID
-setting using data from the field experiment of BKciteTKTK. This
-experiment consisted of one baseline survey (<code>t0</code>) and four
-posttreatment surveys (<code>t1</code> through <code>t4</code>). In the
-experiment, the authors randomly assigned an door-to-door intervention
-to either engage in a conversation promoting transgender rights
+setting using data from the field experiment of <span class="citation">Broockman and Kalla (<a href="#ref-BroKal16">2016</a>)</span>. This experiment consisted of one
+baseline survey (<code>t0</code>) and four posttreatment surveys
+(<code>t1</code> through <code>t4</code>). In the experiment, the
+authors randomly assigned an door-to-door intervention to either engage
+in a conversation promoting transgender rights
 (<code>treated == 1</code>) or a control conversation about recycling
 (<code>treated == 0</code>). Our goal is to estimate the direct effect
 of this treatment fixing values of posttreatment subjective feelings
@@ -113,21 +112,7 @@ We measure intermediate confounders at from wave 1
 (<code>t1</code>).</p>
 <p>We can see a brief view of the data below:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## ── <span style="font-weight: bold;">Attaching core tidyverse packages</span> ──────────────────────── tidyverse 2.0.0 ──</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">dplyr    </span> 1.1.4     <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">readr    </span> 2.1.5</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">forcats  </span> 1.0.0     <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">stringr  </span> 1.5.1</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">ggplot2  </span> 3.5.1     <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">tibble   </span> 3.2.1</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">lubridate</span> 1.9.3     <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">tidyr    </span> 1.3.1</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">purrr    </span> 1.0.2     </span></span>
-<span><span class="co">## ── <span style="font-weight: bold;">Conflicts</span> ────────────────────────────────────────── tidyverse_conflicts() ──</span></span>
-<span><span class="co">## <span style="color: #BB0000;">✖</span> <span style="color: #0000BB;">dplyr</span>::<span style="color: #00BB00;">filter()</span> masks <span style="color: #0000BB;">stats</span>::filter()</span></span>
-<span><span class="co">## <span style="color: #BB0000;">✖</span> <span style="color: #0000BB;">dplyr</span>::<span style="color: #00BB00;">lag()</span>    masks <span style="color: #0000BB;">stats</span>::lag()</span></span>
-<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Use the conflicted package (<span style="color: #0000BB; font-style: italic;">&lt;http://conflicted.r-lib.org/&gt;</span>) to force all conflicts to become errors</span></span></code></pre>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mattblackwell.github.io/DirectEffects/">DirectEffects</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">transphobia</span><span class="op">)</span></span>
-<span><span class="va">transphobia</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">transphobia</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 501 × 19</span></span></span>
 <span><span class="co">##    treated nondiscrim_law_t3 therm_trans_t2 therm_obama_t1 gender_norm_moral_t1</span></span>
 <span><span class="co">##      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
@@ -155,7 +140,7 @@ will condition on for each propensity score and outcome regression. We
 can specify in the relevant call to <code>treat_model</code> or
 <code>outreg_model</code>, but it is often useful to define the formulas
 separately (perhaps to use them in several different models).</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## Propensity score model for treatment</span></span>
 <span><span class="va">ps_t_mod</span> <span class="op">&lt;-</span> <span class="va">treated</span> <span class="op">~</span> <span class="va">therm_trans_t0</span></span>
 <span></span>
@@ -200,7 +185,7 @@ constant value of the mediator over time.</p>
 <p>Below we specify the entire chain of estimators, using
 <code>multinom</code> for the mediator because it has three levels
 (feeling cool, neutral, and warm toward transgender people).</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out_dr_ml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cde_did_aipw.html">cde_did_aipw</a></span><span class="op">(</span>base_mediator <span class="op">=</span> <span class="va">therm_trans_t0</span>, trim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.99</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">treated</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/treat_model.html">treat_model</a></span><span class="op">(</span>engine <span class="op">=</span> <span class="st">"logit"</span>, <span class="va">ps_t_mod</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -215,12 +200,12 @@ included those covariates in our model specifications. In addition, we
 use the difference between posttreatment and pretreatment outcomes as
 the depedent variable in this specification.</p>
 <p>Using the default <code>on_treated == FALSE</code> implies that we
-are estimating what DIDCDEciteTKTK calls the <em>baseline
+are estimating what <span class="citation">Blackwell et al. (<a href="#ref-BlaGlyHil24">2024</a>)</span> calls the <em>baseline
 conditional</em> ACDE or ACDE-BC. We can view the output from these,
 with all of the ACDE-BCs using <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>. This also
 displays the marginalized ACDE-BC that averages the conditional effects
 over the distribution of the baseline mediator.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">out_dr_ml</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
 <span><span class="co">##  did_aipw CDE Estimator</span></span>
@@ -259,7 +244,7 @@ over the distribution of the baseline mediator.</p>
 the neutral group (m = 1), but not for the cool or warm groups. One can
 also use the <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code> function from the
 <strong>broom</strong> package to easily extract information:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">out_dr_ml</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##                                    term   estimate std.error statistic</span></span>
 <span><span class="co">## treated_1_0 treated [(1, 0) vs. (0, 0)] -1.0249682 0.7023920 -1.459254</span></span>
@@ -273,16 +258,16 @@ also use the <code><a href="https://generics.r-lib.org/reference/tidy.html" clas
 <span><span class="co">## treated_1_* 0.24792906 -0.2072087 0.7998689 369</span></span></code></pre>
 <p>This allows for easy plotting of the results using
 <strong>ggpplot2</strong>:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">out_dr_ml</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">term</span>, y <span class="op">=</span> <span class="va">estimate</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_linerange.html" class="external-link">geom_pointrange</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">conf.low</span>, ymax <span class="op">=</span> <span class="va">conf.high</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>, color <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">term</span>, y <span class="op">=</span> <span class="va">estimate</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_pointrange</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">conf.low</span>, ymax <span class="op">=</span> <span class="va">conf.high</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_hline</span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>, color <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><img src="did_cde_files/figure-html/unnamed-chunk-6-1.png" alt="Estimated ACDEs from a DID analysis" width="700"></p>
 <p>Setting <code>on_treated</code> to <code>TRUE</code>, on the other
 hand, estimates the path-conditional ACDE or ACDE-PC.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out_dr_ml_pc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cde_did_aipw.html">cde_did_aipw</a></span><span class="op">(</span>base_mediator <span class="op">=</span> <span class="va">therm_trans_t0</span>, on_treated <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                             trim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.99</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_treatment.html">set_treatment</a></span><span class="op">(</span><span class="va">treated</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -327,6 +312,23 @@ hand, estimates the path-conditional ACDE or ACDE-PC.</p>
 <span><span class="co">## treated [(1, 1) vs. (0, 1)]   1.2990 138</span></span>
 <span><span class="co">## treated [(1, 2) vs. (0, 2)]   0.7044 159</span></span>
 <span><span class="co">## treated [(1, *) vs. (0, *)]   0.7688 369</span></span></code></pre>
+</div>
+<div class="section level3">
+<h3 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h3>
+<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="ref-BlaGlyHil24" class="csl-entry">
+Blackwell, Matthew, Adam Glynn, Hanno Hilbig, and Connor Halloran
+Phillips. 2024. <span>“Estimating Controlled Direct Effects with Panel
+Data: An Application to Reducing Support for Discriminatory
+Policies.”</span> <a href="https://mattblackwell.org/files/papers/did_cde.pdf" class="external-link">https://mattblackwell.org/files/papers/did_cde.pdf</a>.
+</div>
+<div id="ref-BroKal16" class="csl-entry">
+Broockman, David, and Joshua Kalla. 2016. <span>“Durably Reducing
+Transphobia: A Field Experiment on Door-to-Door Canvassing.”</span>
+<em>Science</em> 352 (6282): 220–24. <a href="https://doi.org/10.1126/science.aad9713" class="external-link">https://doi.org/10.1126/science.aad9713</a>.
+</div>
+</div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
