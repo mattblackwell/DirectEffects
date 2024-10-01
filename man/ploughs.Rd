@@ -7,14 +7,23 @@
 women.}
 \format{
 A data frame with 234 observations and 57 variables.
+
+A data frame with 234 observations and 57 variables.
 }
 \source{
+\doi{10.1093/qje/qjt005}
+
 \doi{10.1093/qje/qjt005}
 }
 \usage{
 data(ploughs)
+
+data(ploughs)
 }
 \description{
+A dataset to replicate the analysis in Alesina, Giuliano, and Nunn
+(2013).
+
 A dataset to replicate the analysis in Alesina, Giuliano, and Nunn
 (2013).
 }
@@ -48,8 +57,42 @@ A dataset to replicate the analysis in Alesina, Giuliano, and Nunn
 \item oil_pc. oil production/GDP
 \item ... other variables as annotated in the source.
 }
+
+\itemize{
+  \item isocode. 3-letter code for the country.
+\item flfp2000. Female labor force participation in 2000
+\item female_ownership. Percent of firms with female ownership (in
+  latest survey year)
+\item women_politics. Women in Politics in 2000, WDI
+\item plow. Animal plow cultivation variable (v39): Using
+  Ethnologue - pop weighted
+\item agricultural_suitability. overall (millets, sorghum, wheat,
+  barley, rye): share defined as suitable
+\item tropical_climate. Frac land: tropics and subtropics: using
+  Ethnologue - pop weighted
+\item large_animals. presence of large animals
+\item political_hierarchies. Jurisdictional hierarchy beyond local
+  community (v33): Using Ethnologue - pop weighted
+\item economic_complexity. Settlement patterns (v30)
+\item ln_income. ln (income)
+\item ln_income_squared. ln (income) ^2
+\item centered_ln_inc. de-meaned ln_inc
+\item centered_ln_incsq. de-meaned ln_inc squared
+\item country. country name
+\item communist_dummy. Communism indicator variable
+\item rugged. Ruggedness (Terrain Ruggedness Index, 100 m.)
+\item years_interstate_conflict. Years of interstate conflict, 1800-2007 - from COW
+\item serv_va_gdp2000. Value Added in Service/GDP in 2000
+\item polity2_2000. Polity 2 measure taken from the Polity IV dataset
+\item oil_pc. oil production/GDP
+\item ... other variables as annotated in the source.
+}
 }
 \references{
+Alesina, A., Giuliano, P., & Nunn, N. (2013). On the
+Origins of Gender Roles: Women and the Plough. The Quarterly
+Journal of Economics, 128(2), 469-530. \doi{10.1093/qje/qjt005}
+
 Alesina, A., Giuliano, P., & Nunn, N. (2013). On the
 Origins of Gender Roles: Women and the Plough. The Quarterly
 Journal of Economics, 128(2), 469-530. \doi{10.1093/qje/qjt005}

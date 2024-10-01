@@ -5,3 +5,4 @@ vignettes/*_files/
 vignettes/*_cache/
 docs
 README.html
+.DS_Store

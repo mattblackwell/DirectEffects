@@ -11,11 +11,6 @@ vignette: >
 ---
 
 ```{r loadpkg, echo = FALSE, include = FALSE}
-knitr::opts_chunk$set(fig.width = 5, fig.height = 4, fig.align = "center")
-library(dplyr)
-library(scales)
-library(reshape2)
-library(ggplot2)
 library(DirectEffects) 
 ```
 
@@ -27,178 +22,84 @@ This vignette demonstrates how to estimate the controlled direct effect of some 
 
 Here we briefly introduce some of the statistical theory behind estimating direct effects. The main quantity of interest is the average controlled direct effect or ACDE. This can be illustrated from the following causal structure [@AchBlaSen16, Figure 3]:
 
-```{r, echo = FALSE, out.width = "600px", fig.align='center'}
-knitr::include_graphics("figures/ABS_fig3.png")
-```
-
+![DAG with direct effects structure](figures/ABS_fig3.png){width=600px}
 
 The average controlled direct effect defined for a given treatment ($A_i = a$ vs. $A_i = a^\prime$) and a given value of the mediator ($M_i = m$) is 
 $$ACDE(a, a^\prime, m) = E[Y_i(a, m) - Y_i(a^\prime, m)]$$
-and is the total of the dashed lines in the figure above. Thus, we hold the mediator constant when comparing the outcome under each treatment. The ACDE is useful for discriminating between causal mechanisms, because the average total effect of treatment, $\tau(a, a^\prime) \equiv E[(Y_i(a) - Y_i(a^\prime)]$, can be decomposed as the sum of three quantities: (1) the ACDE, (2) the average natural indirect effect, and (3) a reference interaction that measures of how much the direct effect of $A_i$ depends on a particular $M_i = m$. Thus, if the ACDE is non-zero, it is evidence that the effect of $A_i$ is not entirely explained by $M_i$. We illustrate this with an empirical example. For more information on this, see @AchBlaSen16. 
-
-
-## Estimation by sequential g-estimation
-
-One way to estimate the ACDE with linear models is by sequential g-estimation, a type of structural nested mean model. The key logic of sequential g-estimation is that, under the sequential unconfoundedness assumption, the ACDE can be identified as follows:
-$$E[Y_i(a, 0) - Y_i(0,0)|X_i = x] = E[Y_i - \gamma(a, M_i, x) | A_i = a, x] - E[Y_i - \gamma(0, M_i, x) | A_i = 0, x]$$
-
-The function $\gamma$ above is called the "demediation function" (or "blip-down function") and is defined as follows:
-$$\gamma(a, m, x) = E[Y_i(a, m) - Y_i(a, 0) | X_i = x]$$
-
-This function is the effect of switching from some level of the mediator to 0, and thus is an estimate of the causal effect of the mediator for a fixed value of the treatment $a$ and within levels of the covariates. Subtracting its estimates $\gamma(A_i, M_i, X_i)$ from the outcome $Y_i$ will effectively remove the variation due to the mediator from the outcome, or what @AchBlaSen16 call "demediation." 
-
-The identification of the ACDE hold under the sequential unconfoundedness condition, using the definitions by @AchBlaSen16.
-
-**Assumption 1 (Sequential Unconfoundedness)** 
-
-> First, no omitted variables for the effect of treatment ($A_i$) on the outcome ($Y_i$), conditional on the pretreatment confounders ($X_i$). Second, no omitted variables for the effect of the mediator on the outcome, conditional on the treatment, pretreatment confounders, and intermediate confounders ($Z_i$).
-
-
-While the ACDE is estimated nonparametrically with just this assumption, we need to make a further assumption to be able to use sequential g-estimation. 
-
-**Assumption 2 (No intermediate interactions)**
-
-> The effect of the mediator ($M_i$) on the outcome ($Y_i$) is independent of the intermediate confounders ($Z_i$).
-
-Without this assumption, we would have to model the multivariate distribution of the intermediate confounders in order to estimate the ACDE. 
-
-
-### Estimating the demediation function
-
-Under the assumption of sequential unconcoundedness, the demediation function can be estimated by a regression of the outcome on the variables in the demediation function ($M_i$) plus the intermediate confounders ($Z_i$), treatment ($A_i$), and baseline confounders ($X_i$). If this regression model is correctly specified, the coefficients on the variables in the demediation function are unbiased for the parameters of the demediation function. For example, when there are no interactions between the mediator and the treatment, nor between the mediator and the pretreatment confounders, the demediation function is straightforward to estimate. In this case, the demediation function is  $\gamma(a, m, x) = \alpha \times m$ and the OLS coefficient on the mediator is an the estimate of $\alpha$. 
-
-### Using the demediation function to estimate ACDE
-
-The second stage of sequential g-estimation uses the demediated outcome
-$$\tilde{Y}_i = Y_i - \widehat{\gamma}(A_i, M_i, X_i; \widehat{\alpha}).$$
-If there are no interactions or nonlinearities in the demediation function, then this becomes $\tilde{Y}_i = Y_i - \widehat{\alpha}M_i$. With this demediated outcome in hand, we can estimate the ACDE by regressing this outcome on the treatment and pre-treatment covariates:
-$$E[\tilde{Y}_i | A_i, X_i] = \beta_0 + \beta_1A_i + X_i^T\beta_2.$$
-Under the above assumptions and assuming this regression is correctly specified, the $\widehat{\beta}_1$  is an unbiased estimate of the ACDE. The `sequential_g` function that we demonstrate below will complete both the estimation of the demediation function and the estimation of the ACDE. For more technical details on sequential g-estimation, see @AchBlaSen16. 
+and is the total of the dashed lines in the figure above. Thus, we hold the mediator constant when comparing the outcome under each treatment. The ACDE is useful for discriminating between causal mechanisms, because the average total effect of treatment, $\tau(a, a^\prime) \equiv E[Y_i(a) - Y_i(a^\prime)]$, can be decomposed as the sum of three quantities: (1) the ACDE, (2) the average natural indirect effect, and (3) a reference interaction that measures of how much the direct effect of $A_i$ depends on a particular $M_i = m$. Thus, if the ACDE is non-zero, it is evidence that the effect of $A_i$ is not entirely explained by $M_i$. We illustrate this with an empirical example. For more information on this, see @AchBlaSen16. 
 
 
 
-## Illustrative example of sequential g-estimation
+## Implementation 
 
-We now work through one example of using `sequential_g` to estimate the ACDE. The data comes from @AleGiuNun13. The dataset comes with the package:
-```{r}
-data(ploughs)
+This vignette introduces a new way to design, specify, and implement various estimators for controlled direct effects using a coding style that we refer to as the "assembly line." Users can specify the various components of the estimators sequentially and easily swap out implementation details such as what exact estimators are used for the estimation of each nuisance function or what arguments to pass to these functions. A unified structure and output across different research designs and estimators should make comparing estimators very easy. Finally, this implementation is built around the idea of cross-fitting for nuisance function estimation. 
+
+Let's see how this works in practice. We first load a subset of the `jobcorps` data from the package:
+```{r data}
+data("jobcorps")
+jc <- jobcorps[
+  1:200,
+  c("treat", "female", "age_cat", "work2year2q", "pemplq4", "emplq4", "exhealth30")
+]
 ```
 
-The paper's main argument is that the advent of the capital-intensive agricultural practice of the plow favored men over women participating in agriculture, which have affected gender inequality in modern societies. These authors find that strong effects of plow-based agriculture on female labor-force participation, but not on share of political positions held by women. The authors speculate that this might be due to the (positive) effects of the plow on modern-day income levels, which could offset the direct effects of the plow. The authors control for income and show that a significant effect of the plow appears. We evaluate this approach and try to estimate the ACDE more formally. Thus, in this case, we have the following variables, where $i$ indexes countries:
+This is the Job Corps experiment data used in @Hub14 to estimate the effect of a randomized job training program on self-assessed health holding constant the intermediate outcome of employment. We use a subset of the variables from their study, but the basic variable we use here:
+
+* $Y_i$ is an indicator for whether participants reported "very good" health after 2.5 years out after randomization (`exhealth30`)
+* $A_i$ is an indicator for assignment to the job training program (`treat`)
+* $M_i$ is an indicator for employment 1 to 1.5 years after assignment (`work2year2q`)
+* $Z_i$ are the post-treatment, pre-mediator intermediate confounders (`emplq4`, `pemplq4`)
+* $X_i$ are the pre-treatment characteristics (`female`, `age_cat`)
 
 
-* $Y_i$ is the share of political positions held by women in 2000 (`women_politics`)
-* $A_i$ is the relative proportion of ethnic groups that traditionally used the plow within a country (`plow`)
-* $M_i$ is the log GDP per capita in 2000, mean-centered (`centered_ln_inc`)
-* $Z_i$ are the post-treatment, pre-mediator intermediate confounders (`years_civil_conflict`, `years_interstate_conflict`, `oil_pc`, `european_descent`, `communist_dummy`, `polity2_2000`, `serv_va_gdp2000`)
-* $X_i$ is the pre-treatment characteristics of the country, which are mostly geographic. (`tropical_climate`, `agricultural_suitability`, `large_animals`, `political_hierarchies`, `economic_complexity`, and `rugged`)
+In context of our CDE estimators, we refer to be $A_i$ (the treatment) and $M_i$ (the mediator) as *treatment variables* because we are interested in causal effects that contrast different combinations of these two variables. 
 
-As a baseline, we first regress $Y_i$ on $A_i$ controlling for the pre-treatment variables $X_i$.
-```{r}
-ate.mod <- lm(women_politics ~ plow + agricultural_suitability +
-                tropical_climate +  large_animals + political_hierarchies +
-                economic_complexity + rugged, data = ploughs)
+The first step in our assembly line is to choose the type of CDE estimator (or really estimation strategy) that we want to pursue. These choices include IPW (`cde_ipw()`), regression imputation (`cde_reg_impute()`), and augmented IPW (`cde_aipw()`) among others. Some of these different functions will take different arguments to specify different aspects of the estimator. The AIPW estimator is useful to demonstrate because it uses many of the features of the assembly line approach. 
+
+```{r aipw}
+my_aipw <- cde_aipw() |>
+  set_treatment(treat, ~ female + age_cat) |>
+  treat_model(engine = "logit") |>
+  outreg_model(engine = "lm") |>
+  set_treatment(work2year2q, ~ emplq4 + pemplq4) |>
+  treat_model(engine = "logit") |>
+  outreg_model(engine = "lm") |>
+  estimate(exhealth30 ~ treat + work2year2q, data = jobcorps)
 ```
 
-Notice that the effect of the plow is negative and insignificant.
-```{r, echo = TRUE, eval = TRUE}
-summary(ate.mod)
+The call here consists of several steps connected by R's pipe operator. The first call `cde_aipw()` simply initializes the estimator as taking the AIPW form, meaning that it will use both propensity score models and outcome regressions to estimate the causal effects. 
+
+Following this we have two blocks of 3 lines each that look similar with a few differences. These "treatment blocks" specify the causal variables of interest **in their causal ordering**. In `set_treatment()` we set the name of the treatment variable and give a formula describing the pre-treatment covariates for this treatment. This formula, unless overridden by the next two functions, will be used in the fitting of the propensity score and outcome regression models. `treat_model()` allows the user to specify how to fit the propensity score model for this treatment with a choice of engine and optional arguments to pass to each engine. `outreg_model()` does the same for the outcome regression. We repeat this specification for the mediator. 
+
+The `estimate()` function finally implements the specifications given in the previous commands. Users use a formula to set the outcome and which of the treatment variables we want effects for and indicate the data frame where all of these variables can be found. By default, the nuisance functions (the propensity score model and the outcome regression) are fit using cross-fitting. 
+
+We can either use the `summary()` or `tidy()` functions to get a summary of the different effects being estimated:
+
+```{r summary}
+summary(my_aipw)
+tidy(my_aipw)
 ```
 
+Because the `estimate()` function included both `treat` and `work2year2q` in the formula, the output includes both  the controlled direct effects of the treatment and the conditional average treatment effect of the mediator. Furthermore, by default, the output contains estimates for an effect for each combination of other treatment variables. This can be changed by setting the `eval_vals` argument in the relevant `set_treatment()` call. 
 
-#### Implementation
+The modular structure of the call allow users to easily swap out parts of the models. For example, we could easily alter the above call to use lasso versions of the regression and logit model.
 
-In this example, we would like to estimate the controlled direct effect of plows fixing the value of the mediator, current national income. To do so, we must choose a value at which to fix this mediator. The standard sequential g-estimation approach will fix the value to 0, which is often not a substantively interesting value---it certainly is not for income or logged income. To avoid this problem, we use the mean-centered version of our logged income, `centered_ln_inc`, so that when we demediate with $m = 0$, it will be equivalent to demediation with $m$ set to the mean of logged national income. Furthermore, we also use a squared term of this centered mediator, `centered_ln_incsq`, so that we can include it in the demediation function to account for nonlinear effects of logged income. 
-
-Next, we specify the main formula that contains a left-hand side that specifies the dependent variable, and a right-hand side that distinguishes between the baseline variables, the intermediate variables, and the variables in the demediation function. Each of these  sets of variables on the left-hand side is separated by the vertical bar `|`.  Thus, the formula will have the form `yvar ~ treat + xvars | zvars | mvars`. . For example, here we specify that the demediation variables are $M_i$ and $M_i^2$:
-```{r}
-form_main <- women_politics ~ plow + agricultural_suitability + tropical_climate +
-  large_animals + political_hierarchies + economic_complexity + rugged |
-  years_civil_conflict + years_interstate_conflict  + oil_pc + european_descent +
-  communist_dummy + polity2_2000 + serv_va_gdp2000 |
-  centered_ln_inc + centered_ln_incsq
+```{r aipw_lasso, eval = FALSE}
+my_aipw_lasso <- cde_aipw() |>
+  set_treatment(treat, ~ female + age_cat) |>
+  treat_model(engine = "rlasso_logit") |>
+  outreg_model(engine = "rlasso") |>
+  set_treatment(work2year2q, ~ emplq4 + pemplq4) |>
+  treat_model(engine = "rlasso_logit") |>
+  outreg_model(engine = "rlasso") |>
+  estimate(exhealth30 ~ treat + work2year2q, data = jobcorps)
 ```
 
+Here we use a "rigorous" version of the lasso from the `hdm` package to speed up computation. There are a number of different engines for different outcome and treatment types including:
 
-`sequential_g()`, implements sequential g-estimation in the way outlined in the previous section. Specifically, it runs the  first stage model, constructs the demediator function, and passes it to the second-stage model. At its simplest, it takes in the formula and a data frame:
-
-```{r, echo = TRUE, eval = TRUE}
-direct <- sequential_g(form_main, data = ploughs)
-```
-
-
-### Output
-
-As usual, we can use the `summary` function to the output of the `sequential_g` function:
-```{r, echo = TRUE, eval = TRUE}
-summary(direct)
-```
-
-The standard errors here are based on the asymptotic variance derived in @AchBlaSen16, but it is also possible to use the `boots_g` function to compute standard errors by a simple bootstrap:
-
-```{r}
-out.boots <- boots_g(direct, boots = 250)
-summary(out.boots)
-```
+- GLMs: `lm` (OLS), `logit` (logistic regression), `multinom` (mulitnomial logit)
+- LASSO estimators (from `glmnet`): `lasso`, `lasso_logit`, `lasso_multinom`
+- Rigorous LASSO estimator (from `hdm`): `rlasso`, `rlasso_logit`
 
 
-The coefficient on the treatment variable (here, `plow`), is the estimate of the ACDE. The results show a negative ACDE of plows---in other words, the effect of the plough is negative for fixed income levels. This controlled direct effect is larger in magnitude than the estimated the total effect:
-
-```{r, echo = FALSE, fig.width= 7, fig.height=4}
-df.coef <- rbind(summary(ate.mod)$coef["plow", ],
-               summary(direct)$coef["plow", ]) %>% 
-  as.data.frame()  %>%
-  mutate(pos = c("ATE of Plows", "ACDE of Plows,\nvia sequential g-estimation"))
-
-ggplot(df.coef, aes(x = Estimate, y = pos)) +
-  geom_point() +
-  geom_errorbarh(data = df.coef, aes(xmin = Estimate + 1.96*`Std. Error`, xmax = Estimate - 1.96*`Std. Error`), height = 0.1) +
-  scale_x_continuous(limits = c(-10, 5)) +
-  geom_vline(xintercept = 0, linetype = 2) +
-  geom_text(aes(label = round(Estimate, 1)), nudge_y = 0.1) +
-  theme_bw() +
-  labs(x = "Estimated Causal Effects on Percent of Women in Political Office",
-       y = "",
-       caption = "Lines are 95% confidence intervals")
-```
-
-### Output attributes
-
-There are various quantities and output objects available from the `sequential_g` function. As usual, the coefficient estimates from the second stage can be accessed using the `coef()` function:
-```{r}
-coef(direct)
-```
-One can access confidence intervals for the coefficients using the usual `confint` function:
-```{r}
-confint(direct, "plow")
-```
-
-The `vcov()` function returns the variance covariance-matrix that accounts for the first stage estimation, 
-```{r}
-vcov(direct)[1:3, 1:3]
-```
-
-
-### Sensitivity
-
-The `cdesens` function can perform a sensitivity analysis to evaluate how the estimated ACDE changes for various levels of post-treatment confounding of the mediator-outcome relationship. Currently, this function only supports a model with only one mediator. 
-
-
-```{r}
-# update with only one mediator
-direct1 <- sequential_g(women_politics ~ plow + agricultural_suitability + tropical_climate +
-  large_animals + political_hierarchies + economic_complexity + rugged |
-  years_civil_conflict + years_interstate_conflict  + oil_pc + european_descent +
-  communist_dummy + polity2_2000 + serv_va_gdp2000 |
-  centered_ln_inc,
-  ploughs)
-out_sens <- cdesens(direct1, var = "plow")
-plot(out_sens)
-```
-
-The black line shows how the estimated ACDE would be at various levels of correlation between the mediator and outcome errors, while the gray bands show the 95% confidence intervals. Note that when this correlation is 0, we recover the estimated effect from `sequential_g`. See @AchBlaSen16 for more information. 
-
-
-## References 
-
-
+## References
