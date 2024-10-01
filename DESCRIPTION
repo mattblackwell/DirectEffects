@@ -23,6 +23,7 @@ Suggests:
     knitr,
     rmarkdown,
     dplyr,
+    tidyverse,
     ggplot2,
     reshape2,
     scales,
