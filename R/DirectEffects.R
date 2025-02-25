@@ -192,7 +192,7 @@ sequential_g <- function(formula, data, subset, weights, na.action,
 #'
 #' @keywords internal
 #'
-seq.g.vcov <- function(first_mod, direct_mod, X1, X2, med.vars) {
+seq_g_vcov <- function(first_mod, direct_mod, X1, X2, med.vars) {
   n <- NROW(X2)
   Fhat <- crossprod(X2, X1) / n
   Fhat[, !(colnames(X1) %in% med.vars)] <- 0
