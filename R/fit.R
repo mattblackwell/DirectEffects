@@ -184,7 +184,6 @@ fit_fold <- function(object, data, fit_rows, pred_rows, out) {
 
   model_fits <- out$model_fits
 
-
   
   if (object$has_outreg) {
     blipped_y <- create_blip_list(model_fits, eval_vals, Y)

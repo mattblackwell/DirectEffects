@@ -143,6 +143,9 @@ treat_model <- function(object,
   } else if (engine %in% match_engines) {
     model_spec[[last_block]]$treat_type <- "categorical"
     engine_type <- "match"
+  } else {
+    msg <- sprintf("engine type `%s` not supported", engine)
+    rlang::abort(message)
   }
   
   this_treat <- list(

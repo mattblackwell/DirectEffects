@@ -46,7 +46,7 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_
   N <- nrow(data)
   J <- length(object$model_spec)
 
-
+  
   
   A <- get_treat_df(object, data)
   object$has_ipw <- object$type %in% c("ipw", "aipw", "did_aipw")
@@ -55,6 +55,10 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_
   object$has_blip <- object$type %in% c("sequential_g")
 
   check_cde_estimator(object)
+
+  if (any(table(interaction(A, sep = "_")) <= 2)) {
+    stop("treatment group combinations too small (2 or fewer)")
+  }
   
   if (missing(n_folds)) {
     if (crossfit) {
@@ -94,6 +98,7 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_
   out$model_fits <- make_model_fits(A, eval_vals, object$model_spec)
   fit_rows <- 1L:N
   pred_rows <- 1L:N
+  
   res <- fit_fold(object, data, fit_rows, pred_rows, out)
   out$model_fits <- res 
   out <- estimate_cde(object, formula, data, out)
@@ -105,8 +110,18 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_
     split_ses <- matrix(NA, nrow = n_splits, ncol = nrow(out$estimates))
     for (s in seq_len(n_splits)) {
       fold_size <- N / n_folds
-      f_split <- ceiling(seq_len(N) / fold_size)
-      folds <- split(sample(seq_len(N)), f_split)
+      attempt <- 0
+      good_split <- FALSE
+      while (!good_split & attempt < 10) {
+        attempt <- attempt + 1
+        f_split <- ceiling(seq_len(N) / fold_size)
+        folds <- split(sample(seq_len(N)), f_split)
+        good_split <- check_fold_size(object, data, folds)
+      }
+      if (attempt == 10 & !good_split) {
+        warning("crossfit data has insufficient variation in treatment, using full data")
+        folds <- rep(list(1L:N), times = n_folds)
+      }
       
       out$model_fits <- make_model_fits(A, eval_vals, object$model_spec)
       for (k in seq_len(n_folds)) {
@@ -120,8 +135,8 @@ estimate <- function(object, formula, data, subset, crossfit = TRUE, n_folds, n_
       split_ses[s, ] <- out$estimates[, "std.error"]
     }
     med_ests <- apply(split_ests, 2, median)
-    split_vars <- apply(split_ses ^ 2, 2, median) + sweep(split_ests, 2, med_ests) ^ 2
-    med_ses <- sqrt(apply(split_vars, 2, median))
+    split_vars <- apply(split_ses ^2 + sweep(split_ests, 2, med_ests)^2, 2, median)
+    med_ses <- sqrt(split_vars)
     out$estimates[, "estimate"] <- med_ests
     out$estimates[, "std.error"] <- med_ses
   }

@@ -287,3 +287,22 @@ get_eval_vals <- function(object, data) {
   }
   out
 }
+
+check_fold_size <- function(object, data, folds) {
+
+  n_folds <- length(folds)
+  fold_balanced <- rep(NA, n_folds)
+  for (k in seq_len(n_folds)) {
+    fit_rows <- unlist(folds[-k])
+    pred_rows <- unlist(folds[k])
+    A_fit <- get_treat_df(object, data[fit_rows, ])
+    A <- get_treat_df(object, data)
+    paths <- interaction(A, sep = "_")
+    fit_paths <- interaction(A_fit, sep = "_")  
+    num_paths <- length(unique(paths))
+    num_fit_paths <- length(unique(fit_paths))
+    count_fit_paths <- table(fit_paths)
+    fold_balanced[k] <- (num_paths == num_fit_paths) & (all(count_fit_paths > 3))
+  }
+  return(all(fold_balanced))
+}
