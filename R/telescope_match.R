@@ -150,7 +150,7 @@
 #' tm_out <-  telescope_match(
 #'   tm_form,
 #'   data = jobcorps_female,
-#'   L = 3,
+#'   L = 2,
 #'   boot = FALSE,
 #'   verbose = TRUE
 #' )

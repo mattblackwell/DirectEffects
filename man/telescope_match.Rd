@@ -178,7 +178,7 @@ treat | emplq4 + emplq4full | work2year2q
 tm_out <-  telescope_match(
   tm_form,
   data = jobcorps_female,
-  L = 3,
+  L = 2,
   boot = FALSE,
   verbose = TRUE
 )
